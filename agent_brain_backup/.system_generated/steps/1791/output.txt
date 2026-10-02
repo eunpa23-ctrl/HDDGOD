@@ -1,0 +1,38 @@
+
+The command exited with code 0.
+Output:
+
+>     def start_netflix_routine(self) -> None:
+          """손님이 넷플릭스를 실행했을 때만 감지하여 자동 로그인 연동 (강제 재실행 안 함)"""
+          def routine():
+              # 1. 바탕화면에 넷플릭스 전용 아이콘 바로가기 자동 보장
+              self.netflix_bot.ensure_desktop_shortcut()
+  
+              logger.info("넷플릭스 상시 감시 대기 중 (손님이 바로가기 실행 시 자동 로그인)...")
+              was_running = False
+  
+              while True:
+                  try:
+                      # 2. 크롬(넷플릭스)이 켜져 있는지 확인
+                      is_running = self.netflix_bot.is_cdp_available()
+  
+                      if is_running:
+                          if not was_running:
+                              logger.info("🎬 [ZeusAgent] 손님이 넷플릭스를 실행함 -> 자동 로그인 검사 및 수행!")
+                              was_running = True
+                              self.netflix_bot.connect_cdp()
+  
+                          # 상태 점검 및 미로그인 시 자동 로그인 수행
+                          st = self.netflix_bot.check_and_handle_login()
+                          if st == NetflixStatus.LOGGED_IN:
+                              self.otp_needed = False
+                          elif st == NetflixStatus.OTP_WAITING:
+                              if not self.otp_needed:
+                                  logger.info("⚡ [ZeusAgent] 넷플릭스 4자리 OTP 대기 상태 감지! 서버 알림 준비...")
+                                  self.otp_needed = True
+  
+                      else:
+                          if was_running:
+
+
+

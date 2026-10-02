@@ -1,0 +1,59 @@
+
+The command exited with code 1.
+Output:
+        1 file(s) copied.
+Active code page: 65001
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : 2026년 10월 1일 목요일 오후 8:57:36
+   Source = G:\� �̺�\PROJECT\HDDGOD\
+     Dest : C:\Users\USER\Documents\HDDGOD\
+
+    Files : *.*
+	    
+ Exc Dirs : .git
+	    __pycache__
+	    .vscode
+	    venv
+	    build
+	    dist
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	                  20	G:\� �̺�\PROJECT\HDDGOD\
+	    New File  		    3567	fix_bats.py100%  
+	                   9	G:\� �̺�\PROJECT\HDDGOD\client\
+	    Newer     		   20627	netflix_bot.py100%  
+	                   3	G:\� �̺�\PROJECT\HDDGOD\common\
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\core\
+	    Newer     		      10	version.txt100%  
+	    Newer     		  23.7 m	ZeusAgent.exe  4.2%  8.4% 12.6% 16.8% 21.0% 25.2% 29.4% 33.6% 37.8% 42.0% 46.2% 50.4% 54.6% 58.8% 63.0% 67.2% 71.4% 75.6% 79.8% 84.0% 88.2% 92.4% 96.6%100%  
+	                  55	G:\� �̺�\PROJECT\HDDGOD\packages\
+	                   8	G:\� �̺�\PROJECT\HDDGOD\server\
+	    Older     		     144	.supervisor_status.json100%  
+	                   0	G:\� �̺�\PROJECT\HDDGOD\server\master_icons\
+	                   1	G:\� �̺�\PROJECT\HDDGOD\server\static\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\server\templates\
+	                   8	G:\� �̺�\PROJECT\HDDGOD\tools\
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        16         0        16         0         0         0
+   Files :       116         5       111         0         0         0
+   Bytes :  118.10 m   23.81 m   94.29 m         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           471179415 Bytes/sec.
+   Speed :           26961.102 MegaBytes/min.
+   Ended : 2026년 10월 1일 목요일 오후 8:57:36
+
+

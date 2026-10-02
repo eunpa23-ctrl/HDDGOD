@@ -1,0 +1,15 @@
+
+The command exited with code 0.
+Output:
+
+>             elif p_type == PacketType.OTP_SUBMIT:
+                  # 네이버 메일에서 자동 추출되었거나 점주가 입력한 4자리 코드
+                  code = data.get("otp_code", "")
+                  logger.info(f"수신된 4자리 OTP [{code}] 화면 입력 시도...")
+                  asyncio.create_task(asyncio.to_thread(self.netflix_bot.input_otp_code, code))
+  
+              elif p_type == PacketType.REMOTE_INPUT:
+                  # 모바일 터치 및 마우스/키보드 입력 제어
+
+
+

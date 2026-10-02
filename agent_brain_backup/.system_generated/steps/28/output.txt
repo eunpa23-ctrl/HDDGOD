@@ -1,0 +1,5 @@
+
+The command exited with code 0.
+Output:
+[('trajectory_meta',), ('steps',), ('gen_metadata',), ('executor_metadata',), ('parent_references',), ('trajectory_metadata_blob',), ('battle_mode_infos',)]
+

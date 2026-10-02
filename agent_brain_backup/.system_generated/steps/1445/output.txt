@@ -1,0 +1,25 @@
+
+The command exited with code 1.
+Output:
+Remove-Item : Cannot remove item C:\Users\USER\Documents\HDDGOD\tools\cloudflared.exe: Access to the path 'cloudflared.
+exe' is denied.
+At line:1 char:173
++ ... d C:\Users\USER\Documents; Remove-Item -Recurse -Force HDDGOD; git cl ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (cloudflared.exe:FileInfo) [Remove-Item], UnauthorizedAccessException
+    + FullyQualifiedErrorId : RemoveFileSystemItemUnAuthorizedAccess,Microsoft.PowerShell.Commands.RemoveItemCommand
+Remove-Item : Cannot remove item C:\Users\USER\Documents\HDDGOD\tools: The directory is not empty.
+At line:1 char:173
++ ... d C:\Users\USER\Documents; Remove-Item -Recurse -Force HDDGOD; git cl ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (tools:DirectoryInfo) [Remove-Item], IOException
+    + FullyQualifiedErrorId : RemoveFileSystemItemIOError,Microsoft.PowerShell.Commands.RemoveItemCommand
+Remove-Item : Cannot remove item C:\Users\USER\Documents\HDDGOD: The process cannot access the file 'C:\Users\USER\Docu
+ments\HDDGOD' because it is being used by another process.
+At line:1 char:173
++ ... d C:\Users\USER\Documents; Remove-Item -Recurse -Force HDDGOD; git cl ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (C:\Users\USER\Documents\HDDGOD:DirectoryInfo) [Remove-Item], IOException
+    + FullyQualifiedErrorId : RemoveFileSystemItemIOError,Microsoft.PowerShell.Commands.RemoveItemCommand
+fatal: destination path 'HDDGOD' already exists and is not an empty directory.
+

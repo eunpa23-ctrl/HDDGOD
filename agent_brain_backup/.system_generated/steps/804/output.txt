@@ -1,0 +1,76 @@
+
+The command exited with code 0.
+Output:
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.Extension : '.Extension' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. 
+�̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:64
++ ... m -Path 'G:\� �̺�' -Filter '*.*' | Where-Object { .Extension -match  ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.Extension:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+

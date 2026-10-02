@@ -1,0 +1,10 @@
+
+The command exited with code 1.
+Output:
+SUCCESS: The process "git.exe" with PID 4108 has been terminated.
+SUCCESS: The process "git.exe" with PID 8348 has been terminated.
+SUCCESS: The process "git.exe" with PID 2828 has been terminated.
+SUCCESS: The process "git.exe" with PID 2996 has been terminated.
+ERROR: The process "git-credential-manager.exe" not found.
+ERROR: The process "git-remote-https.exe" not found.
+

@@ -1,0 +1,18 @@
+
+The command exited with code 0.
+Output:
+
+FullName                                                        Length  
+--------                                                        ------  
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy                            
+G:\내 드라이브\PROJECT\HDDGOD\deploy\share_deploy_folder.bat         1453    
+G:\내 드라이브\PROJECT\HDDGOD\deploy\build_client_exe.bat            1395    
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core                       
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\2_정밀검수.bat         4223    
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\1_설치하기.bat         3352    
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\ZeusAgent.exe 24946541
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\config.ini    843     
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\version.txt   6       
+
+
+

@@ -1,0 +1,8 @@
+
+The command exited with code 0.
+Output:
+[master fc0bca8] v1.0.8 - Fix Netflix 2-step login flow, update password, fix server ROOT_DIR bug
+ 4 files changed, 73 insertions(+), 25 deletions(-)
+To https://github.com/eunpa23-ctrl/HDDGOD.git
+   5fa5b85..fc0bca8  master -> master
+

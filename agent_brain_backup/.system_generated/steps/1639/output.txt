@@ -1,0 +1,56 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -439,29 +439,27 @@
+         has_pw = self.eval_js(pw_check_js)
+ 
+         if not has_pw:
+-            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지 → Enter 키 눌러서 "다음"으로 넘어가기
+-            logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 Enter 키 전송, 비밀번호 창 대기 중...")
+-            
+-            # 먼저 다음 버튼이 있으면 명시적으로 JS 클릭도 시도 (안전빵)
+-            btn_click_js = """
+-            (function() {
+-                var btn = document.querySelector('button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"]');
+-                if(btn && !btn.disabled) { btn.click(); return true; }
+-                return false;
+-            })()
+-            """
+-            clicked = self.eval_js(btn_click_js)
+-            
+-            if not clicked:
+-                # 클릭이 안 먹히면 엔터키 쾅!
+-                self.send_cdp_command("Input.dispatchKeyEvent", {
+-                    "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+-                })
+-                self.send_cdp_command("Input.dispatchKeyEvent", {
+-                    "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+-                })
+-            
+-            time.sleep(2.5)  # 화면 전환 대기
++            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지
++            logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 [Tab] -> [Enter] 키 전송 (버튼 포커스)")
++            
++            # 1. 탭(Tab) 키를 눌러서 '다음' 버튼으로 포커스 이동
++            self.send_cdp_command("Input.dispatchKeyEvent", {
++                "type": "keyDown", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9
++            })
++            self.send_cdp_command("Input.dispatchKeyEvent", {
++                "type": "keyUp", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9
++            })
++            time.sleep(0.5)  # 포커스 이동 후 잠시 대기
++            
++            # 2. 엔터(Enter) 키를 눌러서 포커스된 '다음' 버튼 클릭 실행
++            self.send_cdp_command("Input.dispatchKeyEvent", {
++                "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
++            })
++            self.send_cdp_command("Input.dispatchKeyEvent", {
++                "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
++            })
++            
++            time.sleep(2.5)  # 비밀번호 화면 전환 대기
+ 
+         # === STEP 3: 비밀번호 입력창 포커스 및 입력 ===
+         focus_pass_js = """
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

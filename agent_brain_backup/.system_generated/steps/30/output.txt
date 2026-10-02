@@ -1,0 +1,5 @@
+
+The command exited with code 0.
+Output:
+[(0, 'idx', 'INTEGER', 0, None, 1), (1, 'step_type', 'INTEGER', 1, '0', 0), (2, 'status', 'INTEGER', 1, '0', 0), (3, 'has_subtrajectory', 'numeric', 1, 'false', 0), (4, 'metadata', 'BLOB', 0, None, 0), (5, 'error_details', 'BLOB', 0, None, 0), (6, 'permissions', 'BLOB', 0, None, 0), (7, 'task_details', 'BLOB', 0, None, 0), (8, 'render_info', 'BLOB', 0, None, 0), (9, 'step_payload', 'BLOB', 0, None, 0), (10, 'step_format', 'INTEGER', 1, '0', 0)]
+

@@ -1,0 +1,10 @@
+
+The command exited with code 0.
+Output:
+
+InterfaceAlias IPAddress     PrefixOrigin
+-------------- ---------     ------------
+이더넷            192.168.0.100       Manual
+
+
+

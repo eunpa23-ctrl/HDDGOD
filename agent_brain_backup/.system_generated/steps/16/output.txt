@@ -1,0 +1,64 @@
+
+The command exited with code 0.
+Output:
+
+FullName                                                                       LastWriteTime         
+--------                                                                       -------------         
+G:\내 드라이브\PROJECT\HDDGOD\server                                                2026-10-01 오후 6:32:48 
+G:\내 드라이브\PROJECT\HDDGOD\server\server_core.py                                 2026-10-01 오후 6:32:48 
+G:\내 드라이브\PROJECT\HDDGOD\run_server.py                                         2026-10-01 오후 6:31:34 
+G:\내 드라이브\PROJECT\HDDGOD\서버실행.vbs                                              2026-10-01 오후 6:31:24 
+G:\내 드라이브\PROJECT\HDDGOD\server_supervisor.py                                  2026-10-01 오후 6:31:15 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__                                    2026-10-01 오후 6:22:25 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\wol_watchdog.cpython-314.pyc       2026-10-01 오후 6:22:25 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\tunnel_manager.cpython-314.pyc     2026-10-01 오후 6:22:24 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\server_core.cpython-314.pyc        2026-10-01 오후 6:22:23 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\remote_relay.cpython-314.pyc       2026-10-01 오후 6:22:22 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\mail_otp_extractor.cpython-314.pyc 2026-10-01 오후 6:22:21 
+G:\내 드라이브\PROJECT\HDDGOD\server\__pycache__\kakao_notifier.cpython-314.pyc     2026-10-01 오후 6:22:21 
+G:\내 드라이브\PROJECT\HDDGOD\__pycache__                                           2026-10-01 오후 6:22:20 
+G:\내 드라이브\PROJECT\HDDGOD\__pycache__\run_server.cpython-314.pyc                2026-10-01 오후 6:22:20 
+G:\내 드라이브\PROJECT\HDDGOD\__pycache__\run_client.cpython-314.pyc                2026-10-01 오후 6:22:19 
+G:\내 드라이브\PROJECT\HDDGOD\common\__pycache__                                    2026-10-01 오후 6:22:18 
+G:\내 드라이브\PROJECT\HDDGOD\common\__pycache__\protocol.cpython-314.pyc           2026-10-01 오후 6:22:18 
+G:\내 드라이브\PROJECT\HDDGOD\common\__pycache__\config.cpython-314.pyc             2026-10-01 오후 6:22:18 
+G:\내 드라이브\PROJECT\HDDGOD\common\__pycache__\auto_installer.cpython-314.pyc     2026-10-01 오후 6:22:17 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__                                    2026-10-01 오후 6:22:16 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\windows_optimizer.cpython-314.pyc  2026-10-01 오후 6:22:16 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\uwf_controller.cpython-314.pyc     2026-10-01 오후 6:22:15 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\screen_streamer.cpython-314.pyc    2026-10-01 오후 6:22:14 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\power_policy.cpython-314.pyc       2026-10-01 오후 6:22:13 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\netflix_bot.cpython-314.pyc        2026-10-01 오후 6:22:13 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\desktop_guard.cpython-314.pyc      2026-10-01 오후 6:22:12 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\client_tray.cpython-314.pyc        2026-10-01 오후 6:22:11 
+G:\내 드라이브\PROJECT\HDDGOD\client\__pycache__\client_agent.cpython-314.pyc       2026-10-01 오후 6:22:10 
+G:\내 드라이브\PROJECT\HDDGOD\인수인계서.md                                              2026-10-01 오후 6:19:12 
+G:\내 드라이브\PROJECT\HDDGOD\dist\ZeusAgent.exe                                    2026-10-01 오후 12:22:36
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\ZeusAgent.exe                2026-10-01 오후 12:22:33
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\ZeusAgent.pkg                         2026-10-01 오후 12:22:32
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\EXE-00.toc                            2026-10-01 오후 12:22:30
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\version.txt                  2026-10-01 오후 12:22:30
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\PYZ-00.toc                            2026-10-01 오후 12:22:29
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\PYZ-00.pyz                            2026-10-01 오후 12:22:29
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\PKG-00.toc                            2026-10-01 오후 12:22:29
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\Analysis-00.toc                       2026-10-01 오후 12:22:27
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\xref-ZeusAgent.html                   2026-10-01 오후 12:22:27
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\warn-ZeusAgent.txt                    2026-10-01 오후 12:22:27
+G:\내 드라이브\PROJECT\HDDGOD\build\ZeusAgent\base_library.zip                      2026-10-01 오후 12:22:25
+G:\내 드라이브\PROJECT\HDDGOD\ZeusAgent.spec                                        2026-10-01 오후 12:21:54
+G:\내 드라이브\PROJECT\HDDGOD\server\templates\remote_view.html                     2026-10-01 오후 12:21:16
+G:\내 드라이브\PROJECT\HDDGOD\client\screen_streamer.py                             2026-10-01 오후 12:17:27
+G:\내 드라이브\PROJECT\HDDGOD\server\templates\mobile_dashboard.html                2026-10-01 오전 8:32:52 
+G:\내 드라이브\PROJECT\HDDGOD\server\templates\dashboard.html                       2026-10-01 오전 8:32:36 
+G:\내 드라이브\PROJECT\HDDGOD\client\client_agent.py                                2026-10-01 오전 8:32:29 
+G:\내 드라이브\PROJECT\HDDGOD\common\protocol.py                                    2026-10-01 오전 8:32:03 
+G:\내 드라이브\PROJECT\HDDGOD\common\config.py                                      2026-10-01 오전 7:56:54 
+G:\내 드라이브\PROJECT\HDDGOD\server\static\favicon.ico                             2026-10-01 오전 7:55:31 
+G:\내 드라이브\PROJECT\HDDGOD\server\static                                         2026-10-01 오전 7:55:31 
+G:\내 드라이브\PROJECT\HDDGOD\server\tunnel_manager.py                              2026-10-01 오전 7:55:24 
+G:\내 드라이브\PROJECT\HDDGOD\run_client.py                                         2026-10-01 오전 7:55:10 
+G:\내 드라이브\PROJECT\HDDGOD\client\client_tray.py                                 2026-10-01 오전 7:49:59 
+G:\내 드라이브\PROJECT\HDDGOD\클라이언트실행.vbs                                           2026-10-01 오전 7:45:32 
+
+
+

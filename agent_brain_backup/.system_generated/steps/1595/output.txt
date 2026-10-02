@@ -1,0 +1,21 @@
+
+The command exited with code 0.
+Output:
+SUCCESS: The process "chrome.exe" with PID 260 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 8740 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 2748 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 13880 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 5148 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 6832 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 4668 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 6448 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 15056 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 12608 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 14064 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 3276 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 2460 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 240 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 14476 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 9324 has been terminated.
+SUCCESS: The process "chrome.exe" with PID 8724 has been terminated.
+

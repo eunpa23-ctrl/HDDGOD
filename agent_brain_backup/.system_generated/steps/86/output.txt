@@ -1,0 +1,12 @@
+
+The command exited with code 0.
+Output:
+
+   Id ProcessName Path                                                             
+   -- ----------- ----                                                             
+ 9424 python      C:\Users\USER\AppData\Local\Programs\Python\Python314\python.exe 
+13348 python      C:\Users\USER\AppData\Local\Programs\Python\Python314\python.exe 
+11172 pythonw     C:\Users\USER\AppData\Local\Programs\Python\Python314\pythonw.exe
+
+
+

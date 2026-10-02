@@ -1,0 +1,29 @@
+The search for ""PolicyManager\current\device\Start\HideShutDown"" returned the following summary:
+The registry path `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\current\device\Start\HideShutDown` (and its counterpart under `\default\`) is a configuration setting used in Windows to control the visibility of the **Shut Down** command in the Start menu and other power-related interfaces[1][2][3].
+
+### Purpose and Function
+*   **What it does:** When set to a value of `1`, this registry key hides the "Shut Down" option from the Start menu's power menu, the Windows sign-in screen, and the Ctrl+Alt+Delete screen[4][2][5].
+*   **Scope:** Because this key is located in the `HKEY_LOCAL_MACHINE` (HKLM) hive, it is a **system-wide setting** and generally applies to all users on the device[6][7].
+*   **Limitation:** This setting is primarily a user-interface restriction[8][9]. It hides the button but **does not disable the ability to shut down the computer** via other methods, such as the command line (`shutdown /s /t 0`), scripts, or other applications, provided the user has the necessary system permissions[8][6][7].
+
+### Usage Notes
+*   **Registry Values:**
+    *   **`1`**: Hides the Shut Down option[4][2].
+    *   **`0`**: Restores the Shut Down option[8][2].
+*   **Variations:** You may see references to `...\default\...` or `...\current\device\...`. The `default` path is often the template for the setting, while `current\device` represents the active policy applied to the machine[1][4][10].
+*   **Administrative Control:** For enterprise environments, IT administrators typically prefer using **Group Policy** (`gpedit.msc`) via *User Configuration > Administrative Templates > Start Menu and Taskbar > Remove and prevent access to the Shut Down, Restart, Sleep, and Hibernate commands* for a more centralized and manageable approach, though this often restricts all power options rather than just "Shut Down"[1][9][3].
+
+**Warning:** Modifying the Windows Registry incorrectly can cause system issues. Always back up the registry or create a restore point before making manual changes. If you are in a managed corporate environment, these settings may be overwritten by your organization's IT policies (e.g., via Intune or Group Policy)[1][11].
+
+Sources:
+[1] [ip-insider.de](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHL0qKbn3vnqRRWBsXezdN4Z6AKJeW9XyLhrz63O8SnWlbkfDL2fllpNXOCA18_heplWDwcQ0HI7kK6Bwt91l792mYwwl5qj2Nmo5WHLZ0LHqPgMDC_zKErCddmXWDqeH1zk9KGb4AXFXW5PU5T4Oj2OV2rol1Sb-icuqMP1HcRF9d3498T5azPO_pPqqvhkQP18KFB23Xwy2aq-RlVdIWY7w==)
+[2] [top-password.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGxdGbpDmNLkpDllORxoh6fa5NYkH6HSAeIVlKPOId6BJySUbAwVKI4K8iFtSphuNtHRx4PIpk9Q1kk-ydh2NmNtPhVNCRhgzLFOBZAzaGymNodkrbTa5ZjEthCopoL8j04oeTleeGNWVH_XO8Wo7XH_obKEcC0Yd6K_uEvcX1Xun5G0kwz43mKenOmMFymGEc=)
+[3] [ninjaone.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE6rXCbBBJDxdupMemFyYJkUkLwNsxvRNK7VREI38M82dKPMiX7zjpcTtM-zyS1g9waGNFH8F1Fm_ZXyKYkZ-k_z4K80nfdofkp0pTnKbR5KrJ6rEHzUREvIimU4a7n4LCQfflBi_sA__gsox0JfO9eUOlQkkBSGGQaHLrXHHCncu_5SflXte8=)
+[4] [superuser.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFnTC7nT-MxK0HKQGyRjocG_LXL6-u20QcXTvGSgbve2s2gPxiYqBabJ3uDEfjTSSQVLH1BT2t5ajAk-z2Y5ESMRd-3g02FC8O-2uGL9VgZjYOkYZTe_MMAwgafIjKpO4PIiFUoNrZMf1gVrUEelPIcAzlRQaquS2FT_N_p4E6J8WYFTpd_EnA_QJ0kbpo332EedioXrUM=)
+[5] [webmakers.co.nz](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtAlm9YQjCv7Ky2ntyg107MB1rHiQb-5gU43yABzbr4fKacwv52Sae1RLcWFWDMHKS_kVRTyDCXcT_B67mX1eEPC5HBj0G-kbs77L8_YhpOkR_YxBRqHZsfQHc3CjLkpN-L8ohY_wiaACqMSJxKiM70_utc5jYZ8vmsc8riW5PAK9GnXf3U-GJ3FM17HDV)
+[6] [microsoft.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGpSHaZneXMpLP1E51y4tQ995JPJ2wKR9aZThKKtOtoaDn9YNx_ZBG-LldyVmP4ol7q2-2-5R-WfAriGADxrPNTDQntM0KNL49Gqs5ufNHZENmHhQ4jAXIXuo-GM-8i74rIF2yJPxdNRAAcrUYOXcd1Gsw818_cYEEiI3LZ2iil4DOVTf17_-8NUD5x5BDCYjTJSDEqbdQVLl4Q7UT2idDZj8UJnQ==)
+[7] [microsoft.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGpSHaZneXMpLP1E51y4tQ995JPJ2wKR9aZThKKtOtoaDn9YNx_ZBG-LldyVmP4ol7q2-2-5R-WfAriGADxrPNTDQntM0KNL49Gqs5ufNHZENmHhQ4jAXIXuo-GM-8i74rIF2yJPxdNRAAcrUYOXcd1Gsw818_cYEEiI3LZ2iil4DOVTf17_-8NUD5x5BDCYjTJSDEqbdQVLl4Q7UT2idDZj8UJnQ==)
+[8] [superuser.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFnTC7nT-MxK0HKQGyRjocG_LXL6-u20QcXTvGSgbve2s2gPxiYqBabJ3uDEfjTSSQVLH1BT2t5ajAk-z2Y5ESMRd-3g02FC8O-2uGL9VgZjYOkYZTe_MMAwgafIjKpO4PIiFUoNrZMf1gVrUEelPIcAzlRQaquS2FT_N_p4E6J8WYFTpd_EnA_QJ0kbpo332EedioXrUM=)
+[9] [webmakers.co.nz](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtAlm9YQjCv7Ky2ntyg107MB1rHiQb-5gU43yABzbr4fKacwv52Sae1RLcWFWDMHKS_kVRTyDCXcT_B67mX1eEPC5HBj0G-kbs77L8_YhpOkR_YxBRqHZsfQHc3CjLkpN-L8ohY_wiaACqMSJxKiM70_utc5jYZ8vmsc8riW5PAK9GnXf3U-GJ3FM17HDV)
+[10] [superuser.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFnTC7nT-MxK0HKQGyRjocG_LXL6-u20QcXTvGSgbve2s2gPxiYqBabJ3uDEfjTSSQVLH1BT2t5ajAk-z2Y5ESMRd-3g02FC8O-2uGL9VgZjYOkYZTe_MMAwgafIjKpO4PIiFUoNrZMf1gVrUEelPIcAzlRQaquS2FT_N_p4E6J8WYFTpd_EnA_QJ0kbpo332EedioXrUM=)
+[11] [olastrom.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEzmSOw_MTLrOQyo0EcXl5Nvk1pLZNk-ARzAdHRGwNX6hIWSoJBEAet7mpEKhxcCSrakboQ-Vpdyelu74RnKEQYgmahDABOJ2AtJOJhTQ3pBwjI8lCryoy8zLZ4F5u5maHmHg37zxcTBfQsUrdYsTd0C0a_1Tf5tW-atUsgqsLmt-cCOtkIdswVxuXHi61nMjJo-flpblmX)

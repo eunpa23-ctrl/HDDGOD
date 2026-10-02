@@ -1,0 +1,13 @@
+Task: 36085afd-6c99-45b2-8ff8-4ac77cbb1e5b/task-419
+Status: RUNNING
+Log: C:\Users\USER\.gemini\antigravity\brain\36085afd-6c99-45b2-8ff8-4ac77cbb1e5b\.system_generated\tasks\task-419.log
+Log output:
+<truncated 57 lines>
+mport-module hook 'hook-tomli.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+20903 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+21848 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+21849 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+23025 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+23196 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+
+Last progress: 0s ago

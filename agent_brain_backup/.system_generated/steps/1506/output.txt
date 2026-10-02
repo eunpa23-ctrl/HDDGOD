@@ -1,0 +1,9 @@
+
+The command exited with code 0.
+Output:
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+[master e36d69c] Add supervisor status and startup log to gitignore
+ 1 file changed, 4 insertions(+)
+To https://github.com/eunpa23-ctrl/HDDGOD.git
+   39eda7d..e36d69c  master -> master
+

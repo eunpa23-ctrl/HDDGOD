@@ -1,0 +1,15 @@
+
+The command exited with code 0.
+Output:
+
+  server\templates\dashboard.html:760:        function sendPcCommand(clientId, action) {
+> server\templates\dashboard.html:761:            fetch(`/api/command/${clientId}/${action}`, { method: 'POST' });
+  server\templates\dashboard.html:762:        }
+  server\templates\dashboard.html:763:
+  server\templates\dashboard.html:764:        function toggleUwf(clientId, currentStatus) {
+  server\templates\dashboard.html:765:            if (currentStatus === 'PROTECTED') {
+  server\templates\dashboard.html:766:                if (confirm(`[${clientId}] PC� '� �'� �ȯ�Ͻðڽ�
+�?\n\n- �մ� � �Ͻ� �Ǹ�, � � �ġ� �ġ� � � �ֽ�ϴ�.`)) {
+
+
+

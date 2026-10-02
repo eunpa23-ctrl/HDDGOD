@@ -1,0 +1,15 @@
+
+The command exited with code 1.
+Output:
+�ġ �:1 �:139
++ ... e  -Count 1 -Quiet -TimeoutSeconds 1; [PSCustomObject]@{ IP = ; Alive ...
++                                                                  ~
+�ؽ� �ͷ� '=' �ڿ� � �ϴ�.
+�ġ �:1 �:149
++ ... nt 1 -Quiet -TimeoutSeconds 1; [PSCustomObject]@{ IP = ; Alive =  } }
++                                                                     ~
+�ؽ� �ͷ� '=' �ڿ� � �ϴ�.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingStatementInHashLiteral
+ 
+

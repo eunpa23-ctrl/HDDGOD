@@ -1,0 +1,16 @@
+Task: 36085afd-6c99-45b2-8ff8-4ac77cbb1e5b/task-1548
+Status: DONE
+Log: C:\Users\USER\.gemini\antigravity\brain\36085afd-6c99-45b2-8ff8-4ac77cbb1e5b\.system_generated\tasks\task-1548.log
+Log output:
+<truncated 2 lines>
+309D34C72DF5BA098A1F2DE0A120D
+INFO:NetflixBot:�ø� � � �: NAVIGATING_TO_LOGIN (https://www.netflix.com/kr/)
+INFO:NetflixBot:�ø� � � �: NEED_LOGIN (https://www.netflix.com/kr/login?serverState=BgjUv%2BvcAxLgAQEeB%2B0xMARg5B6eWwxc3E5o8cWzM3XaiJJeX7v9zuvpEJwm3AlsMSGnY%2B9sbICmOGjFs%2BEDK15g02CnYMD0rysQM%2FHBeUSdA7vgVlcKZpmky5%2FjQ0ceqnaG06sziNGOTZSauEe4tvw8XqUGsmvkTfEcdIB06RIQ2a6Duwgo%2BKQW7TZFTIn6o4HQSsUHJtJWYTAiq9K19bp5%2BsmQYCfNHPbne4QYdhTlmZASovS2EL1HqAD0nY%2FD7efOYEXeYtozE%2FpQEjix9kAELrwiK3XTMbw9djaxrq6Whuty4WivVPauGAYiDgoMbDjh6yLlGtpczfYj)
+INFO:NetflixBot:�ø� ID/PW �ڵ� �α� �õ� � (CDP Ÿ� 2�ܰ�)...
+INFO:NetflixBot:�й�ȣ �Է� �Ϸ�
+INFO:NetflixBot:�α� � �ư Ŭ� �Ϸ�!
+INFO:NetflixBot:�ڵ� �α� � �: {'success': True, 'message': 'CDP 2�ܰ� �α� �Ϸ�'}
+INFO:NetflixBot:CDP WebSocket � � Ȯ�: ws://127.0.0.1:9222/devtools/page/30E309D34C72DF5BA098A1F2DE0A120D
+Screenshot saved!
+
+Last progress: 2s ago

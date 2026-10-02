@@ -1,0 +1,12 @@
+
+The command exited with code 1.
+Output:
+pyinstaller : 'pyinstaller' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�.
+ �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:1
++ pyinstaller --noconfirm --onefile --windowed --name "ZeusAgent" --hid ...
++ ~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (pyinstaller:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+

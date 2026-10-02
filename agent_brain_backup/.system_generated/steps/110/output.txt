@@ -1,0 +1,26 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\server_supervisor.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -61,7 +61,19 @@
+         cmd = [sys.executable, "run_server.py"]
+         try:
+             proc = subprocess.Popen(cmd, cwd=ROOT_DIR)
+-            exit_code = proc.wait()
++            while proc.poll() is None:
++                update_status(True, restart_count)
++                if os.path.exists(STOP_FLAG_FILE):
++                    print("[*] 정지요청 플래그 감지 -> 서버 프로세스 종료")
++                    proc.terminate()
++                    try:
++                        proc.wait(timeout=3)
++                    except Exception:
++                        proc.kill()
++                    break
++                time.sleep(2)
++
++            exit_code = proc.returncode
+             update_status(False, restart_count, exit_code)
+ 
+             # 정상 종료(0) 또는 Ctrl+C(3221225786 등)로 종료된 경우
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

@@ -1,0 +1,28 @@
+
+The command exited with code 1.
+Output:
+= : '=' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �̸� �Ȯ� Ȯ
+�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:2
++  = Get-CimInstance Win32_Process -Filter 'ProcessId = 3412'; (Invoke- ...
++  ~
+    + CategoryInfo          : ObjectNotFound: (=:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+Invoke-CimMethod : 'InputObject' �Ű� � � �μ� �Ǿ�ϴ�. � 'Microsoft.Management.Infrastructure.Ci
+mInstance'� �Ű� � �ϰ� �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:80
++ ... ss -Filter 'ProcessId = 3412'; (Invoke-CimMethod -InputObject  -Metho ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Invoke-CimMethod], ParameterBindingException
+    + FullyQualifiedErrorId : MissingArgument,Microsoft.Management.Infrastructure.CimCmdlets.InvokeCimMethodCommand
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:122
++ ... voke-CimMethod -InputObject  -MethodName GetOwner).User; .CommandLine
++                                                              ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+

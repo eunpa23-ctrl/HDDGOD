@@ -1,0 +1,14 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\tools\update_install_bat.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -61,7 +61,7 @@
+ powercfg -SetActive SCHEME_CURRENT >nul 2>&1
+ 
+ echo [5/6] 시작메뉴 전원 버튼(종료 숨김, 다시시작 유지) 및 최적화 설정...
+-reg delete "HKCU\\Software\\Microsoft\\Windows\CurrentVersion\\Policies\\Explorer" /v "NoClose" /f >nul 2>&1
++reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer" /v "NoClose" /f >nul 2>&1
+ reg delete "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer" /v "NoClose" /f >nul 2>&1
+ reg add "HKLM\\SOFTWARE\\Microsoft\\PolicyManager\\default\\Start\\HideShutDown" /v "value" /t REG_DWORD /d 1 /f >nul 2>&1
+ reg add "HKLM\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Start" /v "HideShutDown" /t REG_DWORD /d 1 /f >nul 2>&1
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

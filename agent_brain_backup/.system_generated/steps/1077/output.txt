@@ -1,0 +1,20 @@
+
+The command exited with code 0.
+Output:
+Active code page: 65001
+
+FullName                                                                                                               
+--------                                                                                                               
+G:\내 드라이브\PROJECT\HDDGOD\20261001_191348.jpg                                                                           
+G:\내 드라이브\PROJECT\HDDGOD\20261001_190656.jpg                                                                           
+G:\내 드라이브\사진\Screenshot_20230412_195951_YouTube.jpg                                                                    
+G:\내 드라이브\사진\Screenshot_20220929-230953_YouTube.jpg                                                                    
+G:\내 드라이브\사진\Screenshot_20210824-185735_YouTube.jpg                                                                    
+G:\내 드라이브\사진\공치는명훈이인증.JPG                                                                                              
+G:\내 드라이브\호빗&반지의 제왕 확장판 전편\호빗 확장판 전편\02.The.Hobbit.The.Desolation.of.Smaug.2013.EXTENDED.1080p.BluRay.x264.anoXmous\...
+G:\내 드라이브\호빗&반지의 제왕 확장판 전편\호빗 확장판 전편\01.The.Hobbit.An.Unexpected.Journey.2012.EXTENDED.1080p.BluRay.x264.anoXmous\스냅...
+G:\내 드라이브\호빗&반지의 제왕 확장판 전편\호빗 확장판 전편\03.The.Hobbit.The.Battle.of.the.Five.Armies.2014.EXTENDED.1080p.BluRay.x264.ano...
+G:\내 드라이브\사진\20181102_143050.jpg                                                                                       
+
+
+

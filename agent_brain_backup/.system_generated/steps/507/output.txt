@@ -1,0 +1,6 @@
+
+The command exited with code 0.
+Output:
+chrome.exe -> C:\Program Files\Google\Chrome\Application\chrome.exe
+msedge.exe -> C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+

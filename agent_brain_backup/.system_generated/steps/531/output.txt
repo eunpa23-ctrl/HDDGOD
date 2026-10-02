@@ -1,0 +1,134 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -38,10 +38,26 @@
+         self.current_status = NetflixStatus.CLOSED
+ 
+     def find_chrome_path(self) -> str:
++        # 1. 윈도우 레지스트리 App Paths 조회 (가장 정확한 설치 경로)
++        import winreg
++        for app in ["chrome.exe", "msedge.exe", "whale.exe"]:
++            for root in [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]:
++                try:
++                    with winreg.OpenKey(root, rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{app}") as key:
++                        val, _ = winreg.QueryValueEx(key, "")
++                        if val and os.path.exists(val):
++                            return val
++                except Exception:
++                    pass
++
++        # 2. 일반적인 기본 설치 경로 폴백
+         candidates = [
+             r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+-            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe")
++            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
++            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
++            r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
++            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe")
+         ]
+         for path in candidates:
+             if os.path.exists(path):
+@@ -51,25 +51,41 @@
+         """바탕화면에 넷플릭스 전용 아이콘 바로가기(.lnk) 생성"""
+         chrome_exe = self.find_chrome_path()
+         icon_path = os.path.join(self.profile_dir, "netflix.ico")
++        local_ico = r"C:\ZeusAgent\netflix.ico"
++
++        # 아이콘 파일 확보 (로컬 배포본 우선 복사 -> 인터넷 다운로드 시도)
+         if not os.path.exists(icon_path):
+             try:
+-                import urllib.request
+-                urllib.request.urlretrieve("https://assets.nflxext.com/ffe/siteui/common/icons/nficon2016.ico", icon_path)
+-            except Exception:
+-                pass
+-
+-        # 1. 실행기 타깃 결정 (배포 환경: ZeusAgent.exe, 개발 환경: pythonw.exe launch_netflix.py)
+-        zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
+-        if os.path.exists(zeus_exe):
+-            target_path = zeus_exe
+-            target_args = "--launch-netflix"
++                os.makedirs(self.profile_dir, exist_ok=True)
++                if os.path.exists(local_ico):
++                    import shutil
++                    shutil.copy2(local_ico, icon_path)
++                else:
++                    import urllib.request
++                    urllib.request.urlretrieve("https://assets.nflxext.com/ffe/siteui/common/icons/nficon2016.ico", icon_path)
++            except Exception as e:
++                logger.debug(f"아이콘 복사/다운로드 건너뜀: {e}")
++
++        # 1. 실행기 타깃 결정:
++        # 크롬/엣지 실행 파일이 존재하면 직접 CDP 인자 장착하여 바로가기 생성 (딜레이 제로 즉시 기동)
++        if chrome_exe and chrome_exe != "chrome.exe" and os.path.exists(chrome_exe):
++            target_path = chrome_exe
++            target_args = f'--remote-debugging-port={self.cdp_port} --user-data-dir="{self.profile_dir}" --start-maximized --no-first-run --no-default-browser-check --disable-popup-blocking "{self.start_url}"'
++            work_dir = os.path.dirname(chrome_exe)
+         else:
+-            pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
+-            launcher_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launch_netflix.py")
+-            target_path = pythonw_exe
+-            target_args = f'"{launcher_py}"'
+-
+-        # 2. 바탕화면 바로가기(.lnk) 생성
++            zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
++            if os.path.exists(zeus_exe):
++                target_path = zeus_exe
++                target_args = "--launch-netflix"
++                work_dir = r"C:\ZeusAgent"
++            else:
++                pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
++                launcher_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launch_netflix.py")
++                target_path = pythonw_exe
++                target_args = f'"{launcher_py}"'
++                work_dir = os.path.dirname(launcher_py)
++
++        # 2. 바탕화면 바로가기(.lnk) 생성 (사용자 및 공용 바탕화면)
+         desktop_dirs = []
+         user_desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+         if os.path.exists(user_desktop):
+@@ -77,6 +77,8 @@
+         if os.path.exists(public_desktop):
+             desktop_dirs.append(public_desktop)
+ 
++        final_icon = icon_path if os.path.exists(icon_path) else (local_ico if os.path.exists(local_ico) else target_path)
++
+         for d_dir in desktop_dirs:
+             lnk_path = os.path.join(d_dir, "넷플릭스.lnk")
+             try:
+@@ -84,7 +84,8 @@
+                 $s = $ws.CreateShortcut('{lnk_path}')
+                 $s.TargetPath = '{target_path}'
+                 $s.Arguments = '{target_args}'
+-                if (Test-Path '{icon_path}') {{ $s.IconLocation = '{icon_path},0' }}
++                $s.WorkingDirectory = '{work_dir}'
++                if (Test-Path '{final_icon}') {{ $s.IconLocation = '{final_icon},0' }}
+                 $s.Save()
+                 """
+                 subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5)
+@@ -95,15 +95,6 @@
+ 
+     def launch_chrome_with_cdp(self) -> bool:
+         """손님 프로필과 완전히 분리된 넷플릭스 전용 프로필로 크롬 실행"""
+-        # 이미 켜져있는지 확인
+-        try:
+-            resp = requests.get(f"http://127.0.0.1:{self.cdp_port}/json", timeout=1)
+-            if resp.status_code == 200:
+-                logger.info("크롬이 이미 CDP 모드로 실행 중입니다.")
+-                return True
+-        except Exception:
+-            pass
+-
+         os.makedirs(self.profile_dir, exist_ok=True)
+         chrome_exe = self.find_chrome_path()
+ 
+@@ -123,7 +123,6 @@
+             if sys.platform == "win32":
+                 creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008  # DETACHED_PROCESS
+             subprocess.Popen(cmd, creationflags=creationflags)
+-            time.sleep(3)
+             return True
+         except Exception as e:
+             logger.error(f"크롬 실행 실패: {e}")
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

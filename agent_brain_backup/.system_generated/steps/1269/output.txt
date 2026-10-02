@@ -1,0 +1,15 @@
+
+The command exited with code 0.
+Output:
+
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName                                                  
+-------  ------    -----      -----     ------     --  -- -----------                                                  
+     77       8     1812       6088       0.03   2828   1 git                                                          
+     84       8     1808       6016       0.00   2996   1 git                                                          
+    106       6     1408       5332       0.02   4108   1 git                                                          
+     87       9     1872       6908       0.02   8348   1 git                                                          
+    611      56    60600     107936       5.17  12556   1 git-credential-manager                                       
+    156      13     2284       9556       0.08   9580   1 git-remote-https                                             
+
+
+

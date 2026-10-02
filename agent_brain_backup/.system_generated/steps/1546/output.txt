@@ -1,0 +1,12 @@
+
+The command exited with code 1.
+Output:
+curl : 원격 서버에 연결할 수 없습니다.
+At line:1 char:1
++ curl http://127.0.0.1:9222/json
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+ 
+

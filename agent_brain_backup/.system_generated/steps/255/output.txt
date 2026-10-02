@@ -1,0 +1,10 @@
+
+The command exited with code 0.
+Output:
+
+Name            Length
+----            ------
+ZeusAgent.exe 24946541
+
+
+

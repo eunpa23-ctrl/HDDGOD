@@ -1,0 +1,70 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\client\client_agent.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -296,6 +296,12 @@
+                 self.ws_conn = None
+                 await asyncio.sleep(5)
+ 
++    def get_app_dir(self) -> str:
++        """PyInstaller 실행 파일 경로 또는 개발 루트 디렉터리 반환"""
++        if getattr(sys, "frozen", False):
++            return os.path.dirname(os.path.abspath(sys.executable))
++        return ROOT_DIR
++
+     def check_and_apply_update(self, force=False):
+         """서버와 버전을 비교하고 새 버전이 있거나 force=True면 덮어쓰기 업데이트 수행"""
+         import requests
+@@ -302,9 +302,13 @@
++            app_dir = self.get_app_dir()
+             # 현재 버전 읽기
+-            version_path = os.path.join(ROOT_DIR, "version.txt")
++            version_path = os.path.join(app_dir, "version.txt")
+             current_version = "0.0.0"
+             if os.path.exists(version_path):
+-                with open(version_path, "r", encoding="utf-8") as f:
+-                    current_version = f.read().strip()
++                try:
++                    with open(version_path, "r", encoding="utf-8") as f:
++                        current_version = f.read().strip().replace('"', '').replace("'", "").replace('\ufeff', '').strip()
++                except Exception:
++                    pass
+ 
+             # 서버 최신 버전 조회
+             server_url = f"http://{self.server_ip}:{self.server_port}"
+@@ -311,8 +311,8 @@
+             if res.status_code != 200:
+                 return
+-            latest_version = res.text.strip()
+-
+-            if force or latest_version != current_version:
++            latest_version = res.text.strip().replace('"', '').replace("'", "").replace('\ufeff', '').strip()
++
++            if force or (latest_version and latest_version != current_version):
+                 reason = "강제 업데이트 명령" if force else f"현재: {current_version} -> 최신: {latest_version}"
+                 logger.info(f"🔄 클라이언트 업데이트 진행! ({reason})")
+                 
+@@ -319,6 +319,6 @@
+                 exe_res = requests.get(f"{server_url}/api/download/update", stream=True, timeout=10)
+                 if exe_res.status_code == 200:
+-                    new_exe_path = os.path.join(ROOT_DIR, "ZeusAgent_new.exe")
++                    new_exe_path = os.path.join(app_dir, "ZeusAgent_new.exe")
+                     with open(new_exe_path, "wb") as f:
+                         for chunk in exe_res.iter_content(chunk_size=8192):
+                             f.write(chunk)
+@@ -325,5 +325,5 @@
+                     # 새 버전 파일 쓰기
+-                    new_ver_path = os.path.join(ROOT_DIR, "version_new.txt")
++                    new_ver_path = os.path.join(app_dir, "version_new.txt")
+                     with open(new_ver_path, "w", encoding="utf-8") as f:
+                         f.write(latest_version)
+ 
+@@ -330,5 +330,6 @@
+-                    bat_path = os.path.join(ROOT_DIR, "update.bat")
++                    bat_path = os.path.join(app_dir, "update.bat")
+                     bat_content = f"""@echo off
++cd /d "%~dp0"
+ timeout /t 2 /nobreak >nul
+ taskkill /F /IM ZeusAgent.exe >nul 2>&1
+ move /y ZeusAgent_new.exe ZeusAgent.exe
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

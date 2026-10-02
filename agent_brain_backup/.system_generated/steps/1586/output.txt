@@ -1,0 +1,38 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -424,7 +424,7 @@
+             logger.warning("비밀번호 입력창을 찾지 못했습니다.")
+             return {"success": False, "message": "비밀번호 입력창 미발견"}
+ 
+-        # === STEP 4: 로그인 제출 버튼 클릭 ===
++        # === STEP 4: 로그인 제출 버튼 클릭 또는 Enter 전송 ===
+         submit_js = """
+         (function() {
+             var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"]');
+@@ -431,13 +431,16 @@
+-
+-            var btn = document.querySelector(
+-                'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button'
+-            );
+-            if (btn) { btn.click(); return true; }
+-            return false;
+         })()
+         """
+         self.eval_js(submit_js)
+-        logger.info("로그인 제출 버튼 클릭 완료!")
++        
++        # 비밀번호 창에서 Enter 전송하여 최종 로그인
++        self.send_cdp_command("Input.dispatchKeyEvent", {
++            "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
++        })
++        self.send_cdp_command("Input.dispatchKeyEvent", {
++            "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
++        })
++
++        logger.info("로그인 최종 엔터(Enter) 전송 완료!")
+         return {"success": True, "message": "CDP 2단계 로그인 완료"}
+ 
+     def input_otp_code(self, code_str: str) -> bool:
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

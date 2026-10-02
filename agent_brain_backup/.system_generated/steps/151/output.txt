@@ -1,0 +1,10 @@
+
+The command exited with code 0.
+Output:
+
+ProcessId CommandLine                                                                                                  
+--------- -----------                                                                                                  
+    11172 "C:\Users\USER\AppData\Local\Programs\Python\Python314\pythonw.exe" "C:\Users\USER\Desktop\ProgramWatcher\...
+
+
+

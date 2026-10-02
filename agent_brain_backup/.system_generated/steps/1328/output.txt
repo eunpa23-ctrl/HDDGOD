@@ -1,0 +1,8 @@
+
+The command exited with code 0.
+Output:
+[master 5fa5b85] Fix ROOT_DIR bug in ERROR_REPORT handler, protect config.ini from git
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+To https://github.com/eunpa23-ctrl/HDDGOD.git
+   38b2623..5fa5b85  master -> master
+

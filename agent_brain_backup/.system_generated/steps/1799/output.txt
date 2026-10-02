@@ -1,0 +1,18 @@
+
+The command exited with code 0.
+Output:
+
+              time.sleep(15)
+              return self.current_status
+          elif status == "NAVIGATING_TO_LOGIN":
+              time.sleep(2)
+              return self.check_and_handle_login()
+>         elif status == "NEED_LOGIN":
+              # 자동 로그인 시도
+              res = self.do_auto_login(self.target_email, self.target_password)
+              logger.info(f"자동 로그인 실행 결과: {res}")
+              time.sleep(3)
+              # 로그인 후 상태 재점검
+
+
+

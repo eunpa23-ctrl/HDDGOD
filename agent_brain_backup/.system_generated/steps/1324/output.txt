@@ -1,0 +1,14 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\.gitignore. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -19,6 +19,8 @@
+ 
+ # 배포 폴더 내 컴파일된 실행파일 (코드가 아니므로 Git에서 제외, 용량 확보)
+ deploy/ClientDeploy/core/ZeusAgent.exe
++# config.ini - 민감한 계정정보(이메일/비번) 포함, Git 보안 제외
++deploy/ClientDeploy/core/config.ini
+ 
+ # 서버/클라이언트 로그 파일
+ *.log
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

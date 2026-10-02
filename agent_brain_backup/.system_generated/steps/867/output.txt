@@ -1,0 +1,7 @@
+
+The command exited with code 0.
+Output:
+core
+2_�а˼�.bat
+1_�ġ�ϱ�.bat
+

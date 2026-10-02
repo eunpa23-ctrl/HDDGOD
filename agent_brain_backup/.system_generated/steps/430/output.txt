@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+ZeusAgent.exe deployed successfully to G: and C: drives.
+
+Name            Length LastWriteTime          
+----            ------ -------------          
+ZeusAgent.exe 24940774 2026-10-01 � 7:43:36
+
+
+

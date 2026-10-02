@@ -1,0 +1,13 @@
+
+The command exited with code 0.
+Output:
+
+>     NETFLIX_EMAIL,
+      NETFLIX_PASSWORD,
+      CHROME_CDP_PORT,
+>         for char in NETFLIX_EMAIL:
+              self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
+              time.sleep(0.01)
+
+
+

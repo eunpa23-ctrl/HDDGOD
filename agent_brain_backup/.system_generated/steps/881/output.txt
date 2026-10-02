@@ -1,0 +1,28 @@
+
+The command exited with code 0.
+Output:
+G:\� �̺�\PROJECT\HDDGOD\requirements.txt:
+   # �콺 HDD PROTECTOR �̽� � �Ű�
+G:\� �̺�\PROJECT\HDDGOD\0_�̺귯�_�ڵ�ġ.bat:
+   python -m common.auto_installer
+G:\� �̺�\PROJECT\HDDGOD\Ŭ�̾�Ʈ�.vbs:
+   objShell.Run "pythonw run_client.py", 0, False
+G:\� �̺�\PROJECT\HDDGOD\�.vbs:
+   objShell.Run "python server_supervisor.py", 0, False
+G:\� �̺�\PROJECT\HDDGOD\deploy\build_client_exe.bat:
+   python -m pip install -q pyinstaller
+       run_client.py
+       echo [�] �忡 �߽�ϴ�. �̽� ȯ� Ȯ�ּ�.
+G:\� �̺�\PROJECT\HDDGOD\common\auto_installer.py:
+   [�콺 HDD PROTECTOR] �̽� �ʼ� �Ű� �/�¶� �ڵ� �ġ�
+               print("[OK] �ʼ� �̽� �̺귯� � �Ϸ� (� � �)")
+G:\� �̺�\PROJECT\HDDGOD\client\netflix_bot.py:
+                   pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
+                   target_path = pythonw_exe
+G:\� �̺�\PROJECT\HDDGOD\server\server_core.py:
+       # �̽� � � � � �
+G:\� �̺�\PROJECT\HDDGOD\build\ZeusAgent\warn-ZeusAgent.txt:
+   missing module named 'python_socks.async_' - imported by websockets.asyncio.client (optional), webso
+   missing module named python_socks - imported by websockets.asyncio.client (optional), websockets.syn
+   missing module named 'python_socks.sync' - imported by websockets.sync.client (optional)
+

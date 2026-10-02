@@ -1,0 +1,15 @@
+
+The command exited with code 0.
+Output:
+
+> from common.config import (
+      NETFLIX_EMAIL,
+      NETFLIX_PASSWORD,
+      CHROME_CDP_PORT,
+      NETFLIX_PROFILE_DIR,
+      config
+  )
+  from common.protocol import NetflixStatus
+
+
+

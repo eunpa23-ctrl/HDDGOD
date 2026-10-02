@@ -1,0 +1,71 @@
+
+The command exited with code 0.
+Output:
+<truncated 47 lines>
+11897 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+12075 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+13195 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+13755 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+13779 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+14776 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+14777 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+15663 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+15664 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+16386 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+16459 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+16798 INFO: Processing standard module hook 'hook-websockets.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+18162 INFO: Processing standard module hook 'hook-comtypes.client.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+18809 INFO: Processing standard module hook 'hook-psutil.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+18958 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+19168 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+19728 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+20043 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+20865 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+20867 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+21425 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+22540 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\pyautogui\_pyautogui_x11.py:284: SyntaxWarning: "\e" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\e"? A raw string is also an option.
+  '\e': _display.keysym_to_keycode(Xlib.XK.string_to_keysym('Escape')),
+23055 INFO: Processing standard module hook 'hook-pystray.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+23657 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23773 INFO: Processing pre-safe-import-module hook 'hook-gi.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\pystray\_util\gtk.py:53: SyntaxWarning: 'return' in a 'finally' block
+  return False
+23878 INFO: Processing module hooks (post-graph stage)...
+24764 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+25410 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks'
+25421 INFO: Performing binary vs. data reclassification (26 entries)
+25517 INFO: Looking for ctypes DLLs
+25800 INFO: Analyzing run-time hooks ...
+25804 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25809 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25811 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25815 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25819 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25841 INFO: Creating base_library.zip...
+25941 INFO: Looking for dynamic libraries
+26815 INFO: Extra DLL search directories (AddDllDirectory): []
+26815 INFO: Extra DLL search directories (PATH): []
+27376 INFO: Warnings written to G:\� �̺�\PROJECT\HDDGOD\build\ZeusAgent\warn-ZeusAgent.txt
+27477 INFO: Graph cross-reference written to G:\� �̺�\PROJECT\HDDGOD\build\ZeusAgent\xref-ZeusAgent.html
+27547 INFO: checking PYZ
+27587 INFO: Building because G:\� �̺�\PROJECT\HDDGOD\client\netflix_bot.py changed
+27588 INFO: Building PYZ (ZlibArchive) G:\� �̺�\PROJECT\HDDGOD\build\ZeusAgent\PYZ-00.pyz
+28215 INFO: Building PYZ (ZlibArchive) G:\� �̺�\PROJECT\HDDGOD\build\ZeusAgent\PYZ-00.pyz completed successfully.
+28248 INFO: checking PKG
+28263 INFO: Building because toc changed
+28263 INFO: Building PKG (CArchive) ZeusAgent.pkg
+30667 INFO: Building PKG (CArchive) ZeusAgent.pkg completed successfully.
+30682 INFO: Bootloader C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+30682 INFO: checking EXE
+30706 INFO: Building because toc changed
+30706 INFO: Building EXE from EXE-00.toc
+30711 INFO: Copying bootloader EXE to G:\� �̺�\PROJECT\HDDGOD\dist\ZeusAgent.exe
+30931 INFO: Copying icon to EXE
+31084 INFO: Copying 0 resources to EXE
+31084 INFO: Embedding manifest in EXE
+31242 INFO: Appending PKG archive to EXE
+31435 INFO: Fixing EXE headers
+32458 INFO: Building EXE from EXE-00.toc completed successfully.
+32469 INFO: Build complete! The results are available in: G:\� �̺�\PROJECT\HDDGOD\dist
+

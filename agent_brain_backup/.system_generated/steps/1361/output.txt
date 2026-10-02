@@ -1,0 +1,14 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\common\config.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -80,7 +80,7 @@
+ # 네이버 메일 기반 4자리 OTP 자동 추출 설정
+ OTP_MAIL_SERVER = config.get('OTP_MAIL', 'IMAP_SERVER', fallback='imap.naver.com')
+ OTP_MAIL_PORT = config.getint('OTP_MAIL', 'IMAP_PORT', fallback=993)
+-OTP_MAIL_EMAIL = config.get('OTP_MAIL', 'EMAIL', fallback='eunpa23')
++OTP_MAIL_EMAIL = config.get('OTP_MAIL', 'EMAIL', fallback='eunpa23@naver.com')
+ OTP_MAIL_PASSWORD = config.get('OTP_MAIL', 'PASSWORD', fallback='UDT766M1ZSCP')
+ 
+ # 하위 호환
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

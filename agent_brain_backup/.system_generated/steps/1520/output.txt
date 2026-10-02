@@ -1,0 +1,13 @@
+
+The command exited with code 0.
+Output:
+
+>     def check_and_handle_login(self) -> str:
+          """넷플릭스 로그인 상태 점검 및 자동 분기 처리"""
+          if not self.is_cdp_available():
+              self.ws_url = None
+              self.current_status = NetflixStatus.CLOSED
+              return self.current_status
+
+
+

@@ -1,0 +1,33 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\server\server_core.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -636,8 +636,25 @@
+     if "telegram_threshold" in data:
+         cfg.set("TELEGRAM", "ALERT_THRESHOLD_PERCENT", str(data["telegram_threshold"]).strip())
+ 
+-    with open(cfg_file, "w", encoding="utf-8") as f:
+-        cfg.write(f)
++    # G드라이브 및 C드라이브 config.ini 이중 동기화
++    for cf in [cfg_file, r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini"]:
++        try:
++            os.makedirs(os.path.dirname(cf), exist_ok=True)
++            with open(cf, "w", encoding="utf-8") as f:
++                cfg.write(f)
++        except Exception:
++            pass
++
++    # 대시보드 바로가기(.url) URL 최신화 (G:, C: 및 바탕화면)
++    t_ip = str(data.get("client_server_ip", "")).strip() or "192.168.0.100"
++    t_port = str(data.get("server_port", "")).strip() or "8000"
++    sc_content = f"[InternetShortcut]\nURL=http://{t_ip}:{t_port}\n"
++    for sc_dir in [PROJECT_ROOT, r"C:\Users\USER\Documents\HDDGOD", os.path.join(os.path.expanduser("~"), "Desktop")]:
++        try:
++            with open(os.path.join(sc_dir, "제우스_관제_대시보드.url"), "w", encoding="utf-8") as sf:
++                sf.write(sc_content)
++        except Exception:
++            pass
+ 
+     # 윈도우 시작프로그램 설정 동기화
+     if "windows_autostart" in data:
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

@@ -1,0 +1,10 @@
+
+The command exited with code 0.
+Output:
+
+import os
+import time
+                with open(os.path.join(ROOT_DIR, "server", "error_reports.log"), "a", encoding="utf-8") as f:
+
+
+

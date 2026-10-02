@@ -1,0 +1,12 @@
+
+The command exited with code 1.
+Output:
+
+	*�߰� �͸�      -1	C:\Users\USER\Documents\HDDGOD\server\__pycache__\
+	  *�߰� �  		    2549	C:\Users\USER\Documents\HDDGOD\server\__pycache__\kakao_notifier.cpython-314.pyc
+	  *�߰� �  		   13079	C:\Users\USER\Documents\HDDGOD\server\__pycache__\mail_otp_extractor.cpython-314.pyc
+	  *�߰� �  		    3456	C:\Users\USER\Documents\HDDGOD\server\__pycache__\remote_relay.cpython-314.pyc
+	  *�߰� �  		   53208	C:\Users\USER\Documents\HDDGOD\server\__pycache__\server_core.cpython-314.pyc
+	  *�߰� �  		    8864	C:\Users\USER\Documents\HDDGOD\server\__pycache__\tunnel_manager.cpython-314.pyc
+	  *�߰� �  		    6598	C:\Users\USER\Documents\HDDGOD\server\__pycache__\wol_watchdog.cpython-314.pyc
+

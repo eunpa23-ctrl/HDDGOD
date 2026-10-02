@@ -1,0 +1,29 @@
+
+The command exited with code 0.
+Output:
+
+>     def check_and_handle_login(self) -> str:
+          """넷플릭스 로그인 상태 점검 및 자동 분기 처리"""
+          if not self.is_cdp_available():
+              self.ws_url = None
+              self.current_status = NetflixStatus.CLOSED
+              return self.current_status
+  
+          check_script = """
+          (function() {
+              var url = window.location.href;
+              
+              // 1. 이미 로그인된 상태 (/browse 또는 프로필 선택 화면)
+              if (url.indexOf('/browse') !== -1 || document.querySelector('.profile-icon, .avatar-wrapper, [data-uia="p
+rofile-link"], [data-uia="header-profile-menu"]')) {
+                  return { status: 'LOGGED_IN', url: url };
+              }
+  
+              // 2. 4자리 OTP 인증 화면 감지
+              if (document.querySelector('input[type="tel"]') || 
+                  document.querySelector('input[name*="code"]') ||
+                  document.querySelector('input[data-uia*="otp"]') ||
+                  document.body.innerText.indexOf('인증 코드') !== -1 ||
+
+
+

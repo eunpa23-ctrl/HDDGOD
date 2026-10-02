@@ -1,0 +1,8 @@
+
+The command exited with code 1.
+Output:
+Traceback (most recent call last):
+  File "C:\Users\USER\Documents\HDDGOD\test_visible.py", line 5, in <module>
+    from server.mail_otp_extractor import MailExtractor
+ImportError: cannot import name 'MailExtractor' from 'server.mail_otp_extractor' (C:\Users\USER\Documents\HDDGOD\server\mail_otp_extractor.py)
+

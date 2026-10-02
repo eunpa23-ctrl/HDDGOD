@@ -1,0 +1,9 @@
+
+The command exited with code 1.
+Output:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    with open(r'G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\2_�а˼�.bat', 'r', encoding='utf-8', errors='ignore') as f: print(f.read())
+                                                                                                                                 ~~~~~^^^^^^^^^^
+UnicodeEncodeError: 'cp949' codec can't encode character '\u05f8' in position 52: illegal multibyte sequence
+

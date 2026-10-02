@@ -1,0 +1,29 @@
+
+The command exited with code 0.
+Output:
+
+>         # === STEP 4: 로그인 제출 버튼 클릭 ===
+          submit_js = """
+          (function() {
+              var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"]');
+              if (remember && !remember.checked) { remember.click(); }
+  
+              var btn = document.querySelector(
+                  'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], f
+orm button'
+              );
+              if (btn) { btn.click(); return true; }
+              return false;
+          })()
+          """
+          self.eval_js(submit_js)
+          logger.info("로그인 제출 버튼 클릭 완료!")
+          return {"success": True, "message": "CDP 2단계 로그인 완료"}
+  
+      def input_otp_code(self, code_str: str) -> bool:
+          """전달받은 4자리 OTP 코드를 크롬 화면에 0.1초 만에 자동 타이핑"""
+          logger.info(f"넷플릭스 4자리 인증번호 [{code_str}] 자동 입력 실행!")
+          code_str = code_str.strip()
+
+
+

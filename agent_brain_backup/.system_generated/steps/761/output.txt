@@ -1,0 +1,28 @@
+
+The command exited with code 0.
+Output:
+
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:37:uwfmgr.exe file add-exclusion "C:\ProgramData\NetflixProfile" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:38:if exist "C:\Program Files\DAUM\PotPlayer" (
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:39:    uwfmgr.exe file add-exclusion "C:\Program Files\DAUM\PotPlayer" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:40:)
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:41:if exist "C:\Program Files (x86)\PicaLive" (
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:42:    uwfmgr.exe file add-exclusion "C:\Program Files (x86)\PicaLive" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:43:)
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:44:if exist "C:\PicaLive" (
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:45:    uwfmgr.exe file add-exclusion "C:\PicaLive" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:46:)
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:47:if exist "C:\Program Files (x86)\PicaAir" (
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:48:    uwfmgr.exe file add-exclusion "C:\Program Files (x86)\PicaAir" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:49:)
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:50:if not exist "C:\ZeusAgent\DesktopIcons" mkdir "C:\ZeusAgent\DesktopIcons"
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:51:uwfmgr.exe file add-exclusion "C:\ZeusAgent" >nul 2>&1
+> deploy\ClientDeploy\1_�ġ�ϱ�.bat:52:uwfmgr.exe file add-exclusion "%APPDATA%\Microsoft\Windows\Themes" >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:53:
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:54:echo [4/6] 24?�? ???? ???? ?? ???? ??a ???? ??...
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:55:powercfg /h off >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:56:powercfg /change monitor-timeout-ac 0 >nul 2>&1
+  deploy\ClientDeploy\1_�ġ�ϱ�.bat:57:powercfg /change standby-timeout-ac 0 >nul 2>&1
+
+
+

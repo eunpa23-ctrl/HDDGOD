@@ -1,0 +1,23 @@
+
+The command exited with code 0.
+Output:
+
+                  try:
+                      monitor = self.sct.monitors[1]
+>                     sct_img = self.sct.grab(monitor)
+                      img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+                  except Exception:
+                      img = None
+  
+              if not img:
+                  try:
+>                     from PIL import ImageGrab
+>                     img = ImageGrab.grab()
+                  except Exception:
+                      pass
+  
+              if not img:
+                  w = self.screen_w if self.screen_w > 0 else 1920
+
+
+

@@ -1,0 +1,13 @@
+
+The command exited with code 0.
+Output:
+
+Name                             
+----                             
+0_�̺귯�_�ڵ�ġ.bat        
+�_�_�_�.bat
+�_�_�_�.bat
+update.bat                       
+
+
+

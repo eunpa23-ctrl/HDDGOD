@@ -1,0 +1,55 @@
+
+The command exited with code 0.
+Output:
+
+>     except WebSocketDisconnect:
+          logger.warning(f"클라이언트 연결 종료: {client_id}")
+      finally:
+          if client_id in active_clients:
+              del active_clients[client_id]
+  
+  async def handle_auto_otp_flow(client_id: str):
+      """1차: 네이트 메일 자동 추출 시도 -> 실패 시 2차: 카카오톡 알림 발송"""
+      otp = await mail_extractor.poll_netflix_otp(timeout_sec=35, interval_sec=2)
+      if otp:
+          logger.info(f"🎉 네이트 메일에서 4자리 코드 [{otp}] 자동 추출 성공! {client_id}로 자동 전송...")
+          ws = get_client_ws(client_id)
+          if ws:
+              pkt = make_packet(PacketType.OTP_SUBMIT, {"otp_code": otp})
+              await ws.send_text(pkt)
+              return
+>     except WebSocketDisconnect:
+          dashboard_subscribers.remove(websocket)
+  
+  @app.websocket("/ws/remote_view/{client_id}")
+  async def remote_view_websocket(websocket: WebSocket, client_id: str):
+      """원격 제어 뷰어 연결 (좌석 ID / 실제 ID 스마트 브리지)"""
+      await websocket.accept()
+      actual_cid = get_actual_client_id(client_id)
+      remote_relay.add_viewer(client_id, websocket)
+      if actual_cid != client_id:
+          remote_relay.add_viewer(actual_cid, websocket)
+  
+      # 뷰어 접속 즉시 클라이언트에 화면 스트리밍 시작 명령 발송
+      ws = get_client_ws(client_id)
+      if ws:
+          cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
+>     except WebSocketDisconnect:
+          remote_relay.remove_viewer(client_id, websocket)
+          if actual_cid != client_id:
+              remote_relay.remove_viewer(actual_cid, websocket)
+          # 뷰어가 아무도 없으면 스트리밍 중지
+          target_ws = get_client_ws(client_id)
+          if target_ws and actual_cid not in remote_relay.viewers and client_id not in remote_relay.viewers:
+              cmd = make_packet(PacketType.COMMAND, {"action": CommandType.STOP_SCREEN_STREAM})
+              await target_ws.send_text(cmd)
+              logger.info(f"[{actual_cid}] 모든 뷰어 퇴장 -> 화면 스트리밍 절전 중지")
+  
+  # --- 제어 REST API ---
+  
+  @app.post("/api/command/{client_id}/{action}")
+  async def send_command(client_id: str, action: str):
+      ws = get_client_ws(client_id)
+
+
+

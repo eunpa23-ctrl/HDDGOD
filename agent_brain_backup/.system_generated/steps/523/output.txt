@@ -1,0 +1,22 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\run_client.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -12,6 +12,16 @@
+     sys.path.insert(0, ROOT_DIR)
+ os.chdir(ROOT_DIR)
+ 
++# 1. 넷플릭스 바로가기 단독 호출 시 크롬 실행 후 즉시 종료 (중복 실행 락 검사 전에 최우선 처리)
++if len(sys.argv) > 1 and "--launch-netflix" in sys.argv:
++    try:
++        from client.netflix_bot import NetflixBot
++        bot = NetflixBot()
++        bot.launch_chrome_with_cdp()
++    except Exception as e:
++        pass
++    sys.exit(0)
++
+ # ── 중복 실행 방지: 소켓 포트 점유 방식 ──────────────────────────
+ import socket as _sock
+ _lock_sock = _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM)
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

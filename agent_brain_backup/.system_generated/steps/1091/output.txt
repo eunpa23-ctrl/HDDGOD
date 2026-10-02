@@ -1,0 +1,16 @@
+
+The command exited with code 0.
+Output:
+
+Major  Minor  Build  Revision
+-----  -----  -----  --------
+5      1      19041  6216    
+Active code page: 65001
+@echo off
+pushd "%~dp0"
+title [???콺 HDD PROTECTOR] ??????? 10?? ????? ??? ?????
+cls
+echo ================================================================
+
+
+

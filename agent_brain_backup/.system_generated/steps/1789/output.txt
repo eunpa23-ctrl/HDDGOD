@@ -1,0 +1,22 @@
+
+The command exited with code 0.
+Output:
+
+    def __init__(self):
+    def get_client_identity(self) -> str:
+    def get_local_ip(self) -> str:
+    def get_mac_address(self) -> str:
+    def on_system_boot(self) -> None:
+    def start_netflix_routine(self) -> None:
+        def routine():
+    async def run_heartbeat_loop(self, websocket):
+    async def handle_server_commands(self, websocket):
+    async def run_screen_stream_loop(self, websocket):
+    def get_best_server_ip(self) -> str:
+    async def connect_and_serve(self):
+    def get_app_dir(self) -> str:
+    def check_and_apply_update(self, force=False):
+    def start(self):
+
+
+

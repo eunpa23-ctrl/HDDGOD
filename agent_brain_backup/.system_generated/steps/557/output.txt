@@ -1,0 +1,9 @@
+
+The command exited with code 0.
+Output:
+
+client\client_agent.py:322:            res = requests.get(f"{server_url}/api/version", timeout=3)
+server\server_core.py:532:@app.get("/api/version")
+
+
+

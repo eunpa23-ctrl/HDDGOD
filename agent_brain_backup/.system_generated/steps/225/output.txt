@@ -1,0 +1,70 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\run_server.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -19,6 +19,12 @@
+ from common.auto_installer import ensure_dependencies
+ ensure_dependencies(ROOT_DIR)
+ 
++from common.config import SERVER_HOST, SERVER_PORT, CLIENT_SERVER_IP
++
++# 대시보드 접속 URL 결정 (설정된 서버 IP 우선 적용)
++target_ip = CLIENT_SERVER_IP if (CLIENT_SERVER_IP and CLIENT_SERVER_IP != '0.0.0.0') else (SERVER_HOST if SERVER_HOST != '0.0.0.0' else '127.0.0.1')
++dashboard_url = f"http://{target_ip}:{SERVER_PORT}"
++
+ print("=" * 60)
+ print("  ⚡ [제우스 HDD PROTECTOR] 관리 PC 중앙 관제 서버")
+ print("=" * 60)
+@@ -25,4 +25,4 @@
+-print("[*] 로컬 대시보드 주소: http://localhost:8000")
++print(f"[*] 관제 대시보드 주소: {dashboard_url}")
+ print("[*] 관제 서버를 가동합니다... (종료: Ctrl + C)")
+ print("=" * 60)
+ 
+@@ -29,16 +29,22 @@
+ import webbrowser
+ import time
+ 
++def is_port_active(host, port):
++    try:
++        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
++        s.settimeout(0.8)
++        res = (s.connect_ex((host, port)) == 0)
++        s.close()
++        return res
++    except Exception:
++        return False
++
+ # 이미 서버가 실행 중인지 감지 (중복 실행 방지 및 브라우저 즉시 오픈)
+ try:
+-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+-    sock.settimeout(1.0)
+-    is_already_running = (sock.connect_ex(("127.0.0.1", 8000)) == 0)
+-    sock.close()
+-    if is_already_running:
+-        print("[*] 관제 서버가 이미 백그라운드에서 동작 중입니다!")
+-        print("[*] 관제 대시보드 브라우저 화면을 즉시 엽니다...")
+-        webbrowser.open("http://localhost:8000")
++    if is_port_active(target_ip, SERVER_PORT) or is_port_active("127.0.0.1", SERVER_PORT):
++        print(f"[*] 관제 서버가 이미 백그라운드에서 동작 중입니다!")
++        print(f"[*] 관제 대시보드 브라우저 화면을 엽니다: {dashboard_url}")
++        webbrowser.open(dashboard_url)
+         time.sleep(1.5)
+         sys.exit(0)
+ except Exception:
+@@ -46,7 +46,6 @@
+ try:
+     import uvicorn
+     import threading
+-    from common.config import SERVER_HOST, SERVER_PORT
+     from server.server_core import app
+ 
+     def open_browser():
+@@ -53,5 +53,5 @@
+         try:
+-            webbrowser.open(f"http://localhost:{SERVER_PORT}")
++            webbrowser.open(dashboard_url)
+         except Exception:
+             pass
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

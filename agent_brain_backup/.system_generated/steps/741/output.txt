@@ -1,0 +1,120 @@
+
+The command exited with code 0.
+Output:
+
+> client\client_agent.py:222:                    asyncio.create_task(asyncio.to_thread(self.check_and_apply_update, Tru
+e))
+  client\client_agent.py:223:                elif action == CommandType.START_SCREEN_STREAM:
+  client\client_agent.py:224:                    logger.info("?? [� �] ȭ� �Ʈ� � � � -> ĸó �!
+")
+  client\client_agent.py:225:                    self.is_streaming_screen = True
+  client\client_agent.py:226:                elif action == CommandType.STOP_SCREEN_STREAM:
+  client\client_agent.py:227:                    logger.info("?? [� �] ȭ� �Ʈ� � � � �!")
+  client\client_agent.py:228:                    self.is_streaming_screen = False
+  client\client_agent.py:229:
+  client\client_agent.py:230:            elif p_type == PacketType.OTP_SUBMIT:
+  client\client_agent.py:231:                # �̹� �Ͽ� �ڵ� �Ǿ�ų� �ְ� �Է� 4�ڸ� �ڵ�
+  client\client_agent.py:232:                code = data.get("otp_code", "")
+  client\client_agent.py:233:                logger.info(f"�ŵ� 4�ڸ� OTP [{code}] ȭ� �Է� �õ�...")
+  client\client_agent.py:234:                asyncio.create_task(asyncio.to_thread(self.netflix_bot.input_otp_code, cod
+e))
+  client\client_agent.py:235:
+  client\client_agent.py:236:            elif p_type == PacketType.REMOTE_INPUT:
+  client\client_agent.py:237:                # � �ġ � �콺/Ű� �Է� �
+  client\client_agent.py:238:                evt = data.get("event")
+  client\client_agent.py:239:                self.streamer.handle_remote_input(evt, data)
+  client\client_agent.py:240:
+  client\client_agent.py:241:    async def run_screen_stream_loop(self, websocket):
+  client\client_agent.py:242:        """ȭ� �Ʈ� Ȱ�ȭ � �ŷ � ĸó� 12 FPS �Ʈ�"""
+  client\client_agent.py:243:        while True:
+  client\client_agent.py:244:            if self.is_streaming_screen:
+  client\client_agent.py:245:                try:
+  client\client_agent.py:246:                    b64 = await asyncio.to_thread(self.streamer.capture_frame_base64)
+  client\client_agent.py:247:                    if b64:
+  client\client_agent.py:248:                        pkt = make_packet(PacketType.SCREEN_FRAME, {
+  client\client_agent.py:249:                            "client_id": self.client_id,
+  client\client_agent.py:250:                            "frame": b64
+  client\client_agent.py:251:                        })
+  client\client_agent.py:252:                        await websocket.send(pkt)
+  client\client_agent.py:253:                except Exception as e:
+  client\client_agent.py:254:                    logger.error(f"ȭ� � � �: {e}")
+  client\client_agent.py:255:                    break
+  client\client_agent.py:256:                await asyncio.sleep(0.08)
+  client\client_agent.py:257:            else:
+  client\client_agent.py:258:                await asyncio.sleep(0.2)
+  client\client_agent.py:259:
+  client\client_agent.py:260:    def get_best_server_ip(self) -> str:
+  client\client_agent.py:261:        """� �׽�Ʈ � �Ǵ� config.ini/�⺻ IP �ڵ� �ؼ�"""
+  client\client_agent.py:262:        # 1. config.ini � � �ֿ켱 �
+> client\client_agent.py:323:    def check_and_apply_update(self, force=False):
+  client\client_agent.py:324:        """� � �ϰ� � � �ְų� force=True� �� �Ʈ �"""
+  client\client_agent.py:325:        import requests
+  client\client_agent.py:326:        try:
+  client\client_agent.py:327:            app_dir = self.get_app_dir()
+  client\client_agent.py:328:            # � � �б�
+  client\client_agent.py:329:            version_path = os.path.join(app_dir, "version.txt")
+  client\client_agent.py:330:            current_version = "0.0.0"
+  client\client_agent.py:331:            if os.path.exists(version_path):
+  client\client_agent.py:332:                try:
+  client\client_agent.py:333:                    with open(version_path, "r", encoding="utf-8") as f:
+  client\client_agent.py:334:                        current_version = f.read().strip().replace('"', '').replace("'", "
+").replace('\ufeff', '').strip()
+  client\client_agent.py:335:                except Exception:
+  client\client_agent.py:336:                    pass
+  client\client_agent.py:337:
+  client\client_agent.py:338:            # � �ֽ� � �ȸ
+  client\client_agent.py:339:            server_url = f"http://{self.server_ip}:{self.server_port}"
+  client\client_agent.py:340:            res = requests.get(f"{server_url}/api/version", timeout=3)
+  client\client_agent.py:341:            if res.status_code != 200:
+  client\client_agent.py:342:                return
+  client\client_agent.py:343:            latest_version = res.text.strip().replace('"', '').replace("'", "").replace('\
+ufeff', '').strip()
+  client\client_agent.py:344:
+  client\client_agent.py:345:            if force or (latest_version and latest_version != current_version):
+  client\client_agent.py:346:                reason = "� �Ʈ �" if force else f"�: {current_version} -> 
+�ֽ�: {latest_version}"
+  client\client_agent.py:347:                logger.info(f"?? Ŭ�̾�Ʈ �Ʈ �! ({reason})")
+  client\client_agent.py:348:                
+  client\client_agent.py:349:                # � � � �ٿ�ε�
+  client\client_agent.py:350:                exe_res = requests.get(f"{server_url}/api/download/update", stream=True, t
+imeout=10)
+  client\client_agent.py:351:                if exe_res.status_code == 200:
+  client\client_agent.py:352:                    new_exe_path = os.path.join(app_dir, "ZeusAgent_new.exe")
+  client\client_agent.py:353:                    with open(new_exe_path, "wb") as f:
+  client\client_agent.py:354:                        for chunk in exe_res.iter_content(chunk_size=8192):
+  client\client_agent.py:355:                            f.write(chunk)
+  client\client_agent.py:356:                    
+  client\client_agent.py:357:                    # � � � �
+  client\client_agent.py:358:                    new_ver_path = os.path.join(app_dir, "version_new.txt")
+  client\client_agent.py:359:                    with open(new_ver_path, "w", encoding="utf-8") as f:
+  client\client_agent.py:360:                        f.write(latest_version)
+  client\client_agent.py:361:
+  client\client_agent.py:362:                    # �Ʈ �ġ � �
+  client\client_agent.py:363:                    bat_path = os.path.join(app_dir, "update.bat")
+> client\client_agent.py:386:        self.check_and_apply_update()
+  client\client_agent.py:387:
+  client\client_agent.py:388:        # 1. � � � �å �
+  client\client_agent.py:389:        self.on_system_boot()
+  client\client_agent.py:390:
+  client\client_agent.py:391:        # 2. �ø� �
+  client\client_agent.py:392:        self.start_netflix_routine()
+  client\client_agent.py:393:
+  client\client_agent.py:394:        # 3. Ʈ� � �׶� � �
+  client\client_agent.py:395:        tray = ClientTrayUI(on_restart_netflix=self.start_netflix_routine)
+  client\client_agent.py:396:        threading.Thread(target=tray.run_tray, daemon=True).start()
+  client\client_agent.py:397:
+  client\client_agent.py:398:        # 4. � � �񵿱� � �
+  client\client_agent.py:399:        asyncio.run(self.connect_and_serve())
+  client\client_agent.py:400:
+  client\client_agent.py:401:if __name__ == "__main__":
+  client\client_agent.py:402:    if len(sys.argv) > 1 and sys.argv[1] == "--launch-netflix":
+  client\client_agent.py:403:        from client.netflix_bot import NetflixBot
+  client\client_agent.py:404:        bot = NetflixBot()
+  client\client_agent.py:405:        bot.launch_chrome_with_cdp()
+  client\client_agent.py:406:        sys.exit(0)
+  client\client_agent.py:407:
+  client\client_agent.py:408:    agent = ZeusClientAgent()
+  client\client_agent.py:409:    agent.start()
+
+
+

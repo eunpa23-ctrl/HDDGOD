@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+
+FullName                                                          Length LastWriteTime          
+--------                                                          ------ -------------          
+G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\1_�ġ�ϱ�.bat    3513 2026-10-01 � 7:43:40
+C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\1_�ġ�ϱ�.bat   3513 2026-10-01 � 7:43:40
+
+
+

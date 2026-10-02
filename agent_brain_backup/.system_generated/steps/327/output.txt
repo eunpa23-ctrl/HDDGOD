@@ -1,0 +1,6 @@
+
+The command exited with code 0.
+Output:
+Updated CP949 CRLF in: G:\� �̺�\PROJECT\HDDGOD
+Updated CP949 CRLF in: C:\Users\USER\Documents\HDDGOD
+

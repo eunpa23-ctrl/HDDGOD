@@ -1,0 +1,5 @@
+
+The command exited with code 0.
+Output:
+SUCCESS: The process "pythonw.exe" with PID 11172 has been terminated.
+

@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+Active code page: 65001
+
+FullName                                                     
+--------                                                     
+G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy\core\version.txt
+
+
+

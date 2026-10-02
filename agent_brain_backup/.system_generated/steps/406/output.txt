@@ -1,0 +1,13 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\deploy\build_client_exe.bat. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -14,6 +14,7 @@
+ 
+ echo [*] ZeusAgent.exe 무설치 단일 파일 컴파일 시작 (약 1분 소요)...
+ pyinstaller --noconfirm --onefile --windowed --name "ZeusAgent" ^
++    --hidden-import "pystray._win32" ^
+     --add-data "common;common" ^
+     --add-data "client;client" ^
+     run_client.py
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

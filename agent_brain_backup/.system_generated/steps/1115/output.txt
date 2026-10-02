@@ -1,0 +1,146 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -335,79 +335,70 @@
+         self.current_status = NetflixStatus.RUNNING
+         return self.current_status
+ 
++    def send_cdp_command(self, method: str, params: dict) -> dict:
++        """CDP 원시 명령어 전송 (키보드 타이핑 등)"""
++        if not ws_connect: return {}
++        if not self.ws_url and not self.connect_cdp(retries=2): return {}
++        try:
++            with ws_connect(self.ws_url, open_timeout=2, close_timeout=1) as ws:
++                payload = {
++                    "id": int(time.time() * 1000) % 100000,
++                    "method": method,
++                    "params": params
++                }
++                ws.send(json.dumps(payload))
++                res = json.loads(ws.recv(timeout=5.0))
++                return res
++        except Exception:
++            return {}
++
+     def do_auto_login(self) -> dict:
+-        """React/Hawkins 호환 Native Setter를 적용하여 ID/PW 정확한 타이핑 및 로그인 버튼 클릭"""
+-        logger.info("넷플릭스 ID/PW 자동 로그인 시도 중...")
+-        import json
+-        email_json = json.dumps(NETFLIX_EMAIL)
+-        pass_json = json.dumps(NETFLIX_PASSWORD)
+-
+-        login_script = f"""
+-        (async function() {{
+-            function setReactValue(input, value) {{
+-                if (!input) return false;
+-                try {{
+-                    input.focus();
+-                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+-                    if (nativeSetter && nativeSetter.set) {{
+-                        nativeSetter.set.call(input, value);
+-                    }} else {{
+-                        input.value = value;
+-                    }}
+-                    var tracker = input._valueTracker;
+-                    if (tracker) {{
+-                        tracker.setValue("");
+-                    }}
+-                    input.dispatchEvent(new Event('input', {{ bubbles: true, cancelable: true }}));
+-                    input.dispatchEvent(new Event('change', {{ bubbles: true, cancelable: true }}));
+-                    input.dispatchEvent(new KeyboardEvent('keydown', {{ bubbles: true, key: value.slice(-1) }}));
+-                    input.dispatchEvent(new KeyboardEvent('keyup', {{ bubbles: true, key: value.slice(-1) }}));
+-                    return true;
+-                }} catch(e) {{
+-                    input.value = value;
+-                    return false;
+-                }}
+-            }}
+-
+-            var emailInput = document.querySelector('input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], input[autocomplete="email"], #id_userLoginId');
+-            var passInput = document.querySelector('input[data-uia="field-password"], input[name="password"], input[type="password"], #id_password');
+-
+-            if (!emailInput) {{
+-                return {{ success: false, message: '이메일 입력창을 찾지 못함' }};
+-            }}
+-
+-            // 1. 이메일/ID 정확히 타이핑
+-            setReactValue(emailInput, {email_json});
+-
+-            // 2. 0.4초 대기 (이메일 유효성 검사 반응 대기)
+-            await new Promise(function(resolve) {{ setTimeout(resolve, 400); }});
+-
+-            // 3. 비밀번호 타이핑
+-            if (passInput) {{
+-                setReactValue(passInput, {pass_json});
+-            }}
+-
+-            // 4. 로그인 정보 저장 체크박스
++        """CDP 원격 제어(Input.insertText)를 통해 실제 키보드 타이핑처럼 ID/PW 강제 입력"""
++        logger.info("넷플릭스 ID/PW 자동 로그인 시도 중 (CDP 타이핑)...")
++        
++        # 1. 이메일 입력창 포커스 및 초기화
++        focus_email_js = """
++        (function() {
++            var el = document.querySelector('input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], #id_userLoginId');
++            if(el) { el.focus(); el.value = ''; return true; }
++            return false;
++        })()
++        """
++        if not self.eval_js(focus_email_js):
++            return {"success": False, "message": "이메일 입력창을 찾지 못함"}
++        
++        time.sleep(0.3)
++        
++        # 2. 이메일 텍스트 원시 타이핑
++        self.send_cdp_command("Input.insertText", {"text": NETFLIX_EMAIL})
++        time.sleep(0.5)
++        
++        # 3. 비밀번호 입력창 포커스
++        focus_pass_js = """
++        (function() {
++            var el = document.querySelector('input[data-uia="field-password"], input[name="password"], input[type="password"], #id_password');
++            if(el) { el.focus(); el.value = ''; return true; }
++            return false;
++        })()
++        """
++        if self.eval_js(focus_pass_js):
++            time.sleep(0.3)
++            self.send_cdp_command("Input.insertText", {"text": NETFLIX_PASSWORD})
++            time.sleep(0.5)
++        
++        # 4. 로그인 버튼 클릭
++        submit_js = """
++        (function() {
+             var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"], input[type="checkbox"]');
+-            if (remember && !remember.checked) {{
+-                remember.click();
+-            }}
+-
+-            // 5. 0.8초 충분히 대기하여 React 상태 및 로그인 버튼 활성화 완료 확인
+-            await new Promise(function(resolve) {{ setTimeout(resolve, 800); }});
+-
+-            // 6. 로그인 제출 버튼 클릭
++            if (remember && !remember.checked) { remember.click(); }
++            
+             var btn = document.querySelector('button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button');
+-            if (btn) {{
+-                btn.focus();
+-                btn.click();
+-                return {{ success: true, message: 'ID/PW 입력 및 로그인 제출 완료' }};
+-            }}
+-
+-            return {{ success: false, message: '로그인 버튼 미발견' }};
+-        }})()
+-        """
+-        return self.eval_js(login_script)
++            if (btn) { btn.click(); return true; }
++            return false;
++        })()
++        """
++        self.eval_js(submit_js)
++        return {"success": True, "message": "CDP 기반 타이핑 및 로그인 제출 완료"}
+ 
+     def input_otp_code(self, code_str: str) -> bool:
+         """전달받은 4자리 OTP 코드를 크롬 화면에 0.1초 만에 자동 타이핑"""
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

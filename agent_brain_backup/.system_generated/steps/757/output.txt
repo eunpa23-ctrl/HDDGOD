@@ -1,0 +1,18 @@
+
+The command exited with code 0.
+Output:
+
+> server\server_core.py:455:@app.post("/api/command/{client_id}/{action}")
+  server\server_core.py:456:async def send_command(client_id: str, action: str):
+  server\server_core.py:457:    ws = get_client_ws(client_id)
+  server\server_core.py:458:    actual_cid = get_actual_client_id(client_id)
+  server\server_core.py:459:    if ws:
+  server\server_core.py:460:        cmd = make_packet(PacketType.COMMAND, {"action": action})
+  server\server_core.py:461:        await ws.send_text(cmd)
+  server\server_core.py:462:        if action == CommandType.SHUTDOWN:
+  server\server_core.py:463:            watchdog.set_normal_shutdown(actual_cid)
+  server\server_core.py:464:        return {"status": "ok", "sent_to": actual_cid, "action": action}
+  server\server_core.py:465:    elif action == "WOL":
+
+
+

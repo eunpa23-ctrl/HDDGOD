@@ -1,0 +1,8 @@
+
+The command exited with code 0.
+Output:
+[master c72369a] Fix React input handling (type char-by-char)
+ 2 files changed, 29 insertions(+), 9 deletions(-)
+To https://github.com/eunpa23-ctrl/HDDGOD.git
+   c7de228..c72369a  master -> master
+

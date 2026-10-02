@@ -1,0 +1,13 @@
+
+The command exited with code 0.
+Output:
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\Start\HideShutDown
+    Behavior    REG_DWORD    0x20
+    highrange    REG_DWORD    0x1
+    lowrange    REG_DWORD    0x0
+    mergealgorithm    REG_DWORD    0x1
+    policytype    REG_DWORD    0x4
+    value    REG_DWORD    0x0
+
+

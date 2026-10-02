@@ -1,0 +1,19 @@
+
+The command exited with code 1.
+Output:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+    screenshot = ImageGrab.grab()
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\PIL\ImageGrab.py", line 96, in grab
+    offset, size, data = Image.core.grabscreen_win32(
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        include_layered_windows,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+        all_screens,
+        ^^^^^^^^^^^^
+        int(window) if window is not None else 0,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+OSError: screen grab failed
+

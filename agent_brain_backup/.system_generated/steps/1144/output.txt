@@ -1,0 +1,14 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\ZeusAgent.spec. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -28,7 +28,7 @@
+     strip=False,
+     upx=True,
+     upx_exclude=[],
+-    runtime_tmpdir=None,
++    runtime_tmpdir='C:\\ZeusAgent\\temp',
+     console=False,
+     disable_windowed_traceback=False,
+     argv_emulation=False,
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

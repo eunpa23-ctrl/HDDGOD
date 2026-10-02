@@ -1,0 +1,18 @@
+
+The command exited with code 0.
+Output:
+
+              if (el) { el.focus(); el.select(); return true; }
+              return false;
+          })()
+          """
+          if not self.eval_js(focus_email_js):
+>             return {"success": False, "message": "이메일 입력창을 찾지 못함"}
+  
+          time.sleep(0.2)
+          # 기존 내용 전체 지우기 (Ctrl+A → Delete)
+          self.send_cdp_command("Input.dispatchKeyEvent", {
+              "type": "keyDown", "key": "a", "code": "KeyA", "modifiers": 2  # Ctrl
+
+
+

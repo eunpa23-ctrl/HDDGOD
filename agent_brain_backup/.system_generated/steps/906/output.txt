@@ -1,0 +1,35 @@
+
+The command exited with code 0.
+Output:
+
+> client\netflix_bot.py:135:    def launch_chrome_with_cdp(self) -> bool:
+  client\netflix_bot.py:136:        """�մ� �ʰ� � �и� �ø� � �ʷ� ũ� �"""
+  client\netflix_bot.py:137:        os.makedirs(self.profile_dir, exist_ok=True)
+  client\netflix_bot.py:138:        chrome_exe = self.find_chrome_path()
+  client\netflix_bot.py:139:
+  client\netflix_bot.py:140:        cmd = [
+  client\netflix_bot.py:141:            chrome_exe,
+  client\netflix_bot.py:142:            f"--remote-debugging-port={self.cdp_port}",
+  client\netflix_bot.py:143:            f"--user-data-dir={self.profile_dir}",
+  client\netflix_bot.py:144:            "--start-maximized",
+  client\netflix_bot.py:145:            "--no-first-run",
+  client\netflix_bot.py:146:            "--no-default-browser-check",
+  client\netflix_bot.py:147:            "--disable-popup-blocking",
+  client\netflix_bot.py:148:            self.start_url
+  client\netflix_bot.py:149:        ]
+  client\netflix_bot.py:150:
+  client\netflix_bot.py:151:        logger.info(f"�ø� � ũ� � (CDP �Ʈ {self.cdp_port}, � {self.profi
+le_dir})")
+  client\netflix_bot.py:152:        try:
+  client\netflix_bot.py:153:            creationflags = 0
+  client\netflix_bot.py:154:            if sys.platform == "win32":
+  client\netflix_bot.py:155:                creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008  # DETACHE
+D_PROCESS
+  client\netflix_bot.py:156:            subprocess.Popen(cmd, creationflags=creationflags)
+  client\netflix_bot.py:157:            return True
+  client\netflix_bot.py:158:        except Exception as e:
+  client\netflix_bot.py:159:            logger.error(f"ũ� � �: {e}")
+  client\netflix_bot.py:160:            return False
+
+
+

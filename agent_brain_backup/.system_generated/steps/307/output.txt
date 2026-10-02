@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+Collecting pillow-heif
+  Downloading pillow_heif-1.8.0-cp314-cp314-win_amd64.whl.metadata (9.9 kB)
+Requirement already satisfied: pillow>=11.1.0 in C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages (from pillow-heif) (12.3.0)
+Downloading pillow_heif-1.8.0-cp314-cp314-win_amd64.whl (6.8 MB)
+   ---------------------------------------- 6.8/6.8 MB 34.5 MB/s  0:00:00
+Installing collected packages: pillow-heif
+Successfully installed pillow-heif-1.8.0
+

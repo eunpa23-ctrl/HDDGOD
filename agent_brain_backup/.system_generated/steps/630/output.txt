@@ -1,0 +1,20 @@
+
+The command exited with code 0.
+Output:
+
+server\templates\dashboard.html:44:                        <button onclick="openMobileModal()" class="px-3 py-1.5 bg-gr
+adient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounde
+d-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
+server\templates\dashboard.html:245:                        <img id="lan-qr-img" src="" alt="� � QR �ڵ�" class="w-
+full h-full object-contain" />
+server\templates\dashboard.html:250:                        <input id="lan-url-text" type="text" readonly value="Ȯ� 
+�..." class="w-full bg-slate-900 border border-slate-800 text-[11px] text-sky-300 rounded px-2.5 py-1.5 truncate text-
+center select-all focus:outline-none" />
+server\templates\dashboard.html:251:                        <button onclick="copyUrl('lan-url-text')" class="px-2.5 py-
+1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs transition font-semibold shrink-0" title="URL �">
+server\templates\dashboard.html:795:        function openMobileModal() {
+server\templates\dashboard.html:856:                    const lanText = document.getElementById('lan-url-text');
+server\templates\dashboard.html:857:                    const lanQr = document.getElementById('lan-qr-img');
+
+
+

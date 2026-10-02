@@ -1,0 +1,15 @@
+
+The command exited with code 0.
+Output:
+
+>         elif status == "NEED_LOGIN":
+              # 자동 로그인 시도
+              res = self.do_auto_login(self.target_email, self.target_password)
+              logger.info(f"자동 로그인 실행 결과: {res}")
+              time.sleep(3)
+              # 로그인 후 상태 재점검
+              second_check = self.eval_js(check_script)
+              second_status = second_check.get("status") if isinstance(second_check, dict) else "UNKNOWN"
+
+
+

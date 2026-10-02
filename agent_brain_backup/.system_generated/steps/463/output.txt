@@ -1,0 +1,33 @@
+The search for ""HideShutDown" "PolicyManager" reg add start menu" returned the following summary:
+To hide the "Shut down" option from the Start menu using the registry, you can modify the `HideShutDown` policy key[1][2].
+
+### Registry Method
+1.  **Open Registry Editor**: Press `Win + R`, type `regedit`, and press **Enter** (ensure you have administrator privileges)[2][3].
+2.  **Navigate to the Key**: Go to the following path[4][2]:
+    `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\Start\HideShutDown`
+3.  **Modify the Value**:
+    *   Find the DWORD value named `value` in the right pane[1][5].
+    *   Double-click it and change the **Value data** to `1` to hide the option[1][2].
+    *   (To revert this later, change the value back to `0`)[1][2].
+
+### Command Line Method
+You can also perform this action by running the following command in an elevated Command Prompt or PowerShell terminal[4][3]:
+
+```cmd
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\Start\HideShutDown" /v value /t REG_DWORD /d 1 /f
+```
+
+### Important Considerations
+*   **System-Wide Impact**: This setting is located under `HKEY_LOCAL_MACHINE`, meaning it applies system-wide to all users and cannot be easily scoped to specific users only[6][7].
+*   **Not a Security Feature**: This method only removes the "Shut down" option from the visual UI (Start menu, sign-in screen, etc.)[1][3]. It does not prevent a user with sufficient privileges from shutting down the computer via other methods, such as the command line (`shutdown /s /t 0`), `Alt+F4`, or `Ctrl+Alt+Del`[6][2][3].
+*   **Backup**: It is always recommended to back up your registry before making changes[3][8].
+
+Sources:
+[1] [elevenforum.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH97PuyB3VLhXACUG7w2jc07B3wO0JDeSdcXndWj39sMZcEORI1SDtgEB5wb10kbS38hNebywC7Ni9juHOV3VJEA5UdeJisdpRj1XRF6YSQBU1Yqc_m9foi90wCI0ezEyhNmHhi9KFqMl4Bom39_ZTr-PNrWYt2YNhAuh2VF79GiCRqfoKdbL-AiBPbfnmJ)
+[2] [webmakers.co.nz](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHm-0lr4Y8O6cdcu_THW3osgjD1Xrv_Bz07_ILC-G05x8OjTXl4sop8wuwE5xyaQgjM2C6IYNz2yXKL14RZvvZmefcS_CMM3ITPJNVIEHZRX7RZMyin8YgXozzMTZBJAJfJD0gR9jQ1YXJnQi2WR3DlC246qQfczxTpTlLHyey_pBerBe9NRjMoBaiSIKGW)
+[3] [ninjaone.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGdMHpgahUuzeP39OAphtEqXP2C56IBvyAlLYccLYjOv88ndqeCLREu6RKeRVQstkUNmg5NTvNln44ltYY7E_aOuA5MFWoaPQ4QWk_RWdKSOTEMsB4TStoyajCDOCJMNN8HeEEGPDNJ5wuJa-_wRGjlPfIi9TnZkY6u90JLofAavWLwzuLSW8E=)
+[4] [superuser.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZ1VKbmtSyqtSup2ZvrII5O13C_LwcrrZJ-Lavh0D6ar4j3oFoTYtkbWpiO8dEfb2NFLHSRLbicEyZXMo3SvQGrZhv7GycQeEgwFFSmU7PDHYGkPZfShSDeF_hhRwwowpwyJEiYaAmz6EwseN7QpAhs0Y5VU9U1fjLDdToygasAIk7_JxK8dNQH_reV8fOAuHPPVnnZ3k=)
+[5] [superuser.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZ1VKbmtSyqtSup2ZvrII5O13C_LwcrrZJ-Lavh0D6ar4j3oFoTYtkbWpiO8dEfb2NFLHSRLbicEyZXMo3SvQGrZhv7GycQeEgwFFSmU7PDHYGkPZfShSDeF_hhRwwowpwyJEiYaAmz6EwseN7QpAhs0Y5VU9U1fjLDdToygasAIk7_JxK8dNQH_reV8fOAuHPPVnnZ3k=)
+[6] [microsoft.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHmgx0Sc3EwNEob3yrPa7gp5QLTNytrBvPoIK1uneS9xQh_Yk3Ro-1Vi9XLoRmF_rDEeFg-YLbTvxgbCGo5vFMrr_L8-O4awWtWEH3V90MkFieYwL9ZVqbLhhaqFE2OEqevvRT3mvYhQNCLsClYKfPCN_38CAtaRP-MGZN3DZqrYGIwBpC2hJgArlz1iczJjU8n2T2MYRl21F79lgvMx9Hqs7Vo7g==)
+[7] [microsoft.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHmgx0Sc3EwNEob3yrPa7gp5QLTNytrBvPoIK1uneS9xQh_Yk3Ro-1Vi9XLoRmF_rDEeFg-YLbTvxgbCGo5vFMrr_L8-O4awWtWEH3V90MkFieYwL9ZVqbLhhaqFE2OEqevvRT3mvYhQNCLsClYKfPCN_38CAtaRP-MGZN3DZqrYGIwBpC2hJgArlz1iczJjU8n2T2MYRl21F79lgvMx9Hqs7Vo7g==)
+[8] [makeuseof.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFP5mLZbhZT_FJVfPQTZ-UBjqOkWRISLu2krUslaciHqgMIDnijnxg7IKWNSVUICLvHpIl07eWmWGA5G3oTofCbMfaMcPHfiZP-zWXIlwfVnsVZl8_vcD-nUcVXg37mJDqT26DKPCOCaKV5Yp1YE3gNbC--aoM=)

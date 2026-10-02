@@ -1,0 +1,72 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\server\server_core.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -259,7 +259,20 @@
+     """모바일 및 PC 터치 원격 제어 화면"""
+     actual_cid = get_actual_client_id(client_id)
+     ws = get_client_ws(client_id)
+-    if ws:
++    is_online = (ws is not None)
++
++    # 클라이언트 PC 정보 조회 (이름 및 실제 IP)
++    c_info = watchdog.clients.get(actual_cid, {})
++    client_ip = c_info.get("ip", "")
++    client_name = client_id
++    for p in load_pc_mapping():
++        if p.get("id") == client_id or str(p.get("seat")) == client_id:
++            if not client_ip:
++                client_ip = p.get("ip", "")
++            client_name = p.get("name", client_id)
++            break
++
++    if is_online:
+         cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
+         await ws.send_text(cmd)
+         logger.info(f"[{actual_cid}] 화면 스트리밍 시작 명령 전달 성공 (요청 ID: {client_id})")
+@@ -270,8 +270,42 @@
+         name="remote_view.html",
+         context={
+             "client_id": client_id,
+-            "actual_client_id": actual_cid
+-        }
++            "actual_client_id": actual_cid,
++            "client_name": client_name,
++            "client_ip": client_ip,
++            "is_online": is_online
++        }
++    )
++
++@app.get("/api/rdp/{client_id}")
++async def get_rdp_file(client_id: str):
++    """윈도우 기본 원격 데스크톱(mstsc) 연결용 .rdp 파일 생성 및 다운로드"""
++    from fastapi.responses import Response
++    actual_cid = get_actual_client_id(client_id)
++    c_info = watchdog.clients.get(actual_cid, {})
++    target_ip = c_info.get("ip")
++    if not target_ip:
++        for p in load_pc_mapping():
++            if p.get("id") == client_id or str(p.get("seat")) == client_id:
++                target_ip = p.get("ip")
++                break
++    if not target_ip:
++        target_ip = "127.0.0.1"
++
++    rdp_content = f"""full address:s:{target_ip}
++prompt for credentials:i:1
++screen mode id:i:2
++use multimon:i:0
++session bpp:i:32
++compression:i:1
++keyboardhook:i:2
++audiomode:i:0
++redirectclipboard:i:1
++"""
++    return Response(
++        content=rdp_content.encode("utf-16le"),
++        media_type="application/x-rdp",
++        headers={"Content-Disposition": f'attachment; filename="{client_id}_{target_ip}.rdp"'}
+     )
+ 
+ @app.get("/otp/{client_id}", response_class=HTMLResponse)
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

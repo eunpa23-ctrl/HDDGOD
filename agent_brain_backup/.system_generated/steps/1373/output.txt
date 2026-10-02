@@ -1,0 +1,14 @@
+
+The command exited with code 0.
+Output:
+=== 현재 Git 추적 중인 파일 ===
+파일 수: 117
+총 크기: 118.12 MB
+
+=== .gitignore 로 제외된 항목들 ===
+build/ 폴더: 32.9 MB
+dist/ 폴더: 23.8 MB
+__pycache__: 185 KB
+ZeusAgent.exe: 23.8 MB
+제외 합계: 80.7 MB
+

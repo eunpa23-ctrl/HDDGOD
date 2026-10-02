@@ -1,0 +1,48 @@
+
+The command exited with code 1.
+Output:
+Initialized empty Git repository in G:/내 드라이브/PROJECT/HDDGOD/.git/
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '0_라이브러리_자동설치.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ARCHITECTURE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/desktop_guard.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/launch_netflix.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'common/auto_installer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy/build_client_exe.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy/share_deploy_folder.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'fix_bats.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'run_client.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'run_server.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/mail_otp_extractor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/templates/otp_input.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/templates/remote_view.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tunnel_manager.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server_supervisor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/1_전원버튼_숨기기.reg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/1_전원버튼_원상복구.reg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/2_MS방해화면_차단.reg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/3_작업표시줄_새로고침.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/sync_repos.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/test_system_policy.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/update_install_bat.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '관리도구_서버_윈도우시작_등록.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '관리도구_서버_윈도우시작_해제.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '서버실행.vbs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '인수인계서.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '제우스_관제_대시보드.url', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '클라이언트실행.vbs', LF will be replaced by CRLF the next time Git touches it
+Author identity unknown
+
+*** Please tell me who you are.
+
+Run
+
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+
+to set your account's default identity.
+Omit --global to set the identity only in this repository.
+
+fatal: unable to auto-detect email address (got 'USER@DESKTOP-N8THMNJ.(none)')
+

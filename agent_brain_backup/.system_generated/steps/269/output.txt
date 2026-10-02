@@ -1,0 +1,5 @@
+
+The command exited with code 0.
+Output:
+Cleanup completed on both G: and C: drives.
+

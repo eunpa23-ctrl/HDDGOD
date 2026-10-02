@@ -1,0 +1,91 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\server\templates\dashboard.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -1042,7 +1042,85 @@
+         renderGrid();
+         renderMappingTable();
+         updateTotalStat();
++
++        // =====================================================
++        // 🔴 실시간 클라이언트 로그 뷰어
++        // =====================================================
++        const logBox = document.getElementById('log-box');
++        const logFilter = document.getElementById('log-filter');
++        let logAutoScroll = true;
++        let allLogs = [];
++        const MAX_LOGS = 300;
++
++        function appendLog(entry) {
++            allLogs.push(entry);
++            if (allLogs.length > MAX_LOGS) allLogs.shift();
++            renderLogs();
++        }
++
++        function renderLogs() {
++            const filter = logFilter ? logFilter.value : 'ALL';
++            const filtered = allLogs.filter(e => filter === 'ALL' || e.client_id === filter);
++            const colors = { ERROR: '#ff6b6b', WARNING: '#ffd93d', INFO: '#6bcb77', DEBUG: '#adb5bd' };
++            logBox.innerHTML = filtered.map(e =>
++                `<div style="color:${colors[e.level]||'#ccc'};margin:1px 0;font-size:12px;">
++                    <span style="color:#888">[${e.timestamp}]</span>
++                    <span style="color:#4dabf7;font-weight:bold">[${e.client_id}]</span>
++                    <span style="color:${colors[e.level]||'#ccc'}">[${e.level}]</span>
++                    ${e.message}
++                </div>`
++            ).join('');
++            if (logAutoScroll) logBox.scrollTop = logBox.scrollHeight;
++        }
++
++        // 대시보드 WebSocket에서 로그 메시지 수신
++        function handleLogMessage(data) {
++            if (data.type !== 'log') return;
++            appendLog(data);
++            // PC 필터 옵션 자동 추가
++            if (logFilter) {
++                const exists = [...logFilter.options].some(o => o.value === data.client_id);
++                if (!exists) {
++                    const opt = document.createElement('option');
++                    opt.value = data.client_id;
++                    opt.textContent = data.client_id;
++                    logFilter.appendChild(opt);
++                }
++            }
++        }
++
++        // 기존 ws 메시지 처리에 로그 핸들러 연결 (ws는 이미 위에서 정의됨)
++        const _origOnMsg = ws.onmessage;
++        ws.onmessage = function(event) {
++            try {
++                const data = JSON.parse(event.data);
++                if (data.type === 'log') { handleLogMessage(data); return; }
++            } catch(e) {}
++            if (_origOnMsg) _origOnMsg.call(this, event);
++        };
++
++        if (logBox) {
++            logBox.addEventListener('scroll', () => {
++                logAutoScroll = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 20;
++            });
++        }
+     </script>
++
++    <!-- 실시간 로그 뷰어 패널 -->
++    <div style="position:fixed;bottom:0;left:0;right:0;height:220px;background:#1a1a2e;border-top:2px solid #e94560;z-index:999;display:flex;flex-direction:column;">
++        <div style="display:flex;align-items:center;padding:6px 12px;background:#16213e;gap:10px;flex-shrink:0;">
++            <span style="color:#e94560;font-weight:bold;font-size:13px;">🔴 실시간 클라이언트 로그</span>
++            <select id="log-filter" onchange="renderLogs()" style="background:#0f3460;color:#fff;border:1px solid #e94560;border-radius:4px;padding:2px 8px;font-size:12px;">
++                <option value="ALL">전체 PC</option>
++            </select>
++            <button onclick="allLogs=[];renderLogs();" style="background:#333;color:#fff;border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-size:12px;">지우기</button>
++            <button onclick="logAutoScroll=!logAutoScroll;this.textContent=logAutoScroll?'자동스크롤 ON':'자동스크롤 OFF';" style="background:#333;color:#6bcb77;border:none;border-radius:4px;padding:2px 10px;cursor:pointer;font-size:12px;">자동스크롤 ON</button>
++            <span style="margin-left:auto;color:#888;font-size:11px;">클라이언트에서 logger 호출 시 자동 수신</span>
++        </div>
++        <div id="log-box" style="flex:1;overflow-y:auto;padding:6px 12px;font-family:monospace;line-height:1.5;"></div>
++    </div>
++    <!-- 로그 패널 높이만큼 본문 아래 여백 -->
++    <div style="height:220px;"></div>
+ </body>
+ </html>
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

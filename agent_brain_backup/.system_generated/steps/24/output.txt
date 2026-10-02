@@ -1,0 +1,5 @@
+
+The command exited with code 0.
+Output:
+[(0, 'conversation_id', 'TEXT', 0, None, 1), (1, 'title', 'TEXT', 1, '""', 0), (2, 'preview', 'TEXT', 1, '""', 0), (3, 'step_count', 'INTEGER', 1, '0', 0), (4, 'last_modified_time', 'datetime', 1, None, 0), (5, 'workspace_uris', 'TEXT', 1, None, 0), (6, 'status', 'TEXT', 1, '""', 0), (7, 'source', 'TEXT', 1, '""', 0), (8, 'project_id', 'TEXT', 1, '""', 0), (9, 'agent_name', 'TEXT', 1, '""', 0), (10, 'parent_conversation_id', 'TEXT', 1, '""', 0), (11, 'nesting_depth', 'INTEGER', 1, '0', 0), (12, 'battle_id', 'TEXT', 1, '""', 0), (13, 'winning_conversation_id', 'TEXT', 1, '""', 0), (14, 'not_fully_idle', 'numeric', 1, 'false', 0), (15, 'killed', 'numeric', 1, 'false', 0), (16, 'last_user_input_time', 'datetime', 1, None, 0), (17, 'last_user_input_step_index', 'INTEGER', 1, '-1', 0), (18, 'app_data_dir', 'TEXT', 1, '""', 0), (19, 'raw_summary', 'BLOB', 0, None, 0), (20, 'group_id', 'TEXT', 1, '""', 0)]
+

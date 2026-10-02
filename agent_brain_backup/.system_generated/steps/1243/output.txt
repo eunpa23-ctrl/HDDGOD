@@ -1,0 +1,25 @@
+
+The command exited with code 0.
+Output:
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '0_라이브러리_자동설치.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/desktop_guard.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/launch_netflix.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'common/auto_installer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy/build_client_exe.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'fix_bats.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'run_client.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'run_server.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/mail_otp_extractor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/templates/remote_view.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tunnel_manager.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server_supervisor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/test_system_policy.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/update_install_bat.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '서버실행.vbs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '인수인계서.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '제우스_관제_대시보드.url', LF will be replaced by CRLF the next time Git touches it
+[master 38b2623] Add ERROR_REPORT telemetry system
+ 5 files changed, 41 insertions(+), 32 deletions(-)
+

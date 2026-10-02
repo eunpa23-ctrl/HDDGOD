@@ -1,0 +1,15 @@
+Task: 36085afd-6c99-45b2-8ff8-4ac77cbb1e5b/task-159
+Status: RUNNING
+Log: C:\Users\USER\.gemini\antigravity\brain\36085afd-6c99-45b2-8ff8-4ac77cbb1e5b\.system_generated\tasks\task-159.log
+Log output:
+<truncated 14 lines>
+rver:텔레그램 주소 알림 스레드 시작!
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://192.168.0.100:8000 (Press CTRL+C to quit)
+INFO:ZeusServer:터널 상태 확인 중... [0/15] {'status': 'starting', 'public_url': None, 'lan_url': 'http://192.168.0.100:8000', 'local_ip': '192.168.0.100', 'port': 8000}
+INFO:ZeusServer:터널 상태 확인 중... [1/15] {'status': 'starting', 'public_url': None, 'lan_url': 'http://192.168.0.100:8000', 'local_ip': '192.168.0.100', 'port': 8000}
+INFO:ZeusTunnel:🎉 [스마트폰 원격 접속 URL 생성 성공]: https://exam-bidder-arise-elephant.trycloudflare.com
+INFO:ZeusTunnel:📱 스마트폰 카메라로 QR 코드를 스캔하여 매장 밖에서도 즉시 접속 가능합니다.
+INFO:ZeusServer:터널 상태 확인 중... [2/15] {'status': 'ready', 'public_url': 'https://exam-bidder-arise-elephant.trycloudflare.com', 'lan_url': 'http://192.168.0.100:8000', 'local_ip': '192.168.0.100', 'port': 8000}
+
+Last progress: 0s ago

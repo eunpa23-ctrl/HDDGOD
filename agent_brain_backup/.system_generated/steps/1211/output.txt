@@ -1,0 +1,26 @@
+
+The command exited with code 0.
+Output:
+324 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+325 INFO: Python: 3.14.7
+358 INFO: Platform: Windows-10-10.0.19045-SP0
+359 INFO: Python environment: C:\Users\USER\AppData\Local\Programs\Python\Python314
+377 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\pyinstaller.exe',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\python314.zip',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\DLLs',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\win32',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\pythonwin',
+ 'G:\\� �̺�\\PROJECT\\HDDGOD']
+1044 INFO: Appending 'datas' from .spec
+1065 INFO: checking Analysis
+1459 INFO: checking PYZ
+1538 INFO: checking PKG
+1587 INFO: Bootloader C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+1588 INFO: checking EXE
+1626 INFO: Build complete! The results are available in: G:\� �̺�\PROJECT\HDDGOD\dist
+

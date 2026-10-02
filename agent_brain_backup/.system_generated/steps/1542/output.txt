@@ -1,0 +1,6 @@
+
+The command exited with code 0.
+Output:
+WARNING:NetflixBot:CDP �Ʈ � � �...
+Chrome not running or reachable
+

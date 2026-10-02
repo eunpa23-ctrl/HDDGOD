@@ -1,0 +1,121 @@
+
+The command exited with code 0.
+Output:
+<truncated 1 lines>
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.FullName : '.FullName' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�ϴ�. �
+� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:117
++ ...  '*.py', '*.html', '*.js', '*.bat' | Where-Object { .FullName -notmat ...
++                                                         ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.FullName:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+

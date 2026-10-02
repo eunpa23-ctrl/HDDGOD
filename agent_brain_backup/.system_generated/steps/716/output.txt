@@ -1,0 +1,23 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\server\templates\dashboard.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -644,9 +644,14 @@
+                         <button onclick="sendPcCommand('${pc.id}', 'WOL')" class="py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/40 rounded text-indigo-300 transition flex items-center justify-center gap-1">
+                             🔌 WOL 켜기
+                         </button>
+-                        <button onclick="openRemoteView('${pc.id}', '${pc.real_cid || ''}')" class="py-1 bg-blue-600 hover:bg-blue-500 font-bold rounded text-white text-center transition shadow flex items-center justify-center gap-1">
+-                            <i class="fa-solid fa-mobile-screen"></i> 원격 제어
+-                        </button>
++                        <div class="flex gap-1">
++                            <button onclick="openRemoteView('${pc.id}', '${pc.real_cid || ''}')" class="flex-1 py-1 bg-blue-600 hover:bg-blue-500 font-bold rounded text-white text-center transition shadow flex items-center justify-center gap-1" title="웹/모바일 실시간 화면 원격 제어">
++                                <i class="fa-solid fa-mobile-screen"></i> 원격 제어
++                            </button>
++                            <a href="/api/rdp/${pc.id}" download class="px-2 py-1 bg-sky-800 hover:bg-sky-700 font-bold rounded text-white text-center transition shadow flex items-center justify-center text-[10px]" title="윈도우 기본 mstsc 원격 데스크톱(RDP) 연결">
++                                <i class="fa-solid fa-desktop"></i>
++                            </a>
++                        </div>
+                     </div>
+                 `;
+                 grid.appendChild(card);
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

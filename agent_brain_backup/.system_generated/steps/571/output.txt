@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+
+FullName                                                                Length LastWriteTime          
+--------                                                                ------ -------------          
+G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\core\ZeusAgent.exe  24944857 2026-10-01 � 7:59:23
+C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\ZeusAgent.exe 24944857 2026-10-01 � 7:59:23
+
+
+

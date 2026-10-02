@@ -1,0 +1,121 @@
+
+The command exited with code 0.
+Output:
+<truncated 1556 lines>
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.CommandLine : '.CommandLine' � cmdlet, �Լ�, �ũ�Ʈ � �Ǵ� � � �ִ� �α׷� �̸� �νĵ� �ʽ�
+�. �̸� �Ȯ� Ȯ�ϰ� �ΰ� �Ե� � �ΰ� �ùٸ� � � �ٽ� �õ�Ͻʽÿ�.
+�ġ �:1 �:48
++ Get-CimInstance Win32_Process | Where-Object { .CommandLine -match 'p ...
++                                                ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.CommandLine:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+

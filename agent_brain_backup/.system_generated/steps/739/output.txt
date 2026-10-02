@@ -1,0 +1,107 @@
+
+The command exited with code 0.
+Output:
+
+  server\server_core.py:46:    try:
+  server\server_core.py:47:        import winreg
+> server\server_core.py:48:        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentV
+ersion\Run", 0, winreg.KEY_READ)
+  server\server_core.py:49:        val, _ = winreg.QueryValueEx(key, "ZeusServer")
+  server\server_core.py:50:        winreg.CloseKey(key)
+  server\server_core.py:51:        return bool(val)
+  server\server_core.py:52:    except Exception:
+  server\server_core.py:53:        return False
+  server\server_core.py:56:    try:
+  server\server_core.py:57:        import winreg
+> server\server_core.py:58:        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentV
+ersion\Run", 0, winreg.KEY_SET_VALUE)
+  server\server_core.py:59:        if enable:
+  server\server_core.py:60:            vbs_path = os.path.join(PROJECT_ROOT, "�.vbs")
+  server\server_core.py:61:            cmd = f'wscript.exe "{vbs_path}"'
+  server\server_core.py:62:            winreg.SetValueEx(key, "ZeusServer", 0, winreg.REG_SZ, cmd)
+  server\server_core.py:63:            logger.info(f"� �α׷� � �Ϸ�: {cmd}")
+  server\server_core.py:577:
+  server\server_core.py:578:# � Ŭ�̾�Ʈ �ڵ� �Ʈ API �
+> server\server_core.py:579:@app.get("/api/version")
+> server\server_core.py:580:async def get_version():
+  server\server_core.py:581:    """�ֽ� Ŭ�̾�Ʈ � �ȯ"""
+> server\server_core.py:582:    version_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.tx
+t")
+> server\server_core.py:583:    if os.path.exists(version_path):
+  server\server_core.py:584:        try:
+> server\server_core.py:585:            with open(version_path, "r", encoding="utf-8") as f:
+  server\server_core.py:586:                return f.read().strip()
+  server\server_core.py:587:        except Exception:
+  server\server_core.py:588:            try:
+> server\server_core.py:589:                with open(version_path, "r", encoding="utf-16le") as f:
+  server\server_core.py:590:                    return f.read().strip()
+  server\server_core.py:591:            except Exception:
+  server\server_core.py:592:                pass
+  server\server_core.py:593:    return "1.0.0"
+  server\server_core.py:594:
+  server\server_core.py:606:async def get_settings():
+  server\server_core.py:607:    """�/Ŭ�̾�Ʈ � � � �ϰ� �ȸ"""
+> server\server_core.py:608:    version_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.tx
+t")
+  server\server_core.py:609:    exe_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe"
+)
+  server\server_core.py:610:    
+> server\server_core.py:611:    client_version = "1.0.0"
+> server\server_core.py:612:    if os.path.exists(version_path):
+  server\server_core.py:613:        try:
+> server\server_core.py:614:            with open(version_path, "r", encoding="utf-8") as f:
+> server\server_core.py:615:                client_version = f.read().strip().replace('\ufeff', '')
+  server\server_core.py:616:        except Exception:
+  server\server_core.py:617:            try:
+> server\server_core.py:618:                with open(version_path, "r", encoding="utf-16le") as f:
+> server\server_core.py:619:                    client_version = f.read().strip().replace('\ufeff', '')
+  server\server_core.py:620:            except Exception:
+  server\server_core.py:621:                pass
+  server\server_core.py:622:
+  server\server_core.py:623:    exe_exists = os.path.exists(exe_path)
+  server\server_core.py:624:    exe_size_str = "0 MB"
+  server\server_core.py:639:        "client_server_port": cfg.getint("CLIENT", "SERVER_PORT", fallback=8000),
+  server\server_core.py:640:        "admin_password": cfg.get("CLIENT", "ADMIN_PASSWORD", fallback="1234"),
+> server\server_core.py:641:        "client_version": client_version,
+  server\server_core.py:642:        "agent_file_exists": exe_exists,
+  server\server_core.py:643:        "agent_file_size": exe_size_str,
+  server\server_core.py:644:        "windows_autostart": check_windows_autostart(),
+  server\server_core.py:645:        "supervisor_active": check_supervisor_active(),
+  server\server_core.py:646:        "telegram_bot_token": cfg.get("TELEGRAM", "BOT_TOKEN", fallback=""),
+  server\server_core.py:722:    """Ŭ�̾�Ʈ �Ʈ OTA �Ʈ � � API"""
+  server\server_core.py:723:    data = await request.json()
+> server\server_core.py:724:    new_version = data.get("new_version", "").strip()
+  server\server_core.py:725:    
+> server\server_core.py:726:    version_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.tx
+t")
+> server\server_core.py:727:    if new_version:
+> server\server_core.py:728:        with open(version_path, "w", encoding="utf-8") as f:
+> server\server_core.py:729:            f.write(new_version)
+  server\server_core.py:730:
+> server\server_core.py:731:    current_version = "1.0.0"
+> server\server_core.py:732:    if os.path.exists(version_path):
+  server\server_core.py:733:        try:
+> server\server_core.py:734:            with open(version_path, "r", encoding="utf-8") as f:
+> server\server_core.py:735:                current_version = f.read().strip()
+  server\server_core.py:736:        except Exception:
+  server\server_core.py:737:            try:
+> server\server_core.py:738:                with open(version_path, "r", encoding="utf-16le") as f:
+> server\server_core.py:739:                    current_version = f.read().strip()
+  server\server_core.py:740:            except Exception:
+  server\server_core.py:741:                pass
+  server\server_core.py:742:
+  server\server_core.py:743:    # �ü Ŭ�̾�Ʈ� UPDATE_AGENT � �
+  server\server_core.py:744:    count = 0
+  server\server_core.py:750:    return {
+  server\server_core.py:751:        "status": "ok",
+> server\server_core.py:752:        "version": current_version,
+  server\server_core.py:753:        "sent_count": count,
+> server\server_core.py:754:        "message": f"� {current_version} �Ʈ � {count}� PC� �۵Ǿ�ϴ�."
+  server\server_core.py:755:    }
+  server\server_core.py:756:
+  server\server_core.py:757:@app.post("/api/settings/test_telegram")
+  server\server_core.py:758:async def test_telegram(request: Request):
+  server\server_core.py:759:    """�ڷ�׷� � �׽�Ʈ �޽� � API"""
+
+
+

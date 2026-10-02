@@ -1,0 +1,35 @@
+
+The command exited with code 0.
+Output:
+Active code page: 65001
+@echo off
+pushd "%~dp0"
+title [���콺 HDD PROTECTOR] Ŭ���̾�Ʈ 10�� ��Ŭ�� �ڵ� ��ġ��
+cls
+echo ================================================================
+echo   [���콺 HDD PROTECTOR] Ŭ���̾�Ʈ 10�� ��Ŭ�� �ڵ� ��ġ
+echo ================================================================
+echo.
+
+:: ������ ���� Ȯ��
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [���] ���콺 ��Ŭ�� �� �ݵ�� [������ �������� ����]���ּ���!
+    echo.
+    popd
+    pause
+    exit /b 1
+)
+
+echo [1/6] ���α׷� ��ġ ���� ���� �� (C:\ZeusAgent)...
+if not exist "C:\ZeusAgent" mkdir "C:\ZeusAgent"
+copy /y "core\*.*" "C:\ZeusAgent\" >nul 2>&1
+
+if not exist "C:\ZeusAgent\ZeusAgent.exe" (
+    echo [�˸�] ����� ��õ� ��...
+    copy /y "%~dp0core\*.*" "C:\ZeusAgent\" >nul 2>&1
+)
+
+echo [2/6] Windows UWF �������� ��� Ȱ��ȭ ��...
+dism /online /enable-feature /featurename:Client-UnifiedWriteFilter /all /norestart >nul 2>&1
+

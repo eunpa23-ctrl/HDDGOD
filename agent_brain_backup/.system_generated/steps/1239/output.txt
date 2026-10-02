@@ -1,0 +1,36 @@
+
+The command exited with code 0.
+Output:
+
+  
+          return self.server_ip
+  
+>     async def connect_and_serve(self):
+          """관리 PC 서버 WebSocket 연결 유지 및 자동 재접속"""
+          while True:
+              target_ip = self.get_best_server_ip()
+              uri = f"ws://{target_ip}:{self.server_port}/ws/client/{self.client_id}"
+              try:
+                  logger.info(f"관리 서버 연결 시도: {uri}")
+                  async with websockets.connect(uri, open_timeout=3) as ws:
+                      logger.info(f"관리 서버({target_ip}) 연결 성공!")
+                      self.ws_conn = ws
+                      await asyncio.gather(
+                          self.run_heartbeat_loop(ws),
+                          self.handle_server_commands(ws),
+                          self.run_screen_stream_loop(ws)
+                      )
+              except Exception as e:
+                  logger.warning(f"서버({target_ip}) 연결 대기 중 (5초 후 재시도): {e}")
+                  self.ws_conn = None
+                  await asyncio.sleep(5)
+  
+      def get_app_dir(self) -> str:
+          """PyInstaller 실행 파일 경로 또는 개발 루트 디렉터리 반환"""
+          if getattr(sys, "frozen", False):
+              return os.path.dirname(os.path.abspath(sys.executable))
+          return ROOT_DIR
+  
+
+
+

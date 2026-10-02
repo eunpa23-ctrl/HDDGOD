@@ -1,0 +1,12 @@
+
+The command exited with code 0.
+Output:
+rm 'deploy/ClientDeploy/core/ZeusAgent.exe'
+rm 'deploy/ClientDeploy/core/config.ini'
+[master 39eda7d] Stop tracking ZeusAgent.exe and config.ini (moved to .gitignore)
+ 2 files changed, 39 deletions(-)
+ delete mode 100644 deploy/ClientDeploy/core/ZeusAgent.exe
+ delete mode 100644 deploy/ClientDeploy/core/config.ini
+To https://github.com/eunpa23-ctrl/HDDGOD.git
+   e434e55..39eda7d  master -> master
+

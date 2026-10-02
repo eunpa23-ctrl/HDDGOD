@@ -1,0 +1,11 @@
+
+The command exited with code 1.
+Output:
+At line:19 char:70
++ ... ppend(f'서버 방화벽 8000 인바운드 규칙: {\"있음\" if has_8000 else \"없음! <- 핵심 문제\ ...
++                                                                 ~
+The '<' operator is reserved for future use.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : RedirectionNotSupported
+ 
+

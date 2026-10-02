@@ -1,0 +1,12 @@
+
+The command exited with code 1.
+Output:
+Get-ChildItem : 'System.Object[]'�(�) 'Filter' �Ű� � �ʿ� � 'System.String'(�)� �ȯ� � �ϴ�. �
+� �޼�尡 � �ʽ�ϴ�.
+�ġ �:1 �:65
++ ... �̺�\PROJECT\HDDGOD' -Recurse -Filter '*.py', '*.html', '*.js' | Selec ...
++                                          ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-ChildItem], ParameterBindingException
+    + FullyQualifiedErrorId : CannotConvertArgument,Microsoft.PowerShell.Commands.GetChildItemCommand
+ 
+

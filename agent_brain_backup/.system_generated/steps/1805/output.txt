@@ -1,0 +1,19 @@
+The following changes were made by the replace_file_content tool to: C:\Users\USER\Documents\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -363,7 +363,12 @@
+             time.sleep(2)
+             return self.check_and_handle_login()
+         elif status == "NEED_LOGIN":
+-            # 자동 로그인 시도
++            if not self.target_email or not self.target_password:
++                logger.info("로그인 필요 상태이나, 할당된 계정 정보가 없습니다. (서버 요청 대기)")
++                self.current_status = "NEED_LOGIN"
++                return "NEED_LOGIN"
++                
++            # 계정이 있으면 자동 로그인 시도
+             res = self.do_auto_login(self.target_email, self.target_password)
+             logger.info(f"자동 로그인 실행 결과: {res}")
+             time.sleep(3)
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

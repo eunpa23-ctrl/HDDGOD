@@ -1,0 +1,59 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\client\power_policy.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -82,35 +82,28 @@
+         cls.run_cmd(["powercfg.exe", "-SetActive", "SCHEME_CURRENT"])
+ 
+     @classmethod
+-    def hide_shutdown_button(cls) -> bool:
+-        """시작메뉴에서 '시스템 종료' 버튼 숨기기 (NoClose=1)"""
+-        logger.info("시작메뉴 종료 버튼 숨김 정책 적용 (NoClose=1)...")
+-        reg_paths = [
+-            (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"),
+-            (winreg.HKEY_LOCAL_MACHINE, r"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer")
+-        ]
+-        applied = False
+-        for root_key, sub_key in reg_paths:
+-            try:
+-                key = winreg.CreateKeyEx(root_key, sub_key, 0, winreg.KEY_SET_VALUE)
+-                winreg.SetValueEx(key, "NoClose", 0, winreg.REG_DWORD, 1)
+-                winreg.CloseKey(key)
+-                applied = True
+-            except PermissionError:
+-                pass
+-            except Exception as e:
+-                logger.debug(f"NoClose 레지스트리 설정 예외 ({sub_key}): {e}")
++    def hide_only_shutdown_keep_restart(cls) -> bool:
++        """시작메뉴에서 '시스템 종료'만 숨기고 '다시 시작(재부팅)'은 유지 (HideShutDown=1)"""
++        logger.info("시작메뉴 종료 숨김 및 다시 시작 유지 정책 적용 중...")
++        # 1. NoClose는 전체 전원 메뉴를 차단하므로 무조건 삭제
++        cls.restore_shutdown_button()
+         
+-        if applied:
+-            logger.info("시작메뉴 종료 버튼 숨김(NoClose=1) 레지스트리 적용 완료")
+-        else:
+-            logger.warning("시작메뉴 종료 버튼 숨김 적용 실패 (관리자 권한 필요)")
+-        return applied
++        # 2. Windows 10/11 PolicyManager HideShutDown 정책 적용 (시스템 종료만 숨김)
++        cls.run_cmd(["reg", "add", r"HKLM\SOFTWARE\Microsoft\PolicyManager\default\Start\HideShutDown", "/v", "value", "/t", "REG_DWORD", "/d", "1", "/f"])
++        cls.run_cmd(["reg", "add", r"HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start", "/v", "HideShutDown", "/t", "REG_DWORD", "/d", "1", "/f"])
++        cls.run_cmd(["reg", "add", r"HKLM\SOFTWARE\Microsoft\PolicyManager\default\Start\HideRestart", "/v", "value", "/t", "REG_DWORD", "/d", "0", "/f"])
++        logger.info("시작메뉴 '시스템 종료 숨김 / 다시 시작 유지' 적용 완료")
++        return True
++
++    @classmethod
++    def hide_shutdown_button(cls) -> bool:
++        """하위 호환성 유지: 시스템 종료만 숨기고 다시 시작은 유지하도록 위임"""
++        return cls.hide_only_shutdown_keep_restart()
+ 
+     @classmethod
+     def restore_shutdown_button(cls) -> bool:
+-        """시작메뉴 종료 버튼 복원 (NoClose 삭제)"""
+-        logger.info("시작메뉴 종료 버튼 복원 (NoClose 삭제)...")
++        """시작메뉴 전원 버튼 전체 복원 (NoClose 삭제 및 HideShutDown 해제)"""
++        logger.info("시작메뉴 전원 버튼 복원 중...")
+         reg_paths = [
+             (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"),
+             (winreg.HKEY_LOCAL_MACHINE, r"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer")
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

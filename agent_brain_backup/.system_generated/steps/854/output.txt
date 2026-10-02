@@ -1,0 +1,18 @@
+
+The command exited with code 0.
+Output:
+
+> client\client_agent.py:317:    def get_app_dir(self) -> str:
+  client\client_agent.py:318:        """PyInstaller � � � �Ǵ� � �Ʈ �͸� �ȯ"""
+  client\client_agent.py:319:        if getattr(sys, "frozen", False):
+  client\client_agent.py:320:            return os.path.dirname(os.path.abspath(sys.executable))
+  client\client_agent.py:321:        return ROOT_DIR
+  client\client_agent.py:322:
+  client\client_agent.py:323:    def check_and_apply_update(self, force=False):
+  client\client_agent.py:324:        """� � �ϰ� � � �ְų� force=True� �� �Ʈ �"""
+  client\client_agent.py:325:        import requests
+  client\client_agent.py:326:        try:
+  client\client_agent.py:327:            app_dir = self.get_app_dir()
+
+
+

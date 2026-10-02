@@ -1,0 +1,16 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\인수인계서.md. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -35,6 +35,10 @@
+    - 원클릭 배치 파일([관리도구_서버_윈도우시작_등록.bat](file:///G:/내%20드라이브/PROJECT/HDDGOD/관리도구_서버_윈도우시작_등록.bat), [관리도구_서버_윈도우시작_해제.bat](file:///G:/내%20드라이브/PROJECT/HDDGOD/관리도구_서버_윈도우시작_해제.bat)) 동시 제공.
+ 8. **배포 경로 참조 버그 픽스**
+    - [server_core.py](file:///G:/내%20드라이브/PROJECT/HDDGOD/server/server_core.py) 내 `version.txt` 및 `ZeusAgent.exe` 경로가 `server/deploy/`를 잘못 가리키던 문제를 프로젝트 루트 경로(`PROJECT_ROOT/deploy/`)로 정밀 수정.
++9. **모바일 대시보드 환경설정 연동 및 감시자(Watchdog) 실시간 동기화 완비**
++   - [mobile_dashboard.html](file:///G:/내%20드라이브/PROJECT/HDDGOD/server/templates/mobile_dashboard.html) 헤더에 톱니바퀴 버튼(`⚙️`) 및 모바일 전용 환경설정 모달 탑재 (스마트폰에서도 부팅 시 자동실행 토글, 원격 OTA 무인 업데이트, 카운터 IP/비밀번호 변경 가능).
++   - [server_supervisor.py](file:///G:/내%20드라이브/PROJECT/HDDGOD/server_supervisor.py) 감시자 루프를 논블로킹 폴링 방식으로 고도화하여 실시간 하트비트 갱신 보장 (`supervisor_active: True`).
++   - `version.txt`의 UTF-8 BOM 인코딩을 정밀 교정하여 버전 비교 및 OTA 업데이트 안정성 극대화.
+ 
+ ## 3. 프로그램 실행 방법
+ - **서버 구동:** `G:\내 드라이브\PROJECT\HDDGOD\서버실행.vbs` 더블클릭
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

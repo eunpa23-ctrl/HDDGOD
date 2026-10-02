@@ -1,0 +1,2 @@
+Created file file:///G:/%EB%82%B4%20%EB%93%9C%EB%9D%BC%EC%9D%B4%EB%B8%8C/PROJECT/HDDGOD/fix_bats.py with requested content.
+If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.

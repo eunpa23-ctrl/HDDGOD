@@ -1,0 +1,11 @@
+
+The command exited with code 0.
+Output:
+
+Name                                 LastWriteTime        
+----                                 -------------        
+36085afd-6c99-45b2-8ff8-4ac77cbb1e5b 2026-10-01 오후 6:32:21
+6ef6e5c7-01ac-4682-af9c-03da133515af 2026-09-30 오전 7:55:34
+
+
+

@@ -1,0 +1,20 @@
+
+The command exited with code 0.
+Output:
+45: def check_windows_autostart() -> bool:
+55: def set_windows_autostart(enable: bool) -> bool:
+76: def check_supervisor_active() -> bool:
+77: status_file = os.path.join(BASE_DIR, ".supervisor_status.json")
+552: @app.get("/api/settings")
+591: "windows_autostart": check_windows_autostart(),
+592: "supervisor_active": check_supervisor_active(),
+599: @app.post("/api/settings")
+637: if "windows_autostart" in data:
+638: set_windows_autostart(bool(data["windows_autostart"]))
+642: @app.post("/api/settings/autostart")
+643: async def toggle_autostart(request: Request):
+647: success = set_windows_autostart(enable)
+648: return {"status": "ok" if success else "error", "enabled": check_windows_autostart()}
+650: @app.post("/api/settings/update_client")
+687: @app.post("/api/settings/test_telegram")
+

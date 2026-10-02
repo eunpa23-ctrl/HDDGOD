@@ -1,0 +1,65 @@
+
+The command exited with code 0.
+Output:
+        1 file(s) copied.
+Active code page: 65001
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : 2026년 10월 2일 금요일 오후 12:52:36
+   Source = G:\� �̺�\PROJECT\HDDGOD\
+     Dest : C:\Users\USER\Documents\HDDGOD\
+
+    Files : *.*
+	    
+ Exc Dirs : .git
+	    __pycache__
+	    .vscode
+	    venv
+	    build
+	    dist
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	                  21	G:\� �̺�\PROJECT\HDDGOD\
+	    Newer     		    8357	ARCHITECTURE.md100%  
+	                  10	G:\� �̺�\PROJECT\HDDGOD\client\
+	    Newer     		   21390	client_agent.py100%  
+	    New File  		    3820	log_streamer.py100%  
+	                   3	G:\� �̺�\PROJECT\HDDGOD\common\
+	    Newer     		    3273	config.py100%  
+	    Newer     		    1826	protocol.py100%  
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\core\
+	    Newer     		      10	version.txt100%  
+	    Newer     		  23.8 m	ZeusAgent.exe  4.2%  8.4% 12.6% 16.8% 21.0% 25.2% 29.4% 33.6% 37.8% 42.0% 46.2% 50.4% 54.6% 58.8% 63.0% 67.2% 71.4% 75.6% 79.8% 84.0% 88.2% 92.4% 96.6%100%  
+	                  55	G:\� �̺�\PROJECT\HDDGOD\packages\
+	                   8	G:\� �̺�\PROJECT\HDDGOD\server\
+	    Older     		     144	.supervisor_status.json100%  
+	    Newer     		   36960	server_core.py100%  
+	                   0	G:\� �̺�\PROJECT\HDDGOD\server\master_icons\
+	                   1	G:\� �̺�\PROJECT\HDDGOD\server\static\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\server\templates\
+	    Newer     		   68050	dashboard.html100%  
+	                   8	G:\� �̺�\PROJECT\HDDGOD\tools\
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        19         0        19         0         0         0
+   Files :       118        10       108         0         0         0
+   Bytes :  118.13 m   23.94 m   94.19 m         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           204134284 Bytes/sec.
+   Speed :           11680.657 MegaBytes/min.
+   Ended : 2026년 10월 2일 금요일 오후 12:52:36
+
+DONE
+

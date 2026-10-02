@@ -1,0 +1,33 @@
+
+The command exited with code 0.
+Output:
+
+                  with open(pref_path, "w", encoding="utf-8") as f:
+                      json.dump(data, f)
+              except Exception:
+                  pass
+  
+>     def launch_chrome_with_cdp(self) -> bool:
+          """손님 프로필과 완전히 분리된 넷플릭스 전용 프로필로 크롬 실행"""
+          os.makedirs(self.profile_dir, exist_ok=True)
+          self._clean_chrome_profile()
+          
+          chrome_exe = self.find_chrome_path()
+  
+          cmd = [
+              chrome_exe,
+              f"--remote-debugging-port={self.cdp_port}",
+              f"--user-data-dir={self.profile_dir}",
+              "--start-maximized",
+              "--no-first-run",
+              "--no-default-browser-check",
+              "--disable-popup-blocking",
+              self.start_url
+          ]
+  
+          logger.info(f"넷플릭스 전용 크롬 실행 (CDP 포트 {self.cdp_port}, 프로필 {self.profile_dir})")
+          try:
+              creationflags = 0
+
+
+

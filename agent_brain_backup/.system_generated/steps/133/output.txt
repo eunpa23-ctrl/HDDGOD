@@ -1,0 +1,23 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\server\templates\mobile_dashboard.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -18,12 +18,15 @@
+             <h1 class="text-xl font-bold tracking-tight">제우스 모바일</h1>
+         </div>
+         <div class="flex gap-2">
+-            <button onclick="sendCommand('ALL', 'ENABLE_UWF')" class="w-10 h-10 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center active:bg-emerald-800 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
++            <button onclick="sendCommand('ALL', 'ENABLE_UWF')" class="w-10 h-10 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center active:bg-emerald-800 shadow-[0_0_10px_rgba(16,185,129,0.3)]" title="전체 보호">
+                 <i class="fa-solid fa-shield-halved"></i>
+             </button>
+-            <button onclick="sendCommand('ALL', 'REBOOT_RECOVER')" class="w-10 h-10 rounded-full bg-sky-900 text-sky-400 flex items-center justify-center active:bg-sky-800 shadow-[0_0_10px_rgba(14,165,233,0.3)]">
++            <button onclick="sendCommand('ALL', 'REBOOT_RECOVER')" class="w-10 h-10 rounded-full bg-sky-900 text-sky-400 flex items-center justify-center active:bg-sky-800 shadow-[0_0_10px_rgba(14,165,233,0.3)]" title="전체 복구">
+                 <i class="fa-solid fa-rotate"></i>
+             </button>
++            <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center active:bg-slate-700 shadow-[0_0_10px_rgba(251,191,36,0.3)]" title="환경설정">
++                <i class="fa-solid fa-gear"></i>
++            </button>
+         </div>
+     </header>
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

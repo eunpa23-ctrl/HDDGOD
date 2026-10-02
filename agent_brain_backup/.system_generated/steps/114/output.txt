@@ -1,0 +1,20 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\server\server_core.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -79,7 +79,13 @@
+         try:
+             with open(status_file, "r", encoding="utf-8") as f:
+                 data = json.load(f)
+-                return data.get("is_running", False) and (time.time() - data.get("last_heartbeat", 0) < 60)
++                if data.get("is_running", False) and (time.time() - data.get("last_heartbeat", 0) < 60):
++                    return True
++                pid = data.get("supervisor_pid")
++                if pid:
++                    import psutil
++                    if psutil.pid_exists(pid):
++                        return True
+         except Exception:
+             pass
+     return False
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

@@ -1,0 +1,23 @@
+
+The command exited with code 0.
+Output:
+
+  client\client_agent.py:258:                await asyncio.sleep(0.2)
+  client\client_agent.py:259:
+> client\client_agent.py:260:    def get_best_server_ip(self) -> str:
+  client\client_agent.py:261:        """� �׽�Ʈ � �Ǵ� config.ini/�⺻ IP �ڵ� �ؼ�"""
+  client\client_agent.py:262:        # 1. config.ini � � �ֿ켱 �
+  client\client_agent.py:263:        config_paths = [
+  client\client_agent.py:264:            r"C:\ZeusAgent\config.ini",
+  client\client_agent.py:265:            os.path.join(ROOT_DIR, "deploy", "ClientDeploy", "core", "config.ini"),
+  client\client_agent.py:298:        """� PC � WebSocket � � � �ڵ� �"""
+  client\client_agent.py:299:        while True:
+> client\client_agent.py:300:            target_ip = self.get_best_server_ip()
+  client\client_agent.py:301:            uri = f"ws://{target_ip}:{self.server_port}/ws/client/{self.client_id}"
+  client\client_agent.py:302:            try:
+  client\client_agent.py:303:                logger.info(f"� � � �õ�: {uri}")
+  client\client_agent.py:304:                async with websockets.connect(uri, open_timeout=3) as ws:
+  client\client_agent.py:305:                    logger.info(f"� �({target_ip}) � �!")
+
+
+

@@ -1,0 +1,38 @@
+
+The command exited with code 0.
+Output:
+209 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+210 INFO: Python: 3.14.7
+242 INFO: Platform: Windows-10-10.0.19045-SP0
+243 INFO: Python environment: C:\Users\USER\AppData\Local\Programs\Python\Python314
+260 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\pyinstaller.exe',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\python314.zip',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\DLLs',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\win32',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\pythonwin',
+ 'G:\\� �̺�\\PROJECT\\HDDGOD']
+705 INFO: Appending 'datas' from .spec
+722 INFO: checking Analysis
+870 INFO: checking PYZ
+938 INFO: checking PKG
+955 INFO: Building because toc changed
+955 INFO: Building PKG (CArchive) ZeusAgent.pkg
+3542 INFO: Building PKG (CArchive) ZeusAgent.pkg completed successfully.
+3557 INFO: Bootloader C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+3557 INFO: checking EXE
+3579 INFO: Building because toc changed
+3580 INFO: Building EXE from EXE-00.toc
+3586 INFO: Copying bootloader EXE to G:\� �̺�\PROJECT\HDDGOD\dist\ZeusAgent.exe
+3820 INFO: Copying icon to EXE
+3976 INFO: Copying 0 resources to EXE
+3976 INFO: Embedding manifest in EXE
+4125 INFO: Appending PKG archive to EXE
+4343 INFO: Fixing EXE headers
+5429 INFO: Building EXE from EXE-00.toc completed successfully.
+5440 INFO: Build complete! The results are available in: G:\� �̺�\PROJECT\HDDGOD\dist
+

@@ -1,0 +1,44 @@
+
+The command exited with code 0.
+Output:
+
+          for char in NETFLIX_EMAIL:
+              self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
+              time.sleep(0.01)
+          time.sleep(0.4)
+  
+>         # === STEP 2: "Enter" 키 입력 ("다음" 버튼 클릭 효과) ===
+          # 비밀번호 입력창이 이미 있으면 Enter 생략
+          pw_check_js = """
+          (function() {
+              var pw = document.querySelector('input[type="password"], input[name="password"], input[data-uia="field-pa
+ssword"]');
+              return pw ? true : false;
+          })()
+          """
+          has_pw = self.eval_js(pw_check_js)
+  
+          if not has_pw:
+              # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지
+              logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 form.requestSubmit() 실행")
+              
+              submit_form_js = """
+              (function() {
+                  var form = document.querySelector('form');
+                  if (form) {
+                      form.requestSubmit();
+                      return true;
+                  }
+                  return false;
+              })()
+              """
+              success = self.eval_js(submit_form_js)
+              
+              if not success:
+                  logger.warning("form 태그를 찾지 못했습니다. 엔터키 폴백 시도...")
+                  # 최후의 수단: 이메일 입력창에서 직접 Enter 이벤트 강제 발생
+                  fallback_js = """
+                  (function() {
+
+
+

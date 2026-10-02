@@ -1,0 +1,13 @@
+
+The command exited with code 1.
+Output:
+Active code page: 65001
+Get-Content : Cannot find path 'C:\Users\USER\Documents\HDDGOD\server\server.log' because it does not exist.
+At line:1 char:13
++ chcp 65001; Get-Content "C:\Users\USER\Documents\HDDGOD\server\server ...
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\USER\D...rver\server.log:String) [Get-Content], ItemNotFoundEx 
+   ception
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetContentCommand
+ 
+

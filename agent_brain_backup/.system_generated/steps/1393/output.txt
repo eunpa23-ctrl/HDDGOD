@@ -1,0 +1,33 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\client\client_agent.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -27,6 +27,7 @@
+ from client.netflix_bot import NetflixBot
+ from client.screen_streamer import ScreenStreamer
+ from client.client_tray import ClientTrayUI
++from client.log_streamer import WebSocketLogHandler
+ 
+ logging.basicConfig(
+     level=logging.INFO,
+@@ -42,7 +42,7 @@
+         self.client_id = self.get_client_identity()
+         self.local_ip = self.get_local_ip()
+         self.mac_addr = self.get_mac_address()
+-        
++
+         self.netflix_bot = NetflixBot()
+         self.streamer = ScreenStreamer()
+         self.is_streaming_screen = False
+@@ -49,6 +49,10 @@
+         self.otp_needed = False
+         self.otp_sent = False
+ 
++        # 실시간 로그 스트리머: 모든 로그를 서버 대시보드로 자동 전송
++        self.ws_log_handler = WebSocketLogHandler(agent_ref=self, level=logging.INFO)
++        logging.getLogger().addHandler(self.ws_log_handler)
++
+     def get_client_identity(self) -> str:
+         """호스트명 기반 고유 클라이언트 ID 생성 (예: PC-01)"""
+         hostname = socket.gethostname()
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

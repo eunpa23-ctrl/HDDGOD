@@ -1,0 +1,10 @@
+
+The command exited with code 0.
+Output:
+
+CommandLine                                                                    ExecutablePath                          
+-----------                                                                    --------------                          
+C:\Users\USER\AppData\Local\Programs\Python\Python314\python.exe run_server.py C:\Users\USER\AppData\Local\Programs\...
+
+
+

@@ -1,0 +1,58 @@
+
+The command exited with code 1.
+Output:
+        1 file(s) copied.
+Active code page: 65001
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : 2026년 10월 2일 금요일 오후 12:15:53
+   Source = G:\� �̺�\PROJECT\HDDGOD\
+     Dest : C:\Users\USER\Documents\HDDGOD\
+
+    Files : *.*
+	    
+ Exc Dirs : .git
+	    __pycache__
+	    .vscode
+	    venv
+	    build
+	    dist
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	                  21	G:\� �̺�\PROJECT\HDDGOD\
+	    New File  		     462	.gitignore100%  
+	    Newer     		    3663	fix_bats.py100%  
+	                   9	G:\� �̺�\PROJECT\HDDGOD\client\
+	                   3	G:\� �̺�\PROJECT\HDDGOD\common\
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\
+	                   2	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\core\
+	    Newer     		      10	version.txt100%  
+	                  55	G:\� �̺�\PROJECT\HDDGOD\packages\
+	                   8	G:\� �̺�\PROJECT\HDDGOD\server\
+	    Older     		     144	.supervisor_status.json100%  
+	                   0	G:\� �̺�\PROJECT\HDDGOD\server\master_icons\
+	                   1	G:\� �̺�\PROJECT\HDDGOD\server\static\
+	                   4	G:\� �̺�\PROJECT\HDDGOD\server\templates\
+	                   8	G:\� �̺�\PROJECT\HDDGOD\tools\
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        17         0        17         0         0         0
+   Files :       117         4       113         0         0         0
+   Bytes :  118.10 m     4.1 k  118.10 m         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :                7096 Bytes/sec.
+   Speed :               0.406 MegaBytes/min.
+   Ended : 2026년 10월 2일 금요일 오후 12:15:54
+
+

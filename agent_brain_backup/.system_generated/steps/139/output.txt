@@ -1,0 +1,199 @@
+The following changes were made by the replace_file_content tool to: g:\내 드라이브\PROJECT\HDDGOD\server\templates\mobile_dashboard.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -150,6 +150,193 @@
+                 alert('에러 발생: ' + e);
+             }
+         }
++
++        // --- ⚙️ 모바일 환경설정 모달 스크립트 ---
++        let currentSettings = {};
++
++        async function openSettingsModal() {
++            const modal = document.getElementById('mob-settings-modal');
++            if (modal) modal.classList.remove('hidden');
++            const msg = document.getElementById('mob-settings-msg');
++            if (msg) msg.innerText = '설정 불러오는 중...';
++            try {
++                const res = await fetch('/api/settings');
++                const data = await res.json();
++                currentSettings = data;
++
++                document.getElementById('mcfg-server-ip').value = data.client_server_ip || '192.168.0.100';
++                document.getElementById('mcfg-server-port').value = data.server_port || 8000;
++                document.getElementById('mcfg-admin-pwd').value = data.admin_password || '1234';
++                document.getElementById('mcfg-version').innerText = data.client_version || '1.0.1';
++                document.getElementById('mcfg-tg-chatid').value = data.telegram_chat_id || '';
++
++                // 윈도우 시작프로그램 상태 반영
++                updateMobAutostartUI(data.windows_autostart);
++
++                // 자동 재시작(Supervisor) 상태 반영
++                const supBadge = document.getElementById('mob-sup-badge');
++                if (supBadge) {
++                    if (data.supervisor_active) {
++                        supBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30";
++                        supBadge.innerText = '보호 가동 중';
++                    } else {
++                        supBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400";
++                        supBadge.innerText = '대기 중';
++                    }
++                }
++                if (msg) msg.innerText = '';
++            } catch (e) {
++                if (msg) msg.innerText = '설정 로드 실패: ' + e;
++            }
++        }
++
++        function closeSettingsModal() {
++            const modal = document.getElementById('mob-settings-modal');
++            if (modal) modal.classList.add('hidden');
++        }
++
++        function updateMobAutostartUI(isRegistered) {
++            const badge = document.getElementById('mob-autostart-badge');
++            const btn = document.getElementById('mob-btn-autostart');
++            if (!badge || !btn) return;
++            if (isRegistered) {
++                badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30";
++                badge.innerText = "ON";
++                btn.className = "px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold";
++                btn.innerText = "해제";
++            } else {
++                badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400";
++                badge.innerText = "OFF";
++                btn.className = "px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold";
++                btn.innerText = "등록";
++            }
++        }
++
++        async function toggleMobAutostart() {
++            const isCurrentlyOn = Boolean(currentSettings.windows_autostart);
++            try {
++                const res = await fetch('/api/settings/autostart', {
++                    method: 'POST',
++                    headers: {'Content-Type': 'application/json'},
++                    body: JSON.stringify({ enabled: !isCurrentlyOn })
++                });
++                const data = await res.json();
++                currentSettings.windows_autostart = data.enabled;
++                updateMobAutostartUI(data.enabled);
++                alert(data.enabled ? "✅ 윈도우 시작 시 서버 자동 실행이 등록되었습니다." : "ℹ️ 자동 실행이 해제되었습니다.");
++            } catch (e) {
++                alert("오류: " + e);
++            }
++        }
++
++        async function triggerMobOtaUpdate() {
++            if (!confirm("전체 PC에 클라이언트 무인 업데이트 명령을 전송하시겠습니까?")) return;
++            try {
++                const res = await fetch('/api/settings/update_client', {
++                    method: 'POST',
++                    headers: {'Content-Type': 'application/json'},
++                    body: JSON.stringify({ force: true })
++                });
++                const data = await res.json();
++                alert(data.message || "업데이트 명령이 전송되었습니다.");
++            } catch (e) {
++                alert("업데이트 전송 오류: " + e);
++            }
++        }
++
++        async function saveMobSettings() {
++            const payload = {
++                client_server_ip: document.getElementById('mcfg-server-ip').value.trim(),
++                server_port: parseInt(document.getElementById('mcfg-server-port').value.trim()) || 8000,
++                admin_password: document.getElementById('mcfg-admin-pwd').value.trim(),
++                telegram_chat_id: document.getElementById('mcfg-tg-chatid').value.trim()
++            };
++            const msg = document.getElementById('mob-settings-msg');
++            if (msg) msg.innerText = '저장 중...';
++            try {
++                const res = await fetch('/api/settings', {
++                    method: 'POST',
++                    headers: {'Content-Type': 'application/json'},
++                    body: JSON.stringify(payload)
++                });
++                const data = await res.json();
++                if (data.status === 'ok') {
++                    if (msg) msg.innerText = '✅ 설정이 저장되었습니다!';
++                    setTimeout(() => { if (msg) msg.innerText = ''; }, 2500);
++                }
++            } catch (e) {
++                if (msg) msg.innerText = '저장 실패: ' + e;
++            }
++        }
+     </script>
++
++    <!-- ⚙️ 모바일 환경설정 모달 -->
++    <div id="mob-settings-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
++        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
++            <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
++                <i class="fa-solid fa-xmark"></i>
++            </button>
++
++            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
++                <i class="fa-solid fa-gear text-amber-400 text-lg"></i>
++                <h3 class="font-bold text-white text-base">관제 환경설정</h3>
++            </div>
++
++            <!-- 자동 실행 & 안정성 -->
++            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
++                <div class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
++                    <i class="fa-brands fa-windows text-sky-400"></i> 부팅 시 서버 자동 실행
++                </div>
++                <div class="flex items-center justify-between">
++                    <span id="mob-autostart-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">확인 중</span>
++                    <button id="mob-btn-autostart" onclick="toggleMobAutostart()" class="px-3 py-1 bg-indigo-600 rounded-lg text-xs font-bold">등록</button>
++                </div>
++
++                <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
++                    <span class="text-xs text-slate-400">종료 시 무한 재시작</span>
++                    <span id="mob-sup-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">보호 중</span>
++                </div>
++            </div>
++
++            <!-- 클라이언트 OTA 업데이트 -->
++            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
++                <div class="flex items-center justify-between text-xs">
++                    <span class="font-bold text-slate-300 flex items-center gap-1.5">
++                        <i class="fa-solid fa-cloud-arrow-down text-fuchsia-400"></i> 클라이언트 버전
++                    </span>
++                    <span id="mcfg-version" class="font-mono text-fuchsia-300 font-bold">1.0.1</span>
++                </div>
++                <button onclick="triggerMobOtaUpdate()" class="w-full py-2 bg-gradient-to-r from-fuchsia-700 to-pink-600 rounded-xl text-xs font-bold active:from-fuchsia-600">
++                    🚀 전체 PC 원격 무인 업데이트
++                </button>
++            </div>
++
++            <!-- 네트워크 및 비밀번호 -->
++            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
++                <div>
++                    <label class="block text-slate-400 mb-1">카운터 IP (클라이언트 접속용)</label>
++                    <input id="mcfg-server-ip" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none">
++                </div>
++                <div class="grid grid-cols-2 gap-2">
++                    <div>
++                        <label class="block text-slate-400 mb-1">서버 포트</label>
++                        <input id="mcfg-server-port" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none">
++                    </div>
++                    <div>
++                        <label class="block text-slate-400 mb-1">마스터 비밀번호</label>
++                        <input id="mcfg-admin-pwd" type="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none">
++                    </div>
++                </div>
++                <div>
++                    <label class="block text-slate-400 mb-1">텔레그램 Chat ID</label>
++                    <input id="mcfg-tg-chatid" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none">
++                </div>
++                <div class="flex items-center justify-between pt-1">
++                    <span id="mob-settings-msg" class="text-[11px] text-amber-400 font-semibold"></span>
++                    <button onclick="saveMobSettings()" class="px-4 py-1.5 bg-indigo-600 active:bg-indigo-500 rounded-lg text-xs font-bold">저장하기</button>
++                </div>
++            </div>
++        </div>
++    </div>
+ </body>
+ </html>
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

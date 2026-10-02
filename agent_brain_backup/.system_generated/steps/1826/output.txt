@@ -1,0 +1,12 @@
+
+The command exited with code 1.
+Output:
+Traceback (most recent call last):
+  File "C:\Users\USER\Documents\HDDGOD\test_headless.py", line 3, in <module>
+    from client.netflix_bot import NetflixBot
+  File "C:\Users\USER\Documents\HDDGOD\client\netflix_bot.py", line 18, in <module>
+    from common.config import (
+    ...<5 lines>...
+    )
+ImportError: cannot import name 'NETFLIX_EMAIL' from 'common.config' (C:\Users\USER\Documents\HDDGOD\common\config.py)
+

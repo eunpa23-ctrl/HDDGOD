@@ -1,0 +1,132 @@
+The following changes were made by the replace_file_content tool to: G:\내 드라이브\PROJECT\HDDGOD\client\netflix_bot.py. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -353,14 +353,18 @@
+             return {}
+ 
+     def do_auto_login(self) -> dict:
+-        """CDP 원격 제어(Input.insertText)를 통해 실제 키보드 타이핑처럼 ID/PW 강제 입력"""
+-        logger.info("넷플릭스 ID/PW 자동 로그인 시도 중 (CDP 타이핑)...")
+-        
+-        # 1. 이메일 입력창 포커스 및 초기화
++        """CDP 원격 제어(Input.insertText)를 통해 실제 키보드 타이핑처럼 ID/PW 강제 입력
++        넷플릭스는 이메일 입력 → 다음 버튼 → 비밀번호 입력의 2단계 구조임에 주의
++        """
++        logger.info("넷플릭스 ID/PW 자동 로그인 시도 중 (CDP 타이핑 2단계)...")
++
++        # === STEP 1: 이메일 입력창 포커스 및 입력 ===
+         focus_email_js = """
+         (function() {
+-            var el = document.querySelector('input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], #id_userLoginId');
+-            if(el) { el.focus(); el.value = ''; return true; }
++            var el = document.querySelector(
++                'input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], #id_userLoginId'
++            );
++            if (el) { el.focus(); el.select(); return true; }
+             return false;
+         })()
+         """
+@@ -367,31 +367,74 @@
+             return {"success": False, "message": "이메일 입력창을 찾지 못함"}
+-        
+-        time.sleep(0.3)
+-        
+-        # 2. 이메일 텍스트 원시 타이핑
++
++        time.sleep(0.2)
++        # 기존 내용 전체 지우기 (Ctrl+A → Delete)
++        self.send_cdp_command("Input.dispatchKeyEvent", {
++            "type": "keyDown", "key": "a", "code": "KeyA", "modifiers": 2  # Ctrl
++        })
++        self.send_cdp_command("Input.dispatchKeyEvent", {
++            "type": "keyUp", "key": "a", "code": "KeyA"
++        })
++        time.sleep(0.1)
+         self.send_cdp_command("Input.insertText", {"text": NETFLIX_EMAIL})
+-        time.sleep(0.5)
+-        
+-        # 3. 비밀번호 입력창 포커스
++        time.sleep(0.4)
++
++        # === STEP 2: "다음" 버튼 클릭 (비밀번호 창이 분리된 경우 대응) ===
++        # 비밀번호 입력창이 이미 있으면 다음 버튼 생략
++        pw_check_js = """
++        (function() {
++            var pw = document.querySelector('input[type="password"], input[name="password"], input[data-uia="field-password"]');
++            return pw ? true : false;
++        })()
++        """
++        has_pw = self.eval_js(pw_check_js)
++
++        if not has_pw:
++            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지 → "다음" 버튼 클릭
++            next_btn_js = """
++            (function() {
++                var btn = document.querySelector(
++                    'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button'
++                );
++                if (btn) { btn.click(); return true; }
++                return false;
++            })()
++            """
++            clicked = self.eval_js(next_btn_js)
++            if clicked:
++                logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 '다음' 버튼 클릭, 비밀번호 창 대기 중...")
++                time.sleep(2.0)  # 비밀번호 입력 화면이 나타날 때까지 대기
++            else:
++                logger.warning("'다음' 버튼을 찾지 못함")
++
++        # === STEP 3: 비밀번호 입력창 포커스 및 입력 ===
+         focus_pass_js = """
+         (function() {
+-            var el = document.querySelector('input[data-uia="field-password"], input[name="password"], input[type="password"], #id_password');
+-            if(el) { el.focus(); el.value = ''; return true; }
+-            return false;
+-        })()
+-        """
+-        if self.eval_js(focus_pass_js):
+-            time.sleep(0.3)
++            var el = document.querySelector(
++                'input[type="password"], input[name="password"], input[data-uia="field-password"], #id_password'
++            );
++            if (el) { el.focus(); el.select(); return true; }
++            return false;
++        })()
++        """
++        found_pw = self.eval_js(focus_pass_js)
++        if found_pw:
++            time.sleep(0.2)
+             self.send_cdp_command("Input.insertText", {"text": NETFLIX_PASSWORD})
+             time.sleep(0.5)
+-        
+-        # 4. 로그인 버튼 클릭
++            logger.info("비밀번호 입력 완료")
++        else:
++            logger.warning("비밀번호 입력창을 찾지 못했습니다.")
++            return {"success": False, "message": "비밀번호 입력창 미발견"}
++
++        # === STEP 4: 로그인 제출 버튼 클릭 ===
+         submit_js = """
+         (function() {
+-            var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"], input[type="checkbox"]');
++            var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"]');
+             if (remember && !remember.checked) { remember.click(); }
+-            
+-            var btn = document.querySelector('button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button');
++
++            var btn = document.querySelector(
++                'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button'
++            );
+             if (btn) { btn.click(); return true; }
+             return false;
+         })()
+@@ -398,5 +398,6 @@
+         self.eval_js(submit_js)
+-        return {"success": True, "message": "CDP 기반 타이핑 및 로그인 제출 완료"}
++        logger.info("로그인 제출 버튼 클릭 완료!")
++        return {"success": True, "message": "CDP 2단계 로그인 완료"}
+ 
+     def input_otp_code(self, code_str: str) -> bool:
+         """전달받은 4자리 OTP 코드를 크롬 화면에 0.1초 만에 자동 타이핑"""
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

@@ -1,0 +1,28 @@
+
+The command exited with code 0.
+Output:
+
+
+(default)    : C:\Program Files\Google\Chrome\Application\chrome.exe
+Path         : C:\Program Files\Google\Chrome\Application
+PSPath       : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Pat
+               hs\chrome.exe
+PSParentPath : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Pat
+               hs
+PSChildName  : chrome.exe
+PSDrive      : HKLM
+PSProvider   : Microsoft.PowerShell.Core\Registry
+
+(default)    : C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+Path         : C:\Program Files (x86)\Microsoft\Edge\Application
+PSPath       : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Pat
+               hs\msedge.exe
+PSParentPath : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Pat
+               hs
+PSChildName  : msedge.exe
+PSDrive      : HKLM
+PSProvider   : Microsoft.PowerShell.Core\Registry
+
+
+
+

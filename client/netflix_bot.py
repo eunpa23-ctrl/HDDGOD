@@ -133,8 +133,9 @@ class NetflixBot:
         return True
 
     def _clean_chrome_profile(self):
-        """크롬 비정상 종료 시 나타나는 '페이지 복구' 팝업을 영구 제거"""
-        import json
+        """크롬 비정상 종료 시 나타나는 '페이지 복구' 팝업을 영구 제거 및 강제 삭제"""
+        import json, glob
+        # 1. Preferences 파일 수정
         pref_path = os.path.join(self.profile_dir, "Default", "Preferences")
         if os.path.exists(pref_path):
             try:
@@ -148,6 +149,25 @@ class NetflixBot:
                     json.dump(data, f)
             except Exception:
                 pass
+        
+        # 2. 세션 복구 파일 강제 삭제 (이게 확실함)
+        default_dir = os.path.join(self.profile_dir, "Default")
+        if os.path.exists(default_dir):
+            for filename in ["Last Session", "Last Tabs", "Current Session", "Current Tabs"]:
+                try:
+                    target = os.path.join(default_dir, filename)
+                    if os.path.exists(target):
+                        os.remove(target)
+                except Exception:
+                    pass
+            # Sessions 폴더가 있는 최신 크롬 대응
+            sessions_dir = os.path.join(default_dir, "Sessions")
+            if os.path.exists(sessions_dir):
+                for f in glob.glob(os.path.join(sessions_dir, "*")):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
 
     def launch_chrome_with_cdp(self) -> bool:
         """손님 프로필과 완전히 분리된 넷플릭스 전용 프로필로 크롬 실행"""
@@ -164,6 +184,9 @@ class NetflixBot:
             "--no-first-run",
             "--no-default-browser-check",
             "--disable-popup-blocking",
+            "--hide-crash-restore-bubble",
+            "--disable-infobars",
+            "--disable-session-crashed-bubble",
             self.start_url
         ]
 

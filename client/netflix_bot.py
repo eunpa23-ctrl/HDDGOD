@@ -440,25 +440,36 @@ class NetflixBot:
 
         if not has_pw:
             # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지
-            logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 [Tab] -> [Enter] 키 전송 (버튼 포커스)")
+            logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 form.requestSubmit() 실행")
             
-            # 1. 탭(Tab) 키를 눌러서 '다음' 버튼으로 포커스 이동
-            self.send_cdp_command("Input.dispatchKeyEvent", {
-                "type": "keyDown", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9
-            })
-            self.send_cdp_command("Input.dispatchKeyEvent", {
-                "type": "keyUp", "key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9
-            })
-            time.sleep(0.5)  # 포커스 이동 후 잠시 대기
+            submit_form_js = """
+            (function() {
+                var form = document.querySelector('form');
+                if (form) {
+                    form.requestSubmit();
+                    return true;
+                }
+                return false;
+            })()
+            """
+            success = self.eval_js(submit_form_js)
             
-            # 2. 엔터(Enter) 키를 눌러서 포커스된 '다음' 버튼 클릭 실행
-            self.send_cdp_command("Input.dispatchKeyEvent", {
-                "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
-            })
-            self.send_cdp_command("Input.dispatchKeyEvent", {
-                "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
-            })
-            
+            if not success:
+                logger.warning("form 태그를 찾지 못했습니다. 엔터키 폴백 시도...")
+                # 최후의 수단: 이메일 입력창에서 직접 Enter 이벤트 강제 발생
+                fallback_js = """
+                (function() {
+                    var el = document.querySelector('input[name="userLoginId"]');
+                    if (el) {
+                        var ev = new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true});
+                        el.dispatchEvent(ev);
+                        return true;
+                    }
+                    return false;
+                })()
+                """
+                self.eval_js(fallback_js)
+                
             time.sleep(2.5)  # 비밀번호 화면 전환 대기
 
         # === STEP 3: 비밀번호 입력창 포커스 및 입력 ===
@@ -484,24 +495,36 @@ class NetflixBot:
             logger.warning("비밀번호 입력창을 찾지 못했습니다.")
             return {"success": False, "message": "비밀번호 입력창 미발견"}
 
-        # === STEP 4: 로그인 제출 버튼 클릭 또는 Enter 전송 ===
+        # === STEP 4: 로그인 제출 버튼 클릭 또는 form 제출 ===
         submit_js = """
         (function() {
             var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"]');
             if (remember && !remember.checked) { remember.click(); }
+            
+            var form = document.querySelector('form');
+            if (form) {
+                form.requestSubmit();
+                return true;
+            }
+            return false;
         })()
         """
-        self.eval_js(submit_js)
+        success = self.eval_js(submit_js)
         
-        # 비밀번호 창에서 Enter 전송하여 최종 로그인
-        self.send_cdp_command("Input.dispatchKeyEvent", {
-            "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
-        })
-        self.send_cdp_command("Input.dispatchKeyEvent", {
-            "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
-        })
+        if not success:
+            # 폼이 없으면 강제로 JS 이벤트 발생 폴백
+            fallback_js = """
+            (function() {
+                var el = document.querySelector('input[type="password"]');
+                if (el) {
+                    var ev = new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true});
+                    el.dispatchEvent(ev);
+                }
+            })()
+            """
+            self.eval_js(fallback_js)
 
-        logger.info("로그인 최종 엔터(Enter) 전송 완료!")
+        logger.info("로그인 최종 폼 제출(Submit) 완료!")
         return {"success": True, "message": "CDP 2단계 로그인 완료"}
 
     def input_otp_code(self, code_str: str) -> bool:

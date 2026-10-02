@@ -530,25 +530,36 @@ class NetflixBot:
         logger.info(f"넷플릭스 4자리 인증번호 [{code_str}] 자동 입력 (CDP 타이핑) 실행!")
         code_str = code_str.strip()
         
-        # 첫 번째 OTP 입력칸 포커스 맞추기
+        # 첫 번째 OTP 입력칸 좌표를 찾아서 물리적 마우스 클릭으로 확실하게 포커스
         focus_js = """
         (function() {
             var inputs = document.querySelectorAll('input[type="tel"], input[name*="code"], input[data-uia*="otp"]');
             if (inputs.length > 0) {
-                inputs[0].focus();
-                inputs[0].select();
-                return true;
+                var rect = inputs[0].getBoundingClientRect();
+                return {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2};
             }
-            return false;
+            return null;
         })()
         """
-        self.eval_js(focus_js)
-        time.sleep(0.1)
-        
-        # 4자리 숫자 하나씩 타이핑 (넷플릭스가 다음 칸으로 자동 포커스 이동시킴)
-        for char in code_str:
-            self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
+        coords = self.eval_js(focus_js)
+        if coords and isinstance(coords, dict) and 'x' in coords:
+            x, y = int(coords['x']), int(coords['y'])
+            self.send_cdp_command("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
             time.sleep(0.05)
+            self.send_cdp_command("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
+            logger.info(f"OTP 첫 번째 칸 가상 마우스 클릭으로 포커스 완료 (x:{x}, y:{y})")
+        else:
+            logger.warning("OTP 입력칸 좌표를 못 찾았습니다.")
+
+        time.sleep(0.2)
+        
+        # 4자리 숫자 하나씩 실제 키보드 완벽 시뮬레이션 (keyDown -> char -> keyUp)
+        for char in code_str:
+            vk = ord(char)
+            self.send_cdp_command("Input.dispatchKeyEvent", {"type": "keyDown", "key": char, "windowsVirtualKeyCode": vk})
+            self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
+            self.send_cdp_command("Input.dispatchKeyEvent", {"type": "keyUp", "key": char, "windowsVirtualKeyCode": vk})
+            time.sleep(0.1)
             
         time.sleep(0.5)
         

@@ -132,9 +132,28 @@ class NetflixBot:
         logger.info("바탕화면 [넷플릭스.lnk] 바로가기 보장 완료")
         return True
 
+    def _clean_chrome_profile(self):
+        """크롬 비정상 종료 시 나타나는 '페이지 복구' 팝업을 영구 제거"""
+        import json
+        pref_path = os.path.join(self.profile_dir, "Default", "Preferences")
+        if os.path.exists(pref_path):
+            try:
+                with open(pref_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if "profile" not in data:
+                    data["profile"] = {}
+                data["profile"]["exit_type"] = "Normal"
+                data["profile"]["exited_cleanly"] = True
+                with open(pref_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f)
+            except Exception:
+                pass
+
     def launch_chrome_with_cdp(self) -> bool:
         """손님 프로필과 완전히 분리된 넷플릭스 전용 프로필로 크롬 실행"""
         os.makedirs(self.profile_dir, exist_ok=True)
+        self._clean_chrome_profile()
+        
         chrome_exe = self.find_chrome_path()
 
         cmd = [
@@ -383,8 +402,8 @@ class NetflixBot:
         self.send_cdp_command("Input.insertText", {"text": NETFLIX_EMAIL})
         time.sleep(0.4)
 
-        # === STEP 2: "다음" 버튼 클릭 (비밀번호 창이 분리된 경우 대응) ===
-        # 비밀번호 입력창이 이미 있으면 다음 버튼 생략
+        # === STEP 2: "Enter" 키 입력 ("다음" 버튼 클릭 효과) ===
+        # 비밀번호 입력창이 이미 있으면 Enter 생략
         pw_check_js = """
         (function() {
             var pw = document.querySelector('input[type="password"], input[name="password"], input[data-uia="field-password"]');
@@ -394,22 +413,15 @@ class NetflixBot:
         has_pw = self.eval_js(pw_check_js)
 
         if not has_pw:
-            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지 → "다음" 버튼 클릭
-            next_btn_js = """
-            (function() {
-                var btn = document.querySelector(
-                    'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button'
-                );
-                if (btn) { btn.click(); return true; }
-                return false;
-            })()
-            """
-            clicked = self.eval_js(next_btn_js)
-            if clicked:
-                logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 '다음' 버튼 클릭, 비밀번호 창 대기 중...")
-                time.sleep(2.0)  # 비밀번호 입력 화면이 나타날 때까지 대기
-            else:
-                logger.warning("'다음' 버튼을 찾지 못함")
+            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지 → Enter 키 눌러서 "다음"으로 넘어가기
+            logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 Enter 키 전송, 비밀번호 창 대기 중...")
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+            })
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+            })
+            time.sleep(2.5)  # 화면 전환 대기
 
         # === STEP 3: 비밀번호 입력창 포커스 및 입력 ===
         focus_pass_js = """
@@ -431,21 +443,24 @@ class NetflixBot:
             logger.warning("비밀번호 입력창을 찾지 못했습니다.")
             return {"success": False, "message": "비밀번호 입력창 미발견"}
 
-        # === STEP 4: 로그인 제출 버튼 클릭 ===
+        # === STEP 4: 로그인 제출 버튼 클릭 또는 Enter 전송 ===
         submit_js = """
         (function() {
             var remember = document.querySelector('input[name="rememberMe"], input[data-uia*="remember-me"]');
             if (remember && !remember.checked) { remember.click(); }
-
-            var btn = document.querySelector(
-                'button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"], form button'
-            );
-            if (btn) { btn.click(); return true; }
-            return false;
         })()
         """
         self.eval_js(submit_js)
-        logger.info("로그인 제출 버튼 클릭 완료!")
+        
+        # 비밀번호 창에서 Enter 전송하여 최종 로그인
+        self.send_cdp_command("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+        })
+        self.send_cdp_command("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
+        })
+
+        logger.info("로그인 최종 엔터(Enter) 전송 완료!")
         return {"success": True, "message": "CDP 2단계 로그인 완료"}
 
     def input_otp_code(self, code_str: str) -> bool:

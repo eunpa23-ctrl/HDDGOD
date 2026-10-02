@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>넷플릭스 4자리 인증번호 입력 - {{ client_id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@600;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-red-600/20 text-red-500 rounded-2xl text-2xl mb-2">
+            🎬
+        </div>
+        <div>
+            <h1 class="text-xl font-extrabold text-white">넷플릭스 4자리 인증코드</h1>
+            <p class="text-xs text-slate-400 mt-1">[{{ client_id }}] 화면에 표시된 4자리 숫자를 입력해 주세요.</p>
+        </div>
+
+        <!-- 4자리 입력 박스 -->
+        <div class="flex justify-center gap-3">
+            <input id="pin-input" type="tel" maxlength="4" autofocus
+                   class="w-48 h-16 text-center text-3xl font-black tracking-[1em] bg-slate-950 border-2 border-slate-700 focus:border-red-500 rounded-2xl text-white outline-none transition"
+                   placeholder="••••">
+        </div>
+
+        <button onclick="submitOtp()" class="w-full py-4 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-lg shadow-red-600/30 transition text-base">
+            🚀 PC로 즉시 전송
+        </button>
+
+        <p id="msg" class="text-xs font-semibold text-emerald-400 min-h-[16px]"></p>
+    </div>
+
+    <script>
+        const clientId = "{{ client_id }}";
+        const pinInput = document.getElementById('pin-input');
+        const msg = document.getElementById('msg');
+
+        function submitOtp() {
+            const val = pinInput.value.trim();
+            if (val.length < 4) {
+                alert("4자리 숫자를 모두 입력해 주세요.");
+                return;
+            }
+            msg.innerText = "PC 화면으로 전송 중...";
+            fetch(`/api/submit_otp/${clientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otp_code: val })
+            })
+            .then(res => res.json())
+            .then(data => {
+                msg.innerText = "✅ PC 화면에 성공적으로 자동 입력되었습니다!";
+                setTimeout(() => window.close(), 2000);
+            })
+            .catch(err => {
+                msg.innerText = "❌ 전송 실패: 다시 시도해 주세요.";
+            });
+        }
+
+        pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitOtp();
+        });
+    </script>
+</body>
+</html>

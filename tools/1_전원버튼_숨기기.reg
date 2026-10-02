@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; [제우스 HDD PROTECTOR] 시작메뉴 시스템 종료 버튼 숨김
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"NoClose"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"NoClose"=dword:00000001

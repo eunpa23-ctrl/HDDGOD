@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ 제우스 HDD PROTECTOR - 24H 무인 통합 관제 센터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <!-- 상단 네비게이션 헤더 -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl text-amber-400"><i class="fa-solid fa-bolt-lightning"></i></span>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                    제우스 HDD PROTECTOR
+                    <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-semibold">24H 무인 관제 정상</span>
+                </h1>
+                <p class="text-xs text-slate-400">Windows UWF 순간복구 & 넷플릭스 자동화 통합 관제 시스템</p>
+            </div>
+        </div>
+
+        <!-- 일괄 제어 및 모바일 원격 접속 버튼군 -->
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- 서버 리소스 모니터 -->
+        <div class="flex items-center gap-4 text-xs font-semibold bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-microchip text-slate-400"></i> CPU <span id="sys-cpu" class="text-white w-8 text-right">0%</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-memory text-slate-400"></i> RAM <span id="sys-ram" class="text-white w-8 text-right">0%</span>
+                <span id="server-ram" class="text-[10px] text-emerald-400/80 font-normal ml-1 w-[45px] text-left">(0MB)</span>
+            </div>
+            <button onclick="optimizeServerMemory()" class="ml-2 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-300 transition" title="수동 최적화"><i class="fa-solid fa-broom"></i> 수동</button>
+            <button onclick="toggleAutoOptimize()" class="ml-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-300 transition" title="1시간마다 자동 정리 토글">
+                <i class="fa-solid fa-clock"></i> 자동 <span id="auto-opt-status" class="text-rose-400 font-bold">OFF</span>
+            </button>
+        </div>
+                        <button onclick="openMobileModal()" class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
+                <i class="fa-solid fa-mobile-screen-button"></i> 📱 스마트폰 원격 접속
+            </button>
+            <button onclick="sendCommandAll('ENABLE_UWF')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-floppy-disk"></i> 전체 세팅저장 & 보호
+            </button>
+            <button onclick="sendCommandAll('DISABLE_UWF')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-wrench"></i> 전체 유지보수 모드
+            </button>
+            <button onclick="sendCommandAll('UPDATE_AGENT')" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> 전체 에이전트 업데이트
+            </button>
+            <button onclick="sendCommandAll('REBOOT_RECOVER')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> 전체 1초 복구
+            </button>
+            <button onclick="sendWolAll()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-power-off"></i> 전체 전원 켜기(WOL)
+            </button>
+            <button onclick="openSettingsModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5 border border-slate-700">
+                <i class="fa-solid fa-gear text-sm"></i> 환경설정
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 대시보드 컨테이너 -->
+    <main class="max-w-7xl mx-auto p-6 space-y-8">
+        <!-- 상단 요약 카드 -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <p class="text-xs text-slate-400 font-semibold">총 관제 PC</p>
+                        <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                            <button onclick="changePcCount(-1)" class="w-4 h-4 flex items-center justify-center text-rose-400 hover:text-white hover:bg-rose-600 rounded font-black text-xs transition" title="PC 1대 줄이기">-</button>
+                            <span class="text-slate-600 text-[10px]">|</span>
+                            <button onclick="changePcCount(1)" class="w-4 h-4 flex items-center justify-center text-emerald-400 hover:text-white hover:bg-emerald-600 rounded font-black text-xs transition" title="PC 1대 늘리기">+</button>
+                        </div>
+                    </div>
+                    <p id="stat-total" class="text-2xl font-black text-white">-- 대</p>
+                </div>
+                <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400"><i class="fa-solid fa-desktop"></i></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold">현재 켜짐 (Online)</p>
+                    <p id="stat-online" class="text-2xl font-black text-emerald-400">0 대</p>
+                </div>
+                <div class="w-10 h-10 bg-emerald-950/60 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-signal"></i></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold">순간복구 보호 중</p>
+                    <p id="stat-protected" class="text-2xl font-black text-emerald-400">0 대</p>
+                </div>
+                <div class="w-10 h-10 bg-emerald-950/60 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-shield"></i></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold">넷플릭스 정상 작동</p>
+                    <p id="stat-netflix" class="text-2xl font-black text-red-500">0 대</p>
+                </div>
+                <div class="w-10 h-10 bg-red-950/60 text-red-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-play"></i></div>
+            </div>
+        </section>
+
+        <!-- 실시간 PC 카드 목록 -->
+        <section>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-slate-400"></i> 실시간 클라이언트 모니터링
+                </h2>
+                <div class="text-xs text-slate-400 flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 3초 실시간 갱신 중
+                </div>
+            </div>
+
+            <div id="pc-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <!-- PC 카드가 자바스크립트로 동적 렌더링됩니다 -->
+            </div>
+        </section>
+
+        <!-- 손님 PC IP 및 매핑 직접 편집 테이블 (아래 꺽쇠 접이식 아코디언) -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition">
+            <!-- 클릭 가능한 헤더 (꺽쇠 아이콘 포함) -->
+            <div onclick="toggleMappingAccordion()" class="flex flex-wrap items-center justify-between gap-4 p-5 cursor-pointer hover:bg-slate-850 select-none transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-950/80 border border-indigo-700/50 flex items-center justify-center text-indigo-400">
+                        <i class="fa-solid fa-network-wired text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <span>PC 번호 - 고정 IP / MAC 매핑 관리</span>
+                            <span class="text-xs text-indigo-400 font-normal">[클릭하여 펼치기/접기]</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">각 PC 번호와 IP 주소를 직접 수정하고 영구 저장할 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="event.stopPropagation(); addNewPcRow();" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg border border-slate-700 transition">
+                        <i class="fa-solid fa-plus"></i> PC 추가
+                    </button>
+                    <button onclick="event.stopPropagation(); saveMappingConfig();" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white rounded-lg shadow transition">
+                        <i class="fa-solid fa-floppy-disk"></i> 설정 저장
+                    </button>
+                    <!-- 아래 꺽쇠 토글 아이콘 -->
+                    <div class="w-8 h-8 rounded-lg bg-slate-850 flex items-center justify-center border border-slate-800 text-slate-400">
+                        <i id="mapping-chevron" class="fa-solid fa-chevron-down transition-transform duration-300"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 접히는 테이블 본문 영역 (기본: 숨김) -->
+            <div id="mapping-body" class="hidden p-5 pt-0 border-t border-slate-800/80">
+                <div class="overflow-x-auto pt-3">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">PC 번호</th>
+                                <th class="py-3 px-4">PC 별칭 (식별자)</th>
+                                <th class="py-3 px-4">지정 IP 주소</th>
+                                <th class="py-3 px-4">랜카드 MAC 주소 (WOL용)</th>
+                                <th class="py-3 px-4 text-center">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mapping-tbody" class="divide-y divide-slate-800">
+                            <!-- 매핑 행이 동적으로 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 스마트폰 모바일 원격 접속 모달 (매장 밖 / 매장 안 QR 코드 지원) -->
+    <div id="mobile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-6 relative">
+            <!-- 닫기 버튼 -->
+            <button onclick="closeMobileModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white transition w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- 헤더 -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-950/80 border border-purple-500/50 flex items-center justify-center text-purple-400 text-lg">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        스마트폰 모바일 원격 접속
+                        <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-semibold">포트포워딩 불필요</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">카메라로 QR 코드를 스캔하면 외부(LTE/5G)나 매장 안에서 즉시 대시보드가 열립니다.</p>
+                </div>
+            </div>
+
+            <!-- 2분할 카드 그리드 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 1. 매장 밖 (Cloudflare 외부 터널) -->
+                <div class="bg-slate-950/70 border border-purple-500/40 rounded-xl p-4 flex flex-col items-center text-center space-y-3 relative overflow-hidden">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-earth-americas"></i> 매장 밖 (어디서나)
+                        </span>
+                        <span id="tunnel-status-badge" class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-amber-950 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> 확인 중...
+                        </span>
+                    </div>
+
+                    <!-- QR 코드 영역 -->
+                    <div class="w-44 h-44 bg-white p-2.5 rounded-xl flex items-center justify-center shadow-lg relative">
+                        <img id="tunnel-qr-img" src="" alt="매장 밖 QR 코드" class="w-full h-full object-contain hidden" />
+                        <div id="tunnel-loading-box" class="flex flex-col items-center justify-center text-slate-600 gap-2">
+                            <i class="fa-solid fa-circle-notch fa-spin text-2xl text-purple-600"></i>
+                            <span class="text-[11px] text-slate-500 font-medium">원격 터널 생성 중...</span>
+                        </div>
+                    </div>
+
+                    <!-- 접속 URL 입력창 & 복사 버튼 -->
+                    <div class="w-full flex items-center gap-1.5">
+                        <input id="tunnel-url-text" type="text" readonly value="터널 생성 대기 중..." class="w-full bg-slate-900 border border-slate-800 text-[11px] text-purple-300 rounded px-2.5 py-1.5 truncate text-center select-all focus:outline-none" />
+                        <button onclick="copyUrl('tunnel-url-text')" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs transition font-semibold shrink-0" title="URL 복사">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400">집, 이동 중, LTE/5G 무선망 등 외부 어디서든 원클릭 접속</p>
+                </div>
+
+                <!-- 2. 매장 안 (Wi-Fi 로컬 내부망) -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col items-center text-center space-y-3 relative">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wifi"></i> 매장 안 (동일 Wi-Fi)
+                        </span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-sky-950 text-sky-400 border border-sky-500/30">
+                            매장 내부망
+                        </span>
+                    </div>
+
+                    <!-- QR 코드 영역 -->
+                    <div class="w-44 h-44 bg-white p-2.5 rounded-xl flex items-center justify-center shadow-lg">
+                        <img id="lan-qr-img" src="" alt="매장 안 QR 코드" class="w-full h-full object-contain" />
+                    </div>
+
+                    <!-- 접속 URL 입력창 & 복사 버튼 -->
+                    <div class="w-full flex items-center gap-1.5">
+                        <input id="lan-url-text" type="text" readonly value="확인 중..." class="w-full bg-slate-900 border border-slate-800 text-[11px] text-sky-300 rounded px-2.5 py-1.5 truncate text-center select-all focus:outline-none" />
+                        <button onclick="copyUrl('lan-url-text')" class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs transition font-semibold shrink-0" title="URL 복사">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400">매장 공유기(Wi-Fi)에 연결된 상태에서 가장 빠른 반응속도</p>
+                </div>
+            </div>
+
+            <!-- 하단 안내 박스 -->
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-400 flex items-start gap-2.5">
+                <i class="fa-solid fa-lightbulb text-amber-400 mt-0.5 text-sm shrink-0"></i>
+                <div>
+                    <span class="text-slate-200 font-semibold">스마트폰 홈 화면에 추가 꿀팁:</span>
+                    스마트폰 브라우저에서 사이트가 열리면 [공유 / 메뉴] -> <strong class="text-slate-200">"홈 화면에 추가"</strong>를 누르시면 앱처럼 아이콘이 생겨 원터치로 접속할 수 있습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ 환경설정 통합 모달 -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-3xl rounded-2xl p-6 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
+            <!-- 닫기 버튼 -->
+            <button onclick="closeSettingsModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white transition w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- 헤더 -->
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg">
+                    <i class="fa-solid fa-gear"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        제우스 관제 환경설정 (Settings)
+                        <span class="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-normal">통합 관리</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">서버 네트워크, 클라이언트 OTA 업데이트, 윈도우 시작 시 자동 실행 및 안정성을 관리합니다.</p>
+                </div>
+            </div>
+
+            <!-- 설정 본문 그리드 -->
+            <div class="space-y-6 text-xs">
+
+                <!-- 1. 24시간 무인 안정성 & 윈도우 시작 관리 -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i> 24시간 무인 안정성 및 자동 실행
+                        </span>
+                        <span class="text-[11px] text-slate-500">PC방 카운터 서버 전용</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        <!-- 윈도우 시작 시 자동 실행 -->
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div class="font-bold text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-brands fa-windows text-sky-400"></i> 윈도우 시작 시 자동 실행
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-0.5">PC 부팅 시 백그라운드로 자동 가동</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="autostart-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">확인 중</span>
+                                <button id="btn-toggle-autostart" onclick="toggleAutostartSetting()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition">
+                                    등록
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 비정상 종료 시 자동 재시작 (Supervisor) -->
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div class="font-bold text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-heart-pulse text-rose-400"></i> 종료 시 무한 자동 재시작
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-0.5">크래시나 프로세스 종료 시 2초 내 부활</p>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span id="supervisor-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 무한 재시작 보호 중
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 네트워크 및 IP 통신 설정 -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-sky-400"></i> 서버 IP & 클라이언트 통신 설정
+                        </span>
+                        <span class="text-[11px] text-slate-400">기본: 192.168.0.100 / 포트: 8000</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">서버 바인딩 주소 (SERVER_HOST)</label>
+                            <input id="cfg-server-host" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="0.0.0.0">
+                            <span class="text-[10px] text-slate-500 mt-1 block">모든 네트워크 인터페이스 수신 시 0.0.0.0 권장</span>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">관제 서버 포트 (SERVER_PORT)</label>
+                            <input id="cfg-server-port" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="8000">
+                            <span class="text-[10px] text-slate-500 mt-1 block">기본값: 8000</span>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">클라이언트 접속 서버 IP (CLIENT_SERVER_IP)</label>
+                            <input id="cfg-client-server-ip" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="192.168.0.100">
+                            <span class="text-[10px] text-slate-500 mt-1 block">손님 PC가 찾아올 카운터 PC의 고정 IP</span>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">관리자 마스터 비밀번호</label>
+                            <input id="cfg-admin-password" type="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="1234">
+                            <span class="text-[10px] text-slate-500 mt-1 block">손님 PC 트레이 메뉴 인증용 (기본: 1234)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 클라이언트 에이전트 무인 업데이트 (OTA) -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-down text-fuchsia-400"></i> 클라이언트 에이전트 무인 업데이트 (OTA)
+                        </span>
+                        <span id="cfg-agent-status" class="text-[11px] text-emerald-400 font-semibold">배포 파일 준비완료</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-3 rounded-lg">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">현재 배포 버전:</span>
+                                <input id="cfg-client-version" type="text" class="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-center font-bold" value="1.0.1">
+                                <span class="text-slate-500">|</span>
+                                <span class="text-slate-400">실행 파일 크기:</span>
+                                <span id="cfg-agent-size" class="text-slate-200 font-mono font-bold">23.8 MB</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400">버전을 수정 후 업데이트 버튼을 누르면 전체 손님 PC가 자동으로 새 버전을 다운로드받아 스스로 재시작합니다.</p>
+                        </div>
+                        <button onclick="triggerOtaUpdateFromModal()" class="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white font-bold rounded-lg shadow-md transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrows-rotate"></i> 전체 클라이언트 즉시 무인 업데이트 실행
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. 텔레그램 모바일 알림 설정 -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-brands fa-telegram text-sky-400"></i> 텔레그램 모바일 원격 알림 연동
+                        </span>
+                        <button onclick="testTelegramFromModal()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 rounded text-[11px] font-semibold transition">
+                            <i class="fa-regular fa-paper-plane"></i> 테스트 발송
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-slate-400 mb-1 font-semibold">텔레그램 봇 토큰 (BOT_TOKEN)</label>
+                            <input id="cfg-tg-token" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="8904375958:AAHA2S...">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">수신 Chat ID</label>
+                            <input id="cfg-tg-chatid" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" placeholder="8738877973">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 하단 액션 버튼 바 -->
+            <div class="flex items-center justify-between border-t border-slate-800 pt-4">
+                <span id="settings-save-msg" class="text-xs font-semibold text-emerald-400 min-h-[16px]"></span>
+                <div class="flex items-center gap-2">
+                    <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition text-xs">
+                        닫기
+                    </button>
+                    <button onclick="saveAllSettings()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-md transition text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> 설정 저장 및 적용
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 서버에서 영구 저장된 PC 매핑 목록 주입
+        let initialServerData = null;
+        try {
+            initialServerData = {{ initial_pc_list | safe if initial_pc_list else 'null' }};
+        } catch(e) {
+            initialServerData = null;
+        }
+
+        let pcList = Array.isArray(initialServerData) && initialServerData.length > 0 ? initialServerData : [];
+
+        // 데이터가 비어있을 경우 서버 API에서 동기화
+        if (pcList.length === 0) {
+            fetch('/api/get_mapping')
+                .then(r => r.json())
+                .then(data => {
+                    pcList = data;
+                    renderGrid();
+                    renderMappingTable();
+                    updateTotalStat();
+                });
+        }
+
+        function updateTotalStat() {
+            const el = document.getElementById('stat-total');
+            if (el) el.innerText = `${pcList.length} 대`;
+        }
+
+        
+                function toggleAutoOptimize() {
+            fetch('/api/toggle_auto_optimize', { method: 'POST' });
+        }
+        
+        function optimizeServerMemory() {
+            fetch('/api/optimize_memory', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    // 잠깐 동안 버튼 시각적 피드백 주기
+                    const btn = document.querySelector('button[onclick="optimizeServerMemory()"]');
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> 완료';
+                        setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+                    }
+                })
+                .catch(err => console.error("메모리 최적화 실패:", err));
+        }
+
+        // 웹소켓 연결
+        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${wsProtocol}//${location.host}/ws/dashboard`);
+
+        let latestLiveClients = {};
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'FULL_STATE') {
+                latestLiveClients = data.clients || {};
+                updateFullState(latestLiveClients);
+                if (data.server_ram_mb !== undefined) {
+                    const srvRamEl = document.getElementById('server-ram');
+                    if (srvRamEl) srvRamEl.innerText = '(' + data.server_ram_mb + 'MB)';
+                }
+                if (data.auto_optimize !== undefined) {
+                    const autoEl = document.getElementById('auto-opt-status');
+                    if (autoEl) {
+                        if (data.auto_optimize) {
+                            autoEl.innerText = 'ON';
+                            autoEl.className = 'text-emerald-400 font-bold';
+                        } else {
+                            autoEl.innerText = 'OFF';
+                            autoEl.className = 'text-rose-400 font-bold';
+                        }
+                    }
+                }
+
+                
+                if (data.cpu !== undefined) {
+                    const cpuEl = document.getElementById('sys-cpu');
+                    const ramEl = document.getElementById('sys-ram');
+                    if (cpuEl) {
+                        cpuEl.innerText = data.cpu + '%';
+                        cpuEl.className = `w-8 text-right ${data.cpu >= 80 ? 'text-rose-400 font-bold' : 'text-white'}`;
+                    }
+                    if (ramEl) {
+                        ramEl.innerText = data.ram + '%';
+                        ramEl.className = `w-8 text-right ${data.ram >= 80 ? 'text-rose-400 font-bold' : 'text-white'}`;
+                    }
+                }
+            }
+        };
+
+        function updateFullState(clientsData) {
+            let onlineCount = 0;
+            let protectedCount = 0;
+            let netflixCount = 0;
+
+            pcList.forEach(pc => {
+                // 1순위: PC ID 일치
+                let live = clientsData[pc.id];
+
+                // 2순위: IP 주소 일치
+                if (!live) {
+                    for (const cid in clientsData) {
+                        const c = clientsData[cid];
+                        if (c.ip && c.ip === pc.ip) {
+                            live = c;
+                            break;
+                        }
+                    }
+                }
+
+                // 3순위: MAC 주소 일치
+                if (!live && pc.mac && pc.mac !== '00:00:00:00:00:00') {
+                    for (const cid in clientsData) {
+                        const c = clientsData[cid];
+                        if (c.mac && c.mac.toLowerCase() === pc.mac.toLowerCase()) {
+                            live = c;
+                            break;
+                        }
+                    }
+                }
+
+                // 4순위: 로컬 테스트 모드 (단일 클라이언트 연결 시 1번 PC에 매핑)
+                if (!live && pc.seat === 1 && Object.keys(clientsData).length > 0) {
+                    const ckeys = Object.keys(clientsData);
+                    live = clientsData[ckeys[0]];
+                }
+
+                if (live && live.status === 'ONLINE') {
+                    pc.status = 'ONLINE';
+                    pc.real_cid = live.client_id;
+                    pc.uwf = live.uwf_status || 'UNKNOWN';
+                    pc.netflix = live.netflix_status || 'CLOSED';
+                    if (live.ip) pc.ip = live.ip;
+                    if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
+
+                    onlineCount++;
+                    if (pc.uwf === 'PROTECTED') protectedCount++;
+                    if (pc.netflix === 'RUNNING' || pc.netflix === 'LOGGED_IN') netflixCount++;
+                } else {
+                    pc.status = 'OFFLINE';
+                    pc.real_cid = null;
+                }
+            });
+
+            updateTotalStat();
+            document.getElementById('stat-online').innerText = `${onlineCount} 대`;
+            document.getElementById('stat-protected').innerText = `${protectedCount} 대`;
+            document.getElementById('stat-netflix').innerText = `${netflixCount} 대`;
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('pc-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            pcList.forEach(pc => {
+                const isOnline = pc.status === 'ONLINE';
+                const isProtected = pc.uwf === 'PROTECTED';
+                const isNetflixOk = (pc.netflix === 'LOGGED_IN' || pc.netflix === 'RUNNING');
+
+                let uwfBadgeHtml = '';
+                if (pc.uwf === 'PROTECTED') {
+                    uwfBadgeHtml = '<span class="text-emerald-400 font-bold">🛡️ 보호 중</span>';
+                } else if (pc.uwf === 'MAINTENANCE') {
+                    uwfBadgeHtml = '<span class="text-amber-400 font-bold">🔧 유지보수</span>';
+                } else if (pc.uwf === 'DISABLED') {
+                    uwfBadgeHtml = '<span class="text-slate-400 font-semibold">⚪ 보호 꺼짐 (OFF)</span>';
+                } else {
+                    uwfBadgeHtml = '<span class="text-slate-500 font-medium">⚪ 미설치 (대기)</span>';
+                }
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition ${isOnline ? 'bg-slate-900 border-slate-700' : 'bg-slate-950/60 border-slate-800 opacity-75'}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-extrabold text-sm text-white">${pc.name}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                            ${pc.status}
+                        </span>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 space-y-1 mb-3">
+                        <div class="flex justify-between"><span>IP:</span><span class="font-mono text-slate-300">${pc.ip}</span></div>
+                        <div class="flex justify-between">
+                            <span>UWF 보호:</span>
+                            ${uwfBadgeHtml}
+                        </div>
+                        <div class="flex justify-between">
+                            <span>넷플릭스:</span>
+                            <span class="${isNetflixOk ? 'text-emerald-400 font-bold' : 'text-slate-400'}">
+                                ${pc.netflix}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
+                        <button onclick="sendPcCommand('${pc.id}', 'REBOOT_RECOVER')" class="py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition flex items-center justify-center gap-1 font-semibold" title="가장 최근 저장된 깨끗한 상태로 재부팅 복구">
+                            ⚡ 1초 복구
+                        </button>
+                        <button onclick="toggleUwf('${pc.id}', '${pc.uwf}')" class="py-1 rounded font-bold transition flex items-center justify-center gap-1 ${isProtected ? 'bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30' : 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30'}" title="${isProtected ? '유지보수 모드로 전환 (새 게임 설치/패치 가능)' : '현재 상태를 기본 상태로 영구 저장하고 보호 시작'}">
+                            ${isProtected ? '<i class="fa-solid fa-wrench"></i> 유지보수' : '<i class="fa-solid fa-floppy-disk"></i> 세팅저장&보호'}
+                        </button>
+                        <button onclick="sendPcCommand('${pc.id}', 'WOL')" class="py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/40 rounded text-indigo-300 transition flex items-center justify-center gap-1">
+                            🔌 WOL 켜기
+                        </button>
+                        <div class="flex gap-1">
+                            <button onclick="openRemoteView('${pc.id}', '${pc.real_cid || ''}')" class="flex-1 py-1 bg-blue-600 hover:bg-blue-500 font-bold rounded text-white text-center transition shadow flex items-center justify-center gap-1" title="웹/모바일 실시간 화면 원격 제어">
+                                <i class="fa-solid fa-mobile-screen"></i> 원격 제어
+                            </button>
+                            <a href="/api/rdp/${pc.id}" download class="px-2 py-1 bg-sky-800 hover:bg-sky-700 font-bold rounded text-white text-center transition shadow flex items-center justify-center text-[10px]" title="윈도우 기본 mstsc 원격 데스크톱(RDP) 연결">
+                                <i class="fa-solid fa-desktop"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderMappingTable() {
+            const tbody = document.getElementById('mapping-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            pcList.forEach((pc, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-bold text-slate-300">PC ${pc.seat}번</td>
+                    <td class="py-2.5 px-4"><input type="text" value="${pc.name}" onchange="pcList[${idx}].name=this.value; renderGrid();" class="bg-slate-950 border border-slate-800 px-2 py-1 rounded text-slate-200 w-28"></td>
+                    <td class="py-2.5 px-4"><input type="text" value="${pc.ip}" onchange="pcList[${idx}].ip=this.value; renderGrid();" class="bg-slate-950 border border-slate-800 px-2 py-1 rounded text-slate-200 w-32 font-mono"></td>
+                    <td class="py-2.5 px-4"><input type="text" value="${pc.mac}" onchange="pcList[${idx}].mac=this.value" class="bg-slate-950 border border-slate-800 px-2 py-1 rounded text-slate-200 w-40 font-mono"></td>
+                    <td class="py-2.5 px-4 text-center">
+                        <button onclick="deletePcRow(${idx})" class="text-rose-400 hover:text-rose-300" title="PC 삭제"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // PC 대수 조절기 (+ / -)
+        function changePcCount(delta) {
+            if (delta > 0) {
+                // 1대 추가
+                const nextSeat = pcList.length + 1;
+                pcList.push({
+                    seat: nextSeat,
+                    id: `PC-${String(nextSeat).padStart(2, '0')}`,
+                    name: `PC ${nextSeat}번`,
+                    ip: `192.168.0.${10 + nextSeat}`,
+                    mac: '00:00:00:00:00:00',
+                    status: 'OFFLINE',
+                    uwf: 'UNKNOWN',
+                    netflix: 'CLOSED'
+                });
+                renderGrid();
+                renderMappingTable();
+                updateTotalStat();
+                saveMappingConfigSilently();
+            } else if (delta < 0) {
+                // 1대 삭제
+                if (pcList.length <= 1) {
+                    alert("최소 1대 이상의 PC가 등록되어 있어야 합니다.");
+                    return;
+                }
+                const lastPc = pcList[pcList.length - 1];
+                if (confirm(`마지막 PC [${lastPc.name}]을 삭제하시겠습니까?`)) {
+                    pcList.pop();
+                    renderGrid();
+                    renderMappingTable();
+                    updateTotalStat();
+                    saveMappingConfigSilently();
+                }
+            }
+        }
+
+        function addNewPcRow() {
+            changePcCount(1);
+        }
+
+        function deletePcRow(idx) {
+            if (confirm(`[${pcList[idx].name}]를 목록에서 삭제하시겠습니까?`)) {
+                pcList.splice(idx, 1);
+                // PC 번호 및 ID 자동 재정렬
+                pcList.forEach((p, i) => {
+                    p.seat = i + 1;
+                    p.id = `PC-${String(i + 1).padStart(2, '0')}`;
+                });
+                renderGrid();
+                renderMappingTable();
+                updateTotalStat();
+                saveMappingConfigSilently();
+            }
+        }
+
+        // 수동 [설정 저장] 버튼 클릭 시
+        function saveMappingConfig() {
+            fetch('/api/save_mapping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pcList)
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(`🎉 총 ${pcList.length}대의 PC 설정이 성공적으로 영구 저장되었습니다!`);
+            })
+            .catch(err => {
+                alert("저장 실패: " + err);
+            });
+        }
+
+        // 백그라운드 자동 저장 (+ / - 클릭 시 즉각 저장)
+        function saveMappingConfigSilently() {
+            fetch('/api/save_mapping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pcList)
+            });
+        }
+
+        function sendPcCommand(clientId, action) {
+            fetch(`/api/command/${clientId}/${action}`, { method: 'POST' });
+        }
+
+        function toggleUwf(clientId, currentStatus) {
+            if (currentStatus === 'PROTECTED') {
+                if (confirm(`[${clientId}] PC를 '유지보수 모드'로 전환하시겠습니까?\n\n- 손님 복구가 일시 중지되며, 새 게임 설치나 패치를 진행할 수 있습니다.`)) {
+                    sendPcCommand(clientId, 'DISABLE_UWF');
+                }
+            } else {
+                if (confirm(`[${clientId}] 현재 PC 상태를 새로운 '기본 상태(디폴트)'로 영구 저장하고 🛡️보호 모드를 시작하시겠습니까?\n\n- 지금 세팅된 상태가 새로운 원본 기준점으로 고정됩니다.\n- 이후 손님이 쓴 뒤 '1초 복구'를 누르면 지금 상태로 되돌아옵니다.`)) {
+                    sendPcCommand(clientId, 'ENABLE_UWF');
+                }
+            }
+        }
+
+        function sendCommandAll(action) {
+            if (confirm(`전체 PC에 [${action}] 명령을 실행하시겠습니까?`)) {
+                fetch(`/api/command_all/${action}`, { method: 'POST' });
+            }
+        }
+
+        function sendWolAll() {
+            fetch('/api/wol_all', { method: 'POST' });
+        }
+
+        function toggleMappingAccordion() {
+            const body = document.getElementById('mapping-body');
+            const chevron = document.getElementById('mapping-chevron');
+            if (body) {
+                body.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                }
+            }
+        }
+
+        // --- 스마트폰 모바일 원격 접속 제어 ---
+        let tunnelPollTimer = null;
+
+        function openMobileModal() {
+            const modal = document.getElementById('mobile-modal');
+            if (modal) modal.classList.remove('hidden');
+            fetchNetworkInfo();
+            // 터널 URL이 생성될 때까지 2초마다 자동 갱신
+            if (!tunnelPollTimer) {
+                tunnelPollTimer = setInterval(fetchNetworkInfo, 2000);
+            }
+        }
+
+        function closeMobileModal() {
+            const modal = document.getElementById('mobile-modal');
+            if (modal) modal.classList.add('hidden');
+            if (tunnelPollTimer) {
+                clearInterval(tunnelPollTimer);
+                tunnelPollTimer = null;
+            }
+        }
+
+        function fetchNetworkInfo() {
+            fetch('/api/tunnel_info')
+                .then(r => r.json())
+                .then(info => {
+                    const tunnelUrl = info.public_url;
+                    const lanUrl = info.lan_url;
+
+                    // 1. 매장 밖 (Cloudflare 터널)
+                    const tunnelText = document.getElementById('tunnel-url-text');
+                    const tunnelStatus = document.getElementById('tunnel-status-badge');
+                    const tunnelQr = document.getElementById('tunnel-qr-img');
+                    const tunnelLoading = document.getElementById('tunnel-loading-box');
+
+                    if (tunnelUrl) {
+                        if (tunnelText) tunnelText.value = tunnelUrl;
+                        if (tunnelStatus) {
+                            tunnelStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 외부 접속 활성화됨';
+                            tunnelStatus.className = "text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+                        }
+                        if (tunnelQr) {
+                            const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(tunnelUrl)}`;
+                            if (tunnelQr.src !== qrApi) tunnelQr.src = qrApi;
+                            tunnelQr.classList.remove('hidden');
+                        }
+                        if (tunnelLoading) tunnelLoading.classList.add('hidden');
+
+                        // 이미 터널 URL이 확보되었으면 빈번한 폴링 중지 (5초로 완화)
+                        if (tunnelPollTimer) {
+                            clearInterval(tunnelPollTimer);
+                            tunnelPollTimer = setInterval(fetchNetworkInfo, 5000);
+                        }
+                    } else {
+                        if (tunnelText) tunnelText.value = "터널 생성 중... (잠시만 기다려주세요)";
+                        if (tunnelStatus) {
+                            tunnelStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> 터널 생성 대기 중';
+                            tunnelStatus.className = "text-[11px] px-2 py-0.5 rounded-full font-bold bg-amber-950 text-amber-400 border border-amber-500/30 flex items-center gap-1";
+                        }
+                        if (tunnelQr) tunnelQr.classList.add('hidden');
+                        if (tunnelLoading) tunnelLoading.classList.remove('hidden');
+                    }
+
+                    // 2. 매장 안 (내부 Wi-Fi)
+                    const lanText = document.getElementById('lan-url-text');
+                    const lanQr = document.getElementById('lan-qr-img');
+                    if (lanUrl) {
+                        if (lanText) lanText.value = lanUrl;
+                        if (lanQr && (!lanQr.src || !lanQr.src.includes('data='))) {
+                            lanQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(lanUrl)}`;
+                        }
+                    }
+                })
+                .catch(err => console.error("네트워크 정보 조회 실패:", err));
+        }
+
+        function copyUrl(elemId) {
+            const input = document.getElementById(elemId);
+            if (input && input.value && !input.value.includes("생성 중")) {
+                navigator.clipboard.writeText(input.value)
+                    .then(() => alert(`클립보드에 복사되었습니다:\n${input.value}`))
+                    .catch(() => alert(`주소: ${input.value}`));
+            }
+        }
+
+        function openRemoteView(seatId, realCid) {
+            const target = realCid || seatId;
+            window.open(`/remote/${target}`, '_blank', 'width=1000,height=700');
+        }
+
+        // --- ⚙️ 환경설정(Settings) 통합 모달 스크립트 ---
+        let currentSettings = {};
+
+        async function openSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) modal.classList.remove('hidden');
+            const msg = document.getElementById('settings-save-msg');
+            if (msg) msg.innerText = '설정 불러오는 중...';
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                currentSettings = data;
+
+                document.getElementById('cfg-server-host').value = data.server_host || '0.0.0.0';
+                document.getElementById('cfg-server-port').value = data.server_port || 8000;
+                document.getElementById('cfg-client-server-ip').value = data.client_server_ip || '192.168.0.100';
+                document.getElementById('cfg-admin-password').value = data.admin_password || '1234';
+                document.getElementById('cfg-client-version').value = data.client_version || '1.0.1';
+                document.getElementById('cfg-agent-size').innerText = data.agent_file_size || '0 MB';
+                document.getElementById('cfg-tg-token').value = data.telegram_bot_token || '';
+                document.getElementById('cfg-tg-chatid').value = data.telegram_chat_id || '';
+
+                // 윈도우 시작프로그램 상태 반영
+                updateAutostartUI(data.windows_autostart);
+
+                // 자동 재시작(Supervisor) 상태 반영
+                const supBadge = document.getElementById('supervisor-status-badge');
+                if (supBadge) {
+                    if (data.supervisor_active) {
+                        supBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+                        supBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 무한 재시작 보호 중';
+                    } else {
+                        supBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 flex items-center gap-1";
+                        supBadge.innerHTML = '감시자 대기 중';
+                    }
+                }
+
+                if (msg) msg.innerText = '';
+            } catch (e) {
+                if (msg) msg.innerText = '설정 로드 실패: ' + e;
+            }
+        }
+
+        function updateAutostartUI(isRegistered) {
+            const badge = document.getElementById('autostart-status-badge');
+            const btn = document.getElementById('btn-toggle-autostart');
+            if (!badge || !btn) return;
+            if (isRegistered) {
+                badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30";
+                badge.innerText = "자동 실행 ON";
+                btn.className = "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold transition";
+                btn.innerText = "해제";
+            } else {
+                badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400";
+                badge.innerText = "자동 실행 OFF";
+                btn.className = "px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition";
+                btn.innerText = "등록";
+            }
+        }
+
+        async function toggleAutostartSetting() {
+            const isCurrentlyOn = Boolean(currentSettings.windows_autostart);
+            const targetState = !isCurrentlyOn;
+            try {
+                const res = await fetch('/api/settings/autostart', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ enabled: targetState })
+                });
+                const data = await res.json();
+                currentSettings.windows_autostart = data.enabled;
+                updateAutostartUI(data.enabled);
+                alert(data.enabled ? "✅ 윈도우 시작 시 서버 자동 실행이 성공적으로 등록되었습니다!" : "ℹ️ 윈도우 시작 시 자동 실행이 해제되었습니다.");
+            } catch (e) {
+                alert("오류 발생: " + e);
+            }
+        }
+
+        async function saveAllSettings() {
+            const payload = {
+                server_host: document.getElementById('cfg-server-host').value.trim(),
+                server_port: parseInt(document.getElementById('cfg-server-port').value.trim()) || 8000,
+                client_server_ip: document.getElementById('cfg-client-server-ip').value.trim(),
+                admin_password: document.getElementById('cfg-admin-password').value.trim(),
+                telegram_bot_token: document.getElementById('cfg-tg-token').value.trim(),
+                telegram_chat_id: document.getElementById('cfg-tg-chatid').value.trim()
+            };
+
+            const msg = document.getElementById('settings-save-msg');
+            if (msg) {
+                msg.className = "text-xs font-semibold text-amber-400 min-h-[16px]";
+                msg.innerText = "설정 저장 중...";
+            }
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (msg) {
+                    msg.className = "text-xs font-semibold text-emerald-400 min-h-[16px]";
+                    msg.innerText = "✅ 설정이 안전하게 저장되었습니다!";
+                    setTimeout(() => { if (msg) msg.innerText = ''; }, 3000);
+                }
+            } catch (e) {
+                if (msg) {
+                    msg.className = "text-xs font-semibold text-rose-400 min-h-[16px]";
+                    msg.innerText = "저장 실패: " + e;
+                }
+            }
+        }
+
+        async function triggerOtaUpdateFromModal() {
+            const ver = document.getElementById('cfg-client-version').value.trim();
+            if (!confirm(`버전 [${ver}]으로 전체 클라이언트 PC에 무인 자동 업데이트를 전송하시겠습니까?\n\n클라이언트가 새 바이너리를 다운로드받아 스스로 재시작합니다.`)) return;
+
+            try {
+                const res = await fetch('/api/settings/update_client', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ new_version: ver })
+                });
+                const data = await res.json();
+                alert(`🚀 ${data.message}`);
+            } catch (e) {
+                alert("업데이트 전송 실패: " + e);
+            }
+        }
+
+        async function testTelegramFromModal() {
+            const token = document.getElementById('cfg-tg-token').value.trim();
+            const chatid = document.getElementById('cfg-tg-chatid').value.trim();
+            if (!token || !chatid) {
+                alert("봇 토큰과 Chat ID를 먼저 입력해 주세요.");
+                return;
+            }
+            try {
+                const res = await fetch('/api/settings/test_telegram', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ bot_token: token, chat_id: chatid })
+                });
+                const data = await res.json();
+                alert(data.message);
+            } catch (e) {
+                alert("테스트 발송 오류: " + e);
+            }
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        renderGrid();
+        renderMappingTable();
+        updateTotalStat();
+    </script>
+</body>
+</html>

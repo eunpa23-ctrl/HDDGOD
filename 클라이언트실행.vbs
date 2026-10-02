@@ -1,0 +1,4 @@
+Set objShell = CreateObject("WScript.Shell")
+strPath = Left(WScript.ScriptFullName, InStrRev(WScript.ScriptFullName, "\"))
+objShell.CurrentDirectory = strPath
+objShell.Run "pythonw run_client.py", 0, False

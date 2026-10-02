@@ -1,0 +1,90 @@
+[
+  {
+    "seat": 1,
+    "id": "PC-01",
+    "name": "PC 1번",
+    "ip": "192.168.0.91",
+    "mac": "e8:2a:44:b7:9c:38",
+    "status": "OFFLINE",
+    "uwf": "DISABLED",
+    "netflix": "RUNNING",
+    "real_cid": null
+  },
+  {
+    "seat": 2,
+    "id": "PC-02",
+    "name": "PC 2번",
+    "ip": "192.168.0.92",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  },
+  {
+    "seat": 3,
+    "id": "PC-03",
+    "name": "PC 3번",
+    "ip": "192.168.0.93",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  },
+  {
+    "seat": 4,
+    "id": "PC-04",
+    "name": "PC 4번",
+    "ip": "192.168.0.94",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  },
+  {
+    "seat": 5,
+    "id": "PC-05",
+    "name": "PC 5번",
+    "ip": "192.168.0.95",
+    "mac": "e8:2a:44:b7:9c:38",
+    "status": "OFFLINE",
+    "uwf": "DISABLED",
+    "netflix": "RUNNING",
+    "real_cid": null
+  },
+  {
+    "seat": 6,
+    "id": "PC-06",
+    "name": "PC 6번",
+    "ip": "192.168.0.96",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  },
+  {
+    "seat": 7,
+    "id": "PC-07",
+    "name": "PC 7번",
+    "ip": "192.168.0.97",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  },
+  {
+    "seat": 8,
+    "id": "PC-08",
+    "name": "PC 8번",
+    "ip": "192.168.0.98",
+    "mac": "00:00:00:00:00:00",
+    "status": "OFFLINE",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
+    "real_cid": null
+  }
+]

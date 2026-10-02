@@ -1,0 +1,16 @@
+# 제우스 HDD PROTECTOR 파이썬 의존성 패키지
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+websockets>=11.0.3
+aiohttp>=3.8.5
+requests>=2.31.0
+jinja2>=3.1.2
+mss>=9.0.1
+pillow>=10.0.0
+pyautogui>=0.9.54
+pystray>=0.19.5
+wakeonlan>=3.1.0
+pycaw>=20240210
+comtypes>=1.4.1
+psutil
+requests

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📱 원격 제어 - {{ client_id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; touch-action: none; }
+        /* transform origin을 좌상단이 아닌 중심으로 두어 자연스럽게 확대 */
+        #stream-img { 
+            width: 100vw; height: calc(100vh - 50px); 
+            object-fit: contain; cursor: crosshair;
+            transform-origin: center center;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen select-none bg-black">
+    <!-- 상단 툴바 -->
+    <div class="h-[50px] bg-slate-900 border-b border-slate-800 flex items-center justify-between px-2 sm:px-4 text-xs text-white z-10 shrink-0">
+        <div class="font-bold flex items-center gap-1 sm:gap-2">
+            <span id="status-dot" class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full {{ 'bg-emerald-500 animate-pulse' if is_online else 'bg-rose-500' }}"></span>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span class="text-xs sm:text-sm font-extrabold text-white truncate max-w-[120px] sm:max-w-none">{{ client_name }} ({{ client_id }})</span>
+                <span class="text-[10px] text-sky-400 font-mono bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800/40">클라이언트 IP: {{ client_ip if client_ip else '미확인' }}</span>
+                <span class="hidden lg:inline text-[9px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">중계서버: 192.168.0.100</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-1 sm:gap-2">
+            <a href="/api/rdp/{{ client_id }}" download class="px-2 sm:px-3 py-1.5 bg-sky-700 hover:bg-sky-600 rounded font-bold transition flex items-center gap-1 text-[11px] text-white border border-sky-500/40" title="윈도우 기본 원격 데스크톱(mstsc) 연결 파일 다운로드">
+                <i class="fa-solid fa-desktop"></i> <span class="hidden md:inline">MSTSC 직접연결</span>
+            </a>
+            <button onclick="resetZoom()" class="px-2 py-1.5 bg-slate-700 hover:bg-slate-600 rounded font-semibold transition flex items-center gap-1" title="화면 크기 초기화">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+            </button>
+            <input id="key-input" type="text" placeholder="입력 후 전송" class="bg-slate-950 border border-slate-700 px-2 py-1.5 rounded text-xs text-white w-20 sm:w-36 focus:outline-none focus:border-indigo-500">
+            <button onclick="sendKeyText()" class="px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-paper-plane"></i> <span class="hidden sm:inline">전송</span>
+            </button>
+            <button onclick="window.close()" class="px-2 sm:px-3 py-1.5 bg-rose-800 hover:bg-rose-700 rounded font-semibold transition">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- 화면 스트리밍 영역 (줌/이동 컨테이너) -->
+    <div id="touch-container" class="flex-1 flex items-center justify-center relative bg-black overflow-hidden w-full h-full touch-none">
+        <!-- 로딩 / 오프라인 인디케이터 -->
+        <div id="loading-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/95 text-slate-300 gap-3 z-0">
+            {% if not is_online %}
+            <div class="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-2xl">
+                <i class="fa-solid fa-power-off"></i>
+            </div>
+            <p class="text-base font-bold text-white">{{ client_name }} 손님 PC가 오프라인 상태입니다</p>
+            <p class="text-xs text-slate-400 max-w-sm text-center">손님 PC(IP: {{ client_ip }})에서 [1_설치하기.bat]가 완료되었는지, 전원 및 네트워크가 켜져 있는지 확인해주세요.</p>
+            <div class="flex items-center gap-2 mt-2">
+                <button onclick="location.reload()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold text-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> 다시 연결 시도
+                </button>
+                <a href="/api/rdp/{{ client_id }}" download class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-bold text-slate-200 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-desktop"></i> MSTSC RDP 파일 다운로드
+                </a>
+            </div>
+            {% else %}
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500"></i>
+            <p class="text-sm font-bold text-white">{{ client_name }} ({{ client_ip }}) 화면을 불러오는 중입니다...</p>
+            <p class="text-xs text-slate-500">중계 서버(192.168.0.100)를 통해 실시간 프레임을 수신하고 있습니다.</p>
+            {% endif %}
+        </div>
+
+        <img id="stream-img" src="" alt="" class="max-w-full max-h-full transition-opacity opacity-0 z-0 draggable-false" draggable="false">
+    </div>
+
+    <script>
+        const clientId = "{{ client_id }}";
+        const actualClientId = "{{ actual_client_id }}" || clientId;
+        const targetId = actualClientId;
+        const img = document.getElementById('stream-img');
+        const container = document.getElementById('touch-container');
+        const overlay = document.getElementById('loading-overlay');
+        const statusDot = document.getElementById('status-dot');
+
+        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${location.host}/ws/remote_view/${targetId}`);
+
+        let firstFrameReceived = false;
+
+        ws.onopen = () => { console.log('[Remote] Connected'); };
+        ws.onmessage = (e) => {
+            if (!firstFrameReceived) {
+                firstFrameReceived = true;
+                if (overlay) overlay.style.display = 'none';
+                img.classList.remove('opacity-0');
+            }
+            img.src = "data:image/jpeg;base64," + e.data;
+        };
+        ws.onerror = (e) => { if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-rose-500'; };
+        ws.onclose = () => { if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-slate-600'; };
+
+        function sendEvent(type, xRatio, yRatio, extra = {}) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ event: type, x: xRatio, y: yRatio, ...extra }));
+            }
+        }
+
+        // --- 줌 & 화면 이동(Pan) 로직 ---
+        let scale = 1;
+        let panX = 0, panY = 0;
+        let startX = 0, startY = 0;
+        let startPanX = 0, startPanY = 0;
+        let initialDistance = 0;
+        let initialScale = 1;
+        let isDragging = false;
+        let movedSignificantly = false;
+
+        function updateTransform() {
+            img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        window.resetZoom = function() {
+            scale = 1; panX = 0; panY = 0;
+            updateTransform();
+        };
+
+        // PC 마우스 드래그 이동 지원
+        container.addEventListener('mousedown', (e) => {
+            if(e.button !== 0) return; // 좌클릭만
+            isDragging = true;
+            movedSignificantly = false;
+            startX = e.clientX; startY = e.clientY;
+            startPanX = panX; startPanY = panY;
+        });
+        
+        container.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) movedSignificantly = true;
+            if (movedSignificantly) {
+                panX = startPanX + dx; panY = startPanY + dy;
+                updateTransform();
+            }
+        });
+
+        container.addEventListener('mouseup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            if (!movedSignificantly) {
+                // 단순 클릭
+                triggerClick(e.clientX, e.clientY, 'left');
+            }
+        });
+
+        container.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            triggerClick(e.clientX, e.clientY, 'right');
+        });
+
+        // 모바일 터치 줌/이동 지원
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            movedSignificantly = false;
+            if (e.touches.length === 1) {
+                startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+                startPanX = panX; startPanY = panY;
+            } else if (e.touches.length === 2) {
+                initialDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialScale = scale;
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) movedSignificantly = true;
+                if (movedSignificantly) {
+                    panX = startPanX + dx; panY = startPanY + dy;
+                    updateTransform();
+                }
+            } else if (e.touches.length === 2) {
+                movedSignificantly = true;
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                if (initialDistance > 0) {
+                    const ratio = currentDistance / initialDistance;
+                    scale = Math.min(Math.max(1, initialScale * ratio), 5); // 1배 ~ 5배 제한
+                    updateTransform();
+                }
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (!movedSignificantly && e.changedTouches.length === 1) {
+                // 단순 터치(탭)
+                triggerClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY, 'left');
+            }
+        });
+
+        // 실제 이미지 좌표 비율을 계산하여 서버로 전송
+        function triggerClick(clientX, clientY, buttonType) {
+            const rect = img.getBoundingClientRect();
+            // 줌/팬 상태에서도 getBoundingClientRect()는 최종 렌더링된 사각형을 반환함
+            // 따라서 단순히 터치된 X,Y가 이미지 사각형 안에 있는지 보고 비율을 구하면 완벽히 매칭됨
+            if (clientX >= rect.left && clientX <= rect.right &&
+                clientY >= rect.top && clientY <= rect.bottom) {
+                const xRatio = (clientX - rect.left) / rect.width;
+                const yRatio = (clientY - rect.top) / rect.height;
+                sendEvent('CLICK', xRatio, yRatio, { button: buttonType });
+            }
+        }
+
+        // 키보드 텍스트 전송
+        window.sendKeyText = function() {
+            const input = document.getElementById('key-input');
+            if (input.value) {
+                sendEvent('TEXT', 0, 0, { text: input.value });
+                input.value = '';
+            }
+        };
+        document.getElementById('key-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendKeyText();
+        });
+    </script>
+</body>
+</html>

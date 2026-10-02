@@ -304,6 +304,23 @@ class ZeusClientAgent:
                 async with websockets.connect(uri, open_timeout=3) as ws:
                     logger.info(f"관리 서버({target_ip}) 연결 성공!")
                     self.ws_conn = ws
+                    
+                    # --- 자율 진단: 지난번 크래시 로그가 있으면 서버로 보고 ---
+                    crash_log_path = os.path.join(self.get_app_dir(), "crash.log")
+                    if os.path.exists(crash_log_path):
+                        try:
+                            with open(crash_log_path, "r", encoding="utf-8") as f:
+                                err_text = f.read()
+                            pkt = make_packet(PacketType.ERROR_REPORT, {
+                                "client_id": self.client_id,
+                                "error": "Crash from previous run",
+                                "traceback": err_text
+                            })
+                            await ws.send(pkt)
+                            os.remove(crash_log_path) # 성공 시 삭제
+                        except Exception:
+                            pass
+                            
                     await asyncio.gather(
                         self.run_heartbeat_loop(ws),
                         self.handle_server_commands(ws),

@@ -14,6 +14,7 @@ class PacketType:
     OTP_SUBMIT = "OTP_SUBMIT"
     SCREEN_FRAME = "SCREEN_FRAME"
     REMOTE_INPUT = "REMOTE_INPUT"
+    ERROR_REPORT = "ERROR_REPORT"
 
 class CommandType:
     REBOOT = "REBOOT"

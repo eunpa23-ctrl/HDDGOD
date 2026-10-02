@@ -1,42 +1,25 @@
-# Python
+﻿# 파이썬 및 가상환경 관련
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
+*.class
 venv/
-ENV/
 env/
 .env
 
-# PyInstaller
+# PyInstaller 빌드 파일 (용량이 큰 컴파일 결과물 및 찌꺼기 제외)
+build/
+dist/
 *.manifest
 
-# IDEs and Editors
+# OS 및 에디터 임시 파일
 .vscode/
 .idea/
-*.swp
-*.swo
+.DS_Store
+Thumbs.db
 
-# Project specific
-crash.log
-server.log
-*~
-*.bak
+# 배포 폴더 내 컴파일된 실행파일 (코드가 아니므로 Git에서 제외, 용량 확보)
+deploy/ClientDeploy/core/ZeusAgent.exe
+
+# 서버/클라이언트 로그 파일
+*.log
+logs/

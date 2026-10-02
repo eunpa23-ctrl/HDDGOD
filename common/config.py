@@ -80,7 +80,7 @@ NETFLIX_PROFILE_DIR = config.get('NETFLIX', 'PROFILE_DIR', fallback=r'C:\Program
 # 네이버 메일 기반 4자리 OTP 자동 추출 설정
 OTP_MAIL_SERVER = config.get('OTP_MAIL', 'IMAP_SERVER', fallback='imap.naver.com')
 OTP_MAIL_PORT = config.getint('OTP_MAIL', 'IMAP_PORT', fallback=993)
-OTP_MAIL_EMAIL = config.get('OTP_MAIL', 'EMAIL', fallback='eunpa23')
+OTP_MAIL_EMAIL = config.get('OTP_MAIL', 'EMAIL', fallback='eunpa23@naver.com')
 OTP_MAIL_PASSWORD = config.get('OTP_MAIL', 'PASSWORD', fallback='UDT766M1ZSCP')
 
 # 하위 호환

@@ -73,7 +73,7 @@ HEARTBEAT_INTERVAL = config.getint('CLIENT', 'HEARTBEAT_INTERVAL', fallback=3)
 ADMIN_PASSWORD = config.get('CLIENT', 'ADMIN_PASSWORD', fallback='1234')
 
 NETFLIX_EMAIL = config.get('NETFLIX', 'EMAIL', fallback='eunpa23@naver.com')
-NETFLIX_PASSWORD = config.get('NETFLIX', 'PASSWORD', fallback='@Greendayfe')
+NETFLIX_PASSWORD = config.get('NETFLIX', 'PASSWORD', fallback='@Oep0325')
 CHROME_CDP_PORT = config.getint('NETFLIX', 'CHROME_CDP_PORT', fallback=9222)
 NETFLIX_PROFILE_DIR = config.get('NETFLIX', 'PROFILE_DIR', fallback=r'C:\ProgramData\NetflixProfile')
 

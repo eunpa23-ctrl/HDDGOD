@@ -372,7 +372,7 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 trace = data.get("traceback", "")
                 log_entry = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Client: {client_id} | Error: {error_msg}\n{trace}\n"
                 logger.error(f"🚨 [텔레메트리] 클라이언트 {client_id} 오류 보고 수신:\n{error_msg}")
-                with open(os.path.join(ROOT_DIR, "server", "error_reports.log"), "a", encoding="utf-8") as f:
+                with open(os.path.join(PROJECT_ROOT, "server", "error_reports.log"), "a", encoding="utf-8") as f:
                     f.write(log_entry + "-"*60 + "\n")
 
     except WebSocketDisconnect:

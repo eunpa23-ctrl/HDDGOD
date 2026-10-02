@@ -15,6 +15,7 @@ class PacketType:
     SCREEN_FRAME = "SCREEN_FRAME"
     REMOTE_INPUT = "REMOTE_INPUT"
     ERROR_REPORT = "ERROR_REPORT"
+    LOG_STREAM = "LOG_STREAM"
 
 class CommandType:
     REBOOT = "REBOOT"

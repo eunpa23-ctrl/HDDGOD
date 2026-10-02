@@ -27,6 +27,7 @@ from client.windows_optimizer import WindowsOptimizer
 from client.netflix_bot import NetflixBot
 from client.screen_streamer import ScreenStreamer
 from client.client_tray import ClientTrayUI
+from client.log_streamer import WebSocketLogHandler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,13 +44,17 @@ class ZeusClientAgent:
         self.client_id = self.get_client_identity()
         self.local_ip = self.get_local_ip()
         self.mac_addr = self.get_mac_address()
-        
+
         self.netflix_bot = NetflixBot()
         self.streamer = ScreenStreamer()
         self.is_streaming_screen = False
         self.ws_conn = None
         self.otp_needed = False
         self.otp_sent = False
+
+        # 실시간 로그 스트리머: 모든 로그를 서버 대시보드로 자동 전송
+        self.ws_log_handler = WebSocketLogHandler(agent_ref=self, level=logging.INFO)
+        logging.getLogger().addHandler(self.ws_log_handler)
 
     def get_client_identity(self) -> str:
         """호스트명 기반 고유 클라이언트 ID 생성 (예: PC-01)"""
@@ -304,7 +309,10 @@ class ZeusClientAgent:
                 async with websockets.connect(uri, open_timeout=3) as ws:
                     logger.info(f"관리 서버({target_ip}) 연결 성공!")
                     self.ws_conn = ws
-                    
+
+                    # --- 연결 직후: 버퍼에 쌓인 로그 먼저 일괄 전송 ---
+                    await self.ws_log_handler.flush_buffer(ws)
+
                     # --- 자율 진단: 지난번 크래시 로그가 있으면 서버로 보고 ---
                     crash_log_path = os.path.join(self.get_app_dir(), "crash.log")
                     if os.path.exists(crash_log_path):

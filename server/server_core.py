@@ -375,6 +375,32 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 with open(os.path.join(PROJECT_ROOT, "server", "error_reports.log"), "a", encoding="utf-8") as f:
                     f.write(log_entry + "-"*60 + "\n")
 
+            elif p_type == PacketType.LOG_STREAM:
+                # 실시간 로그 스트리밍: 대시보드로 중계 + 파일 저장
+                level = data.get("level", "INFO")
+                msg = data.get("message", "")
+                ts = data.get("timestamp", time.strftime("%H:%M:%S"))
+                log_entry = {
+                    "type": "log",
+                    "client_id": client_id,
+                    "level": level,
+                    "message": msg,
+                    "timestamp": ts
+                }
+                # 대시보드 WebSocket으로 실시간 중계
+                import json as _json
+                await asyncio.gather(
+                    *[ws.send_text(_json.dumps(log_entry, ensure_ascii=False))
+                      for ws in list(dashboard_connections) if ws],
+                    return_exceptions=True
+                )
+                # 파일 저장 (PC별 로그 파일)
+                log_dir = os.path.join(PROJECT_ROOT, "server", "client_logs")
+                os.makedirs(log_dir, exist_ok=True)
+                log_path = os.path.join(log_dir, f"{client_id}.log")
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(f"[{ts}] [{level}] {msg}\n")
+
     except WebSocketDisconnect:
         logger.warning(f"클라이언트 연결 종료: {client_id}")
     finally:

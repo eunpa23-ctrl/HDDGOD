@@ -25,3 +25,7 @@ deploy/ClientDeploy/core/config.ini
 # ì„œë²„/í´ë¼ì´ì–¸íŠ¸ ë¡œê·¸ íŒŒì¼
 *.log
 logs/
+
+# ¼­¹ö »óÅÂ/·Î±× ÆÄÀÏ
+server/.supervisor_status.json
+startup_log.txt

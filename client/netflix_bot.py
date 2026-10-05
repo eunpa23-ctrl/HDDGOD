@@ -16,8 +16,6 @@ try:
 except ImportError:
     ws_connect = None
 from common.config import (
-    NETFLIX_EMAIL,
-    NETFLIX_PASSWORD,
     CHROME_CDP_PORT,
     NETFLIX_PROFILE_DIR,
     config
@@ -30,12 +28,16 @@ logger = logging.getLogger("NetflixBot")
 class NetflixBot:
     """크롬 CDP(포트 9222)를 이용한 넷플릭스 DRM 우회 자동화 및 4자리 OTP 자동 타이핑"""
 
-    def __init__(self):
+    def __init__(self, email: str = None, password: str = None):
         self.cdp_port = CHROME_CDP_PORT
         self.profile_dir = NETFLIX_PROFILE_DIR
         self.start_url = config.get('NETFLIX', 'START_URL', fallback='https://www.netflix.com')
         self.ws_url = None
         self.current_status = NetflixStatus.CLOSED
+        
+        # 외부(클라이언트 에이전트)에서 주입받은 임시 1회용 계정 정보 사용 (로컬 config fallback 포함)
+        self.target_email = email or config.get('NETFLIX', 'EMAIL', fallback=None)
+        self.target_password = password or config.get('NETFLIX', 'PASSWORD', fallback=None)
 
     def find_chrome_path(self) -> str:
         # 1. 윈도우 레지스트리 App Paths 조회 (가장 정확한 설치 경로)
@@ -359,8 +361,18 @@ class NetflixBot:
             time.sleep(2)
             return self.check_and_handle_login()
         elif status == "NEED_LOGIN":
-            # 자동 로그인 시도
-            res = self.do_auto_login()
+            if not self.target_email:
+                self.target_email = config.get('NETFLIX', 'EMAIL', fallback=None)
+            if not self.target_password:
+                self.target_password = config.get('NETFLIX', 'PASSWORD', fallback=None)
+
+            if not self.target_email or not self.target_password:
+                logger.info("로그인 필요 상태이나, 할당된 계정 정보가 없습니다. (서버 요청 대기)")
+                self.current_status = "NEED_LOGIN"
+                return "NEED_LOGIN"
+                
+            # 계정이 있으면 자동 로그인 시도
+            res = self.do_auto_login(self.target_email, self.target_password)
             logger.info(f"자동 로그인 실행 결과: {res}")
             time.sleep(3)
             # 로그인 후 상태 재점검
@@ -394,7 +406,7 @@ class NetflixBot:
         except Exception:
             return {}
 
-    def do_auto_login(self) -> dict:
+    def do_auto_login(self, email: str, password: str) -> dict:
         """CDP 원격 제어(Input.insertText)를 통해 실제 키보드 타이핑처럼 ID/PW 강제 입력
         넷플릭스는 이메일 입력 → 다음 버튼 → 비밀번호 입력의 2단계 구조임에 주의
         """
@@ -404,8 +416,9 @@ class NetflixBot:
         focus_email_js = """
         (function() {
             var el = document.querySelector(
-                'input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], #id_userLoginId'
+                'input[data-uia="field-userLoginId"], input[name="userLoginId"], input[type="email"], input[autocomplete="email"], #id_userLoginId, input[name="userLoginIdOrEmail"]'
             );
+            if (el && el.offsetParent !== null) { el.focus(); el.select(); return true; }
             if (el) { el.focus(); el.select(); return true; }
             return false;
         })()
@@ -414,37 +427,54 @@ class NetflixBot:
             return {"success": False, "message": "이메일 입력창을 찾지 못함"}
 
         time.sleep(0.2)
-        # 기존 내용 전체 지우기 (Ctrl+A → Delete)
+        # 기존 내용 전체 지우기 (Ctrl+A → Backspace)
         self.send_cdp_command("Input.dispatchKeyEvent", {
             "type": "keyDown", "key": "a", "code": "KeyA", "modifiers": 2  # Ctrl
         })
         self.send_cdp_command("Input.dispatchKeyEvent", {
             "type": "keyUp", "key": "a", "code": "KeyA"
         })
+        time.sleep(0.05)
+        self.send_cdp_command("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8, "nativeVirtualKeyCode": 8
+        })
+        self.send_cdp_command("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8, "nativeVirtualKeyCode": 8
+        })
         time.sleep(0.1)
         # React가 인지할 수 있도록 한 글자씩 실제 타이핑
-        for char in NETFLIX_EMAIL:
+        for char in email:
             self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
             time.sleep(0.01)
         time.sleep(0.4)
 
         # === STEP 2: "다음" 버튼 물리 마우스 클릭 시뮬레이션 ===
-        # 비밀번호 입력창이 이미 있으면 클릭 생략
+        # 비밀번호 입력창이 이미 화면에 보이는 상태면 다음 버튼 클릭 생략
         pw_check_js = """
         (function() {
             var pw = document.querySelector('input[type="password"], input[name="password"], input[data-uia="field-password"]');
-            return pw ? true : false;
+            return (pw && pw.offsetParent !== null) ? true : false;
         })()
         """
         has_pw = self.eval_js(pw_check_js)
 
         if not has_pw:
-            # 비밀번호 입력창이 없음 = 이메일만 받는 1페이지
+            # 비밀번호 입력창이 없음 = 이메일만 받는 1단계 페이지
             logger.info("넷플릭스 2단계 로그인: 이메일 입력 후 '다음' 버튼 가상 마우스 클릭 시도...")
             
             click_js = """
             (function() {
                 var btn = document.querySelector('button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"]');
+                if (!btn) {
+                    var allBtns = document.querySelectorAll('button');
+                    for (var i = 0; i < allBtns.length; i++) {
+                        var t = (allBtns[i].innerText || "").trim();
+                        if (t.indexOf("다음") !== -1 || t.indexOf("Next") !== -1 || t.indexOf("로그인") !== -1 || t.indexOf("Sign In") !== -1) {
+                            btn = allBtns[i];
+                            break;
+                        }
+                    }
+                }
                 if (!btn) return null;
                 var rect = btn.getBoundingClientRect();
                 return {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2};
@@ -468,23 +498,45 @@ class NetflixBot:
                     "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13
                 })
                 
-            time.sleep(2.5)  # 화면 전환 대기
+            time.sleep(1.5)  # 화면 전환 기본 대기
 
-        # === STEP 3: 비밀번호 입력창 포커스 및 입력 ===
+        # === STEP 3: 비밀번호 입력창 포커스 및 입력 (화면 전환 대기 루프 최대 5초) ===
         focus_pass_js = """
         (function() {
             var el = document.querySelector(
                 'input[type="password"], input[name="password"], input[data-uia="field-password"], #id_password'
             );
+            if (el && el.offsetParent !== null) { el.focus(); el.select(); return true; }
             if (el) { el.focus(); el.select(); return true; }
             return false;
         })()
         """
-        found_pw = self.eval_js(focus_pass_js)
+        found_pw = False
+        for _ in range(8):
+            if self.eval_js(focus_pass_js):
+                found_pw = True
+                break
+            time.sleep(0.5)
+
         if found_pw:
             time.sleep(0.2)
+            # 기존 내용 지우기
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyDown", "key": "a", "code": "KeyA", "modifiers": 2
+            })
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyUp", "key": "a", "code": "KeyA"
+            })
+            time.sleep(0.05)
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyDown", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8, "nativeVirtualKeyCode": 8
+            })
+            self.send_cdp_command("Input.dispatchKeyEvent", {
+                "type": "keyUp", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8, "nativeVirtualKeyCode": 8
+            })
+            time.sleep(0.1)
             # React가 인지할 수 있도록 한 글자씩 실제 타이핑
-            for char in NETFLIX_PASSWORD:
+            for char in password:
                 self.send_cdp_command("Input.dispatchKeyEvent", {"type": "char", "text": char})
                 time.sleep(0.01)
             time.sleep(0.5)
@@ -500,6 +552,16 @@ class NetflixBot:
             if (remember && !remember.checked) { remember.click(); }
             
             var btn = document.querySelector('button[data-uia="login-submit-button"], button[data-uia="continue-button"], button[type="submit"]');
+            if (!btn) {
+                var allBtns = document.querySelectorAll('button');
+                for (var i = 0; i < allBtns.length; i++) {
+                    var t = (allBtns[i].innerText || "").trim();
+                    if (t.indexOf("로그인") !== -1 || t.indexOf("Sign In") !== -1 || t.indexOf("다음") !== -1) {
+                        btn = allBtns[i];
+                        break;
+                    }
+                }
+            }
             if (!btn) return null;
             var rect = btn.getBoundingClientRect();
             return {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2};

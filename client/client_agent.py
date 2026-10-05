@@ -51,6 +51,8 @@ class ZeusClientAgent:
         self.ws_conn = None
         self.otp_needed = False
         self.otp_sent = False
+        self.cred_needed = False
+        self.cred_requested = 0
 
         # 실시간 로그 스트리머: 모든 로그를 서버 대시보드로 자동 전송
         self.ws_log_handler = WebSocketLogHandler(agent_ref=self, level=logging.INFO)
@@ -96,6 +98,16 @@ class ZeusClientAgent:
     def on_system_boot(self) -> None:
         """매 부팅 시 0.1초 만에 실행되는 필수 안전/최적화 루틴"""
         logger.info("=== 제우스 부팅 시퀀스 가동 ===")
+        # 0. 바탕화면 보호 (DesktopGuard)
+        try:
+            from client.desktop_guard import DesktopGuard
+            guard = DesktopGuard()
+            guard.restore_wallpaper()
+            import threading
+            threading.Thread(target=guard.monitor_wallpaper_loop, daemon=True).start()
+        except Exception as e:
+            logger.error(f"DesktopGuard 초기화 실패: {e}")
+
         # 1. 마스터 볼륨 100% 강제 고정 및 음소거 해제
         PowerPolicy.set_master_volume_100()
 
@@ -143,8 +155,11 @@ class ZeusClientAgent:
 
                         # 상태 점검 및 미로그인 시 자동 로그인 수행
                         st = self.netflix_bot.check_and_handle_login()
-                        if st == NetflixStatus.LOGGED_IN:
+                        if st == "NEED_LOGIN":
+                            self.cred_needed = True
+                        elif st == NetflixStatus.LOGGED_IN:
                             self.otp_needed = False
+                            self.cred_needed = False
                         elif st == NetflixStatus.OTP_WAITING:
                             if not self.otp_needed:
                                 logger.info("⚡ [ZeusAgent] 넷플릭스 4자리 OTP 대기 상태 감지! 서버 알림 준비...")
@@ -190,6 +205,17 @@ class ZeusClientAgent:
                     })
                     await websocket.send(otp_pkt)
                     logger.info("📡 [ZeusAgent] 서버로 OTP_REQUIRED 즉시 전송 완료!")
+
+                # 넷플릭스 1회용 계정 정보 필요 시 서버에 요청
+                if self.cred_needed:
+                    now = time.time()
+                    if now - self.cred_requested > 10:
+                        self.cred_requested = now
+                        cred_pkt = make_packet(PacketType.CREDENTIAL_REQUEST, {
+                            "client_id": self.client_id
+                        })
+                        await websocket.send(cred_pkt)
+                        logger.info("📡 [ZeusAgent] 서버로 넷플릭스 계정 정보(CREDENTIAL_REQUEST) 요청 전송 완료!")
 
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
             except Exception as e:
@@ -237,6 +263,16 @@ class ZeusClientAgent:
                 code = data.get("otp_code", "")
                 logger.info(f"수신된 4자리 OTP [{code}] 화면 입력 시도...")
                 asyncio.create_task(asyncio.to_thread(self.netflix_bot.input_otp_code, code))
+                
+            elif p_type == PacketType.CREDENTIAL_RESPONSE:
+                email = data.get("email")
+                password = data.get("password")
+                if email and password:
+                    logger.info(f"서버로부터 임시 넷플릭스 계정을 발급받았습니다: {email}")
+                    self.netflix_bot.target_email = email
+                    self.netflix_bot.target_password = password
+                    self.cred_needed = False
+                    self.cred_requested = 0
 
             elif p_type == PacketType.REMOTE_INPUT:
                 # 모바일 터치 및 마우스/키보드 입력 제어
@@ -418,7 +454,7 @@ ping 127.0.0.1 -n 2 >nul
 start "" "%~dp0ZeusAgent.exe"
 del "%~f0"
 """
-                    with open(bat_path, "w", encoding="utf-8") as f:
+                    with open(bat_path, "w", encoding="cp949") as f:
                         f.write(bat_content)
 
                     # 배치 파일 실행 후 현재 프로세스 완전 종료

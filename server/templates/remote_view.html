@@ -123,48 +123,102 @@
             updateTransform();
         };
 
-        // PC 마우스 드래그 이동 지원
-        container.addEventListener('mousedown', (e) => {
-            if(e.button !== 0) return; // 좌클릭만
-            isDragging = true;
-            movedSignificantly = false;
-            startX = e.clientX; startY = e.clientY;
-            startPanX = panX; startPanY = panY;
-        });
-        
+        // 실제 이미지 좌표 비율을 정밀하게 계산
+        function getRatio(clientX, clientY) {
+            const rect = img.getBoundingClientRect();
+            if (clientX >= rect.left && clientX <= rect.right &&
+                clientY >= rect.top && clientY <= rect.bottom &&
+                rect.width > 0 && rect.height > 0) {
+                const xRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                const yRatio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+                return { x: xRatio, y: yRatio, valid: true };
+            }
+            return { valid: false };
+        }
+
+        // 실시간 마우스 이동 동기화 (30ms 스로틀링, ~33 FPS)
+        let lastMoveTime = 0;
         container.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) movedSignificantly = true;
-            if (movedSignificantly) {
+            if (isDragging && e.ctrlKey) {
+                // Ctrl 누르고 드래그 시 화면 줌/팬 이동
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
                 panX = startPanX + dx; panY = startPanY + dy;
                 updateTransform();
+                return;
+            }
+
+            const pos = getRatio(e.clientX, e.clientY);
+            if (!pos.valid) return;
+            const now = Date.now();
+            if (now - lastMoveTime > 30) {
+                lastMoveTime = now;
+                sendEvent('MOVE', pos.x, pos.y);
             }
         });
 
-        container.addEventListener('mouseup', (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-            if (!movedSignificantly) {
-                // 단순 클릭
-                triggerClick(e.clientX, e.clientY, 'left');
+        // PC 마우스 클릭 (좌클릭)
+        container.addEventListener('click', (e) => {
+            if (e.ctrlKey) return;
+            const pos = getRatio(e.clientX, e.clientY);
+            if (pos.valid) {
+                sendEvent('CLICK', pos.x, pos.y, { button: 'left' });
             }
         });
 
+        // PC 마우스 더블클릭
+        container.addEventListener('dblclick', (e) => {
+            const pos = getRatio(e.clientX, e.clientY);
+            if (pos.valid) {
+                sendEvent('CLICK', pos.x, pos.y, { button: 'double' });
+            }
+        });
+
+        // PC 마우스 우클릭
         container.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            triggerClick(e.clientX, e.clientY, 'right');
+            const pos = getRatio(e.clientX, e.clientY);
+            if (pos.valid) {
+                sendEvent('CLICK', pos.x, pos.y, { button: 'right' });
+            }
+        });
+
+        // PC 마우스 휠 스크롤 지원
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.ctrlKey) {
+                // Ctrl + 휠: 줌 인/아웃
+                const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+                scale = Math.min(Math.max(1, scale * zoomFactor), 5);
+                updateTransform();
+            } else {
+                // 일반 휠: 원격 클라이언트 마우스 휠 전송
+                const delta = e.deltaY < 0 ? 120 : -120;
+                sendEvent('WHEEL', 0, 0, { delta: delta });
+            }
+        }, { passive: false });
+
+        // PC Ctrl+드래그 화면 이동 시작
+        container.addEventListener('mousedown', (e) => {
+            if (e.ctrlKey) {
+                isDragging = true;
+                startX = e.clientX; startY = e.clientY;
+                startPanX = panX; startPanY = panY;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
         });
 
         // 모바일 터치 줌/이동 지원
         container.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            movedSignificantly = false;
             if (e.touches.length === 1) {
+                movedSignificantly = false;
                 startX = e.touches[0].clientX; startY = e.touches[0].clientY;
                 startPanX = panX; startPanY = panY;
             } else if (e.touches.length === 2) {
+                e.preventDefault();
                 initialDistance = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -174,49 +228,40 @@
         }, { passive: false });
 
         container.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             if (e.touches.length === 1) {
                 const dx = e.touches[0].clientX - startX;
                 const dy = e.touches[0].clientY - startY;
-                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) movedSignificantly = true;
-                if (movedSignificantly) {
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) movedSignificantly = true;
+                if (movedSignificantly && scale > 1) {
+                    e.preventDefault();
                     panX = startPanX + dx; panY = startPanY + dy;
                     updateTransform();
+                } else if (!movedSignificantly) {
+                    const pos = getRatio(e.touches[0].clientX, e.touches[0].clientY);
+                    if (pos.valid) sendEvent('MOVE', pos.x, pos.y);
                 }
             } else if (e.touches.length === 2) {
-                movedSignificantly = true;
+                e.preventDefault();
                 const currentDistance = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 if (initialDistance > 0) {
                     const ratio = currentDistance / initialDistance;
-                    scale = Math.min(Math.max(1, initialScale * ratio), 5); // 1배 ~ 5배 제한
+                    scale = Math.min(Math.max(1, initialScale * ratio), 5);
                     updateTransform();
                 }
             }
         }, { passive: false });
 
         container.addEventListener('touchend', (e) => {
-            e.preventDefault();
             if (!movedSignificantly && e.changedTouches.length === 1) {
-                // 단순 터치(탭)
-                triggerClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY, 'left');
+                const pos = getRatio(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                if (pos.valid) {
+                    sendEvent('CLICK', pos.x, pos.y, { button: 'left' });
+                }
             }
         });
-
-        // 실제 이미지 좌표 비율을 계산하여 서버로 전송
-        function triggerClick(clientX, clientY, buttonType) {
-            const rect = img.getBoundingClientRect();
-            // 줌/팬 상태에서도 getBoundingClientRect()는 최종 렌더링된 사각형을 반환함
-            // 따라서 단순히 터치된 X,Y가 이미지 사각형 안에 있는지 보고 비율을 구하면 완벽히 매칭됨
-            if (clientX >= rect.left && clientX <= rect.right &&
-                clientY >= rect.top && clientY <= rect.bottom) {
-                const xRatio = (clientX - rect.left) / rect.width;
-                const yRatio = (clientY - rect.top) / rect.height;
-                sendEvent('CLICK', xRatio, yRatio, { button: buttonType });
-            }
-        }
 
         // 키보드 텍스트 전송
         window.sendKeyText = function() {

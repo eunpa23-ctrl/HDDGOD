@@ -14,6 +14,7 @@ python -m pip install -q pyinstaller
 
 echo [*] ZeusAgent.exe 무설치 단일 파일 컴파일 시작 (약 1분 소요)...
 pyinstaller --noconfirm --onefile --windowed --name "ZeusAgent" ^
+    --runtime-tmpdir "C:\ZeusAgent\temp" ^
     --hidden-import "pystray._win32" ^
     --add-data "common;common" ^
     --add-data "client;client" ^

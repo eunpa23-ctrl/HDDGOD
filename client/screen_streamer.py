@@ -30,10 +30,22 @@ class ScreenStreamer:
     def __init__(self, target_width: int = 1920, quality: int = 75):
         self.target_width = target_width
         self.quality = quality
+        
+        # 윈도우 OS 디스플레이 배율(DPI 125%, 150% 등)에 의한 마우스 좌표 왜곡 100% 방지
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2) # Per-monitor DPI aware
+        except Exception:
+            try:
+                ctypes.windll.user32.SetProcessDPIAware()
+            except Exception:
+                pass
+
         self.sct = mss.mss() if HAS_MSS else None
         user32 = ctypes.windll.user32
         self.screen_w = user32.GetSystemMetrics(0)
         self.screen_h = user32.GetSystemMetrics(1)
+        if self.screen_w <= 0: self.screen_w = 1920
+        if self.screen_h <= 0: self.screen_h = 1080
 
     def capture_frame_base64(self) -> str:
         """화면을 캡처하여 최적화된 JPEG base64 문자열로 반환"""
@@ -59,6 +71,33 @@ class ScreenStreamer:
                 h = self.screen_h if self.screen_h > 0 else 1080
                 img = Image.new("RGB", (w, h), color=(15, 23, 42))
 
+            # 캡처된 원본 모니터 크기로 해상도 동기화 (DPI 오차 0%)
+            self.screen_w = img.width
+            self.screen_h = img.height
+
+            # 화면 위에 실제 마우스 커서 화살표 선명하게 합성
+            try:
+                class POINT(ctypes.Structure):
+                    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+                pt = POINT()
+                if ctypes.windll.user32.GetCursorPos(ctypes.byref(pt)):
+                    cx, cy = pt.x, pt.y
+                    if 0 <= cx < img.width and 0 <= cy < img.height:
+                        from PIL import ImageDraw
+                        draw = ImageDraw.Draw(img)
+                        points = [
+                            (cx, cy),
+                            (cx, cy + 18),
+                            (cx + 5, cy + 14),
+                            (cx + 9, cy + 21),
+                            (cx + 12, cy + 19),
+                            (cx + 8, cy + 12),
+                            (cx + 14, cy + 12)
+                        ]
+                        draw.polygon(points, fill="white", outline="black")
+            except Exception:
+                pass
+
             # 가로 폭 리사이즈 (대역폭 절약 및 모바일 최적화)
             if img.width > self.target_width:
                 ratio = self.target_width / float(img.width)
@@ -83,18 +122,25 @@ class ScreenStreamer:
 
             if event_type == "CLICK":
                 btn = data.get("button", "left")
-                if HAS_PYAUTOGUI:
-                    pyautogui.click(real_x, real_y, button=btn)
+                ctypes.windll.user32.SetCursorPos(real_x, real_y)
+                if btn == "right":
+                    ctypes.windll.user32.mouse_event(8, 0, 0, 0, 0) # Right Down
+                    ctypes.windll.user32.mouse_event(16, 0, 0, 0, 0) # Right Up
+                elif btn == "double":
+                    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
+                    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
+                    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
+                    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
                 else:
-                    ctypes.windll.user32.SetCursorPos(real_x, real_y)
-                    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0) # Down
-                    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0) # Up
+                    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0) # Left Down
+                    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0) # Left Up
 
             elif event_type == "MOVE":
-                if HAS_PYAUTOGUI:
-                    pyautogui.moveTo(real_x, real_y)
-                else:
-                    ctypes.windll.user32.SetCursorPos(real_x, real_y)
+                ctypes.windll.user32.SetCursorPos(real_x, real_y)
+
+            elif event_type == "WHEEL":
+                delta = int(data.get("delta", 0))
+                ctypes.windll.user32.mouse_event(0x0800, 0, 0, delta, 0) # MOUSEEVENTF_WHEEL
 
             elif event_type == "TEXT":
                 text = data.get("text", "")

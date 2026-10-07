@@ -1,5 +1,0 @@
-
-The command exited with code 0.
-Output:
-192.168.0.91 is UP! RDP(3389): True, SMB(445): False
-

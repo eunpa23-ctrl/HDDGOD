@@ -1,7 +1,0 @@
-
-The command exited with code 0.
-Output:
-20261001_191348.heic True 1532032
-20261001_190656.heic True 797899
-pillow_heif NOT available
-

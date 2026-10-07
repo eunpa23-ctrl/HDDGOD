@@ -1,5 +1,0 @@
-
-The command exited with code 0.
-Output:
-f4:4d:30:e3:06:48
-

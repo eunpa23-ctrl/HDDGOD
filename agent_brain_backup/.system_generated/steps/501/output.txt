@@ -1,8 +1,0 @@
-
-The command exited with code 1.
-Output:
-�ڿ� " �ڰ� �ϴ�.
-    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
- 
-

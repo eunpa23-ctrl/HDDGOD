@@ -1,9 +1,0 @@
-
-The command exited with code 1.
-Output:
-INFO:NetflixBot:넷플릭스 전용 크롬 실행 (CDP 포트 9222, 프로필 C:\ProgramData\NetflixProfile)
-INFO:NetflixBot:CDP WebSocket 연결 대상 확보: ws://127.0.0.1:9222/devtools/page/4D48A0ADFA9AC5F326D9ED84A5F0101F
-INFO:NetflixBot:넷플릭스 현재 상태 감지: NAVIGATING_TO_LOGIN (https://www.netflix.com/kr/)
-INFO:NetflixBot:넷플릭스 현재 상태 감지: NEED_LOGIN (https://www.netflix.com/kr/login?serverState=BgjUv%2BvcAxLgAeySK4Q8zCrg9gBAQue%2FZa1qXwgXONln%2BHLksmgFVcuGMuQi%2BWwUGOS4tdWR076SoBZNOLPsZON1Bnpjafzlfc0%2FhhHnCecq6IDz9ewWLkUWynn3GoaoVFCHPFi8u5BnEBctfYTP9Jh5tdJk94a4nBcNB3qbuhc6MsJ2mswY235%2FGLFevN2oa2%2Fp8h3V7Nmdh7HFfbC5qKCf33aoiWY0f2vnAfZU9ySUdFtTrki7oNVZkAAMRMJOBjDNKDAOBQw4h9dPw5WfL3x%2B0dRl%2FXEcy%2Bk%2Fa9GUo7isleZxXO8Pnc8lGAYiDgoMtQhequ%2F3ZURA0%2BqR)
-ERROR: NetflixBot.do_auto_login() missing 2 required positional arguments: 'email' and 'password'
-

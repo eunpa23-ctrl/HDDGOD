@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-G:\� �̺�\PROJECT\HDDGOD\tools\update_install_bat.py:64: SyntaxWarning: "\C" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\C"? A raw string is also an option.
-  reg delete "HKCU\\Software\\Microsoft\\Windows\CurrentVersion\\Policies\\Explorer" /v "NoClose" /f >nul 2>&1
-Wrote CP949 CRLF to: G:\� �̺�\PROJECT\HDDGOD\deploy\ClientDeploy\1_�ġ�ϱ�.bat
-Wrote CP949 CRLF to: C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\1_�ġ�ϱ�.bat
-

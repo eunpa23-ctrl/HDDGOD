@@ -1,9 +1,0 @@
-
-The command exited with code 0.
-Output:
-warning: in the working copy of 'ARCHITECTURE.md', LF will be replaced by CRLF the next time Git touches it
-[master b6e7620] Update ARCHITECTURE.md to v1.0.8 - add telemetry, OTP, GitHub, 2-step login
- 1 file changed, 154 insertions(+), 120 deletions(-)
-To https://github.com/eunpa23-ctrl/HDDGOD.git
-   104ccc1..b6e7620  master -> master
-

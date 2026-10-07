@@ -1,6 +1,0 @@
-
-The command exited with code 0.
-Output:
-205: elif action == CommandType.UPDATE_AGENT:
-366: tray = ClientTrayUI(on_restart_netflix=self.start_netflix_routine)
-

@@ -1,8 +1,0 @@
-
-The command exited with code 1.
-Output:
-  File "<string>", line 1
-    import os; def tree(d, indent=''): files=os.listdir(d); files=[f for f in files if f not in ['.git', '__pycache__', 'venv', 'build', 'dist', '.vscode']]; files.sort(); for i, f in enumerate(files): is_last=(i==len(files)-1); print(indent + ('� ' if is_last else '� ') + f); path=os.path.join(d,f); if os.path.isdir(path): tree(path, indent + ('    ' if is_last else '�   ')); tree('.')
-               ^^^
-SyntaxError: invalid syntax
-

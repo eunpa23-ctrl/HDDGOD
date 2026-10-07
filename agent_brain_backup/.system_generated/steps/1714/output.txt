@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-[master 569d2e2] Perfectly simulate physical mouse click and keyboard events for OTP input
- 2 files changed, 21 insertions(+), 10 deletions(-)
-To https://github.com/eunpa23-ctrl/HDDGOD.git
-   d7d1a68..569d2e2  master -> master
-

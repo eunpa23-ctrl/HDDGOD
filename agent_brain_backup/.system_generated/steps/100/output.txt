@@ -1,5 +1,0 @@
-
-The command exited with code 0.
-Output:
-Raw bytes: b'\xff\xfe1\x00.\x000\x00.\x001\x00\r\x00\n\x00'
-

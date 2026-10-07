@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-SUCCESS: The process "python.exe" with PID 3376 has been terminated.
-SUCCESS: The process "python.exe" with PID 3412 has been terminated.
-ERROR: The process "pythonw.exe" not found.
-SUCCESS: The process "cloudflared.exe" with PID 5352 has been terminated.
-

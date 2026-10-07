@@ -1,7 +1,0 @@
-
-The command exited with code 0.
-Output:
-TargetPath: C:\Program Files\Google\Chrome\Application\chrome.exe
-Arguments: --remote-debugging-port=9222 --user-data-dir="C:\ProgramData\NetflixProfile" --start-maximized --no-first-run --no-default-browser-check --disable-popup-blocking "https://www.netflix.com"
-IconLocation: C:\ProgramData\NetflixProfile\netflix.ico,0
-

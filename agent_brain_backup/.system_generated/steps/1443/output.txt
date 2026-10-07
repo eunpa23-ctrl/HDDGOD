@@ -1,5 +1,0 @@
-
-The command exited with code 1.
-Output:
-fatal: not a git repository (or any of the parent directories): .git
-

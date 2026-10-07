@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-Exists: True
-Data: {'supervisor_pid': 964, 'is_running': False, 'restart_count': 1, 'last_exit_code': None, 'last_heartbeat': 1790847535.8698049}
-Time now: 1790847977.1454144
-Heartbeat diff: 441.2756130695343
-

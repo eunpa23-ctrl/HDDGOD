@@ -1,8 +1,0 @@
-
-The command exited with code 1.
-Output:
-  File "<string>", line 1
-    content = '''@echo off\npushd " %~dp0\\n\ntitle
-              ^
-SyntaxError: unterminated triple-quoted string literal (detected at line 1)
-

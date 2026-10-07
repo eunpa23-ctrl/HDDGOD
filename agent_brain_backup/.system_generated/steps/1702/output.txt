@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-[master d7d1a68] Fix OTP input to use CDP char typing instead of JS value injection
- 2 files changed, 50 insertions(+), 34 deletions(-)
-To https://github.com/eunpa23-ctrl/HDDGOD.git
-   a9fe056..d7d1a68  master -> master
-

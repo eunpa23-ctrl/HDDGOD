@@ -1,5 +1,0 @@
-
-The command exited with code 0.
-Output:
-Port 3389: OPEN
-

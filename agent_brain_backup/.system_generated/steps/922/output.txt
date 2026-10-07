@@ -1,9 +1,0 @@
-
-The command exited with code 1.
-Output:
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-    import sys; sys.stdout.reconfigure(encoding='utf-8'); p = [p for p in os.listdir(r'deploy\ClientDeploy') if p.startswith('2')][0]; print(open(os.path.join(r'deploy\ClientDeploy', p), 'rb').read().decode('cp949', errors='ignore'))
-                                                                          ^^
-NameError: name 'os' is not defined. Did you forget to import 'os'?
-

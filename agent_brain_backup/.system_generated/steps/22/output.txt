@@ -1,9 +1,0 @@
-
-The command exited with code 1.
-Output:
-Traceback (most recent call last):
-  File "<string>", line 6, in <module>
-    cursor.execute('SELECT conversation_id, summary FROM conversation_summaries')
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-sqlite3.OperationalError: no such column: summary
-

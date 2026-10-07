@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-[master 6fc25d8] Fix Chrome Restore Pages popup blocking Netflix login Enter key
- 1 file changed, 41 insertions(+), 26 deletions(-)
-To https://github.com/eunpa23-ctrl/HDDGOD.git
-   6ebd376..6fc25d8  master -> master
-

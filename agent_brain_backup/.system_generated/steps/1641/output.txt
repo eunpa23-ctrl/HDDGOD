@@ -1,8 +1,0 @@
-
-The command exited with code 0.
-Output:
-[master 2c858d3] Use Tab + Enter to submit Netflix Next button
- 1 file changed, 18 insertions(+), 20 deletions(-)
-To https://github.com/eunpa23-ctrl/HDDGOD.git
-   c72369a..2c858d3  master -> master
-

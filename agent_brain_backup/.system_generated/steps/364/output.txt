@@ -1,5 +1,0 @@
-
-The command exited with code 0.
-Output:
-532: @app.get("/api/version")
-

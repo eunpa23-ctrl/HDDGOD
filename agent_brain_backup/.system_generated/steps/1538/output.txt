@@ -1,8 +1,0 @@
-
-The command exited with code 1.
-Output:
-Traceback (most recent call last):
-  File "<string>", line 4, in <module>
-    import websocket
-ModuleNotFoundError: No module named 'websocket'
-

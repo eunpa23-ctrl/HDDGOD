@@ -1,6 +1,0 @@
-
-The command exited with code 0.
-Output:
-pystray version: unknown
-Backend: <class 'pystray._win32.Icon'>
-

@@ -1,9 +1,0 @@
-
-The command exited with code 0.
-Output:
-Status: 200
-INPUT: <input type="text" autoComplete="email" dir="ltr" id=":R5akql6l9allbaldalkm:" name="userLoginId" data-uia="field-userLoginId" data-hcw-form-control-element="true" value=""/>
-INPUT: <input type="password" autoComplete="password" dir="ltr" id=":R59lal6l9allbaldalkm:" name="password" data-uia="field-password" data-hcw-form-control-element="true" value=""/>
-BUTTON: <button data-uia="continue-button" class="e136yimv2 default-ltr-iqcdef-cache-2896cm" type="submit">
-BUTTON: <button data-uia="help-menu-toggle-expanded" class="egsim9q0 default-ltr-iqcdef-cache-qaxsqt" type="button">
-

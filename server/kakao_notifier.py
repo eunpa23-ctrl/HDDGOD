@@ -19,7 +19,7 @@ class KakaoNotifier:
     def send_otp_alert(self, client_id: str, otp_page_url: str) -> bool:
         """점주 스마트폰으로 4자리 인증번호 요청 메시지 발송"""
         message = (
-            f"[⚡ 제우스 관제 알림]\n"
+            f"[⚡ 제우스 HDD PROTECTOR 관제 알림]\n"
             f"[{client_id}] 넷플릭스 4자리 인증코드가 필요합니다.\n\n"
             f"아래 링크를 눌러 4자리 번호를 입력해 주세요:\n"
             f"{otp_page_url}"

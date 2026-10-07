@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
     <header class="sticky top-0 z-50 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-2">
             <i class="fa-solid fa-bolt text-amber-400 text-xl"></i>
-            <h1 class="text-xl font-bold tracking-tight">제우스 모바일</h1>
+            <h1 class="text-xl font-bold tracking-tight">제우스 HDD PROTECTOR 모바일</h1>
         </div>
         <div class="flex gap-2">
             <button onclick="sendCommand('ALL', 'ENABLE_UWF')" class="w-10 h-10 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center active:bg-emerald-800 shadow-[0_0_10px_rgba(16,185,129,0.3)]" title="전체 보호">
@@ -24,8 +24,15 @@
             <button onclick="sendCommand('ALL', 'REBOOT_RECOVER')" class="w-10 h-10 rounded-full bg-sky-900 text-sky-400 flex items-center justify-center active:bg-sky-800 shadow-[0_0_10px_rgba(14,165,233,0.3)]" title="전체 복구">
                 <i class="fa-solid fa-rotate"></i>
             </button>
+            <button id="mob-mem-btn" onclick="optimizeMemoryMobile()" class="w-10 h-10 rounded-full bg-slate-800 text-emerald-400 flex items-center justify-center active:bg-slate-700 shadow-[0_0_10px_rgba(16,185,129,0.3)]" title="메모리 최적화">
+                <i class="fa-solid fa-broom text-sm"></i>
+            </button>
             <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center active:bg-slate-700 shadow-[0_0_10px_rgba(251,191,36,0.3)]" title="환경설정">
                 <i class="fa-solid fa-gear"></i>
+            </button>
+            <button onclick="openMobLogModal()" class="w-10 h-10 rounded-full bg-slate-800 text-rose-400 flex items-center justify-center active:bg-slate-700 shadow-[0_0_10px_rgba(244,63,94,0.3)] relative" title="실시간 클라이언트 로그">
+                <i class="fa-solid fa-gears text-sm"></i>
+                <span id="mob-log-badge" class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-slate-950 hidden animate-pulse"></span>
             </button>
         </div>
     </header>
@@ -48,7 +55,7 @@
                 </div>
             </div>
             <div class="flex flex-col items-center flex-1">
-                <span class="text-[10px] text-slate-400 mb-1">제우스 점유율</span>
+                <span class="text-[10px] text-slate-400 mb-1">제우스 HDD PROTECTOR 점유율</span>
                 <div class="flex items-baseline gap-1">
                     <span id="mob-server-ram" class="text-lg font-bold text-emerald-400">0</span>
                     <span class="text-xs text-slate-500">MB</span>
@@ -79,7 +86,7 @@
                         <span id="badge-${pc.id}" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">오프라인</span>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.open('/remote/${pc.id}', '_blank')" class="flex-1 py-3 bg-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-slate-700">
+            <button onclick="window.open('/remote/${pc.id}', '_blank')" class="flex-1 py-3 bg-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-slate-700">
                             <i class="fa-solid fa-desktop"></i> 원격조작
                         </button>
                         <button onclick="sendCommand('${pc.id}', 'REBOOT_RECOVER')" class="flex-1 py-3 bg-sky-900 text-sky-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-sky-800">
@@ -104,6 +111,10 @@
 
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
+            if (data.type === 'log') {
+                handleMobLogMessage(data);
+                return;
+            }
             if (data.type === 'FULL_STATE') {
                 // 상단 리소스 업데이트
                 if(data.cpu !== undefined) document.getElementById('mob-cpu').innerText = data.cpu;
@@ -169,6 +180,17 @@
                 document.getElementById('mcfg-admin-pwd').value = data.admin_password || '1234';
                 document.getElementById('mcfg-version').innerText = data.client_version || '1.0.1';
                 document.getElementById('mcfg-tg-chatid').value = data.telegram_chat_id || '';
+
+                // Pica 설정 별도 로드
+                try {
+                    const picaRes = await fetch('/api/pica/status');
+                    const picaData = await picaRes.json();
+                    document.getElementById('mcfg-pica-enabled').checked = picaData.is_enabled;
+                    document.getElementById('mcfg-pica-auto-login').checked = picaData.auto_login_enabled;
+                    document.getElementById('mcfg-pica-path').value = picaData.program_path;
+                    document.getElementById('mcfg-pica-process').value = picaData.process_name;
+                    document.getElementById('mcfg-pica-password').value = picaData.password_masked;
+                } catch(e) {}
 
                 // 윈도우 시작프로그램 상태 반영
                 updateMobAutostartUI(data.windows_autostart);
@@ -251,22 +273,105 @@
                 admin_password: document.getElementById('mcfg-admin-pwd').value.trim(),
                 telegram_chat_id: document.getElementById('mcfg-tg-chatid').value.trim()
             };
+            
+            const picaPayload = {
+                is_enabled: document.getElementById('mcfg-pica-enabled').checked,
+                auto_login_enabled: document.getElementById('mcfg-pica-auto-login').checked,
+                program_path: document.getElementById('mcfg-pica-path').value,
+                process_name: document.getElementById('mcfg-pica-process').value,
+                password: document.getElementById('mcfg-pica-password').value
+            };
+            
             const msg = document.getElementById('mob-settings-msg');
             if (msg) msg.innerText = '저장 중...';
             try {
-                const res = await fetch('/api/settings', {
+                await fetch('/api/settings', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
-                const data = await res.json();
-                if (data.status === 'ok') {
-                    if (msg) msg.innerText = '✅ 설정이 저장되었습니다!';
-                    setTimeout(() => { if (msg) msg.innerText = ''; }, 2500);
-                }
+                await fetch('/api/pica/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(picaPayload)
+                });
+                
+                if (msg) msg.innerText = '✅ 설정이 저장되었습니다!';
+                setTimeout(() => { if (msg) msg.innerText = ''; closeSettingsModal(); }, 1000);
             } catch (e) {
                 if (msg) msg.innerText = '저장 실패: ' + e;
             }
+        }
+    
+        // --- 🔴 실시간 클라이언트 로그 모바일 뷰어 ---
+        let mobLogs = [];
+        const MAX_MOB_LOGS = 200;
+        let mobLogAutoScroll = true;
+
+        function handleMobLogMessage(logEntry) {
+            mobLogs.push(logEntry);
+            if (mobLogs.length > MAX_MOB_LOGS) mobLogs.shift();
+            
+            // 모달이 닫혀있으면 새 로그 알림 점 표시
+            const modal = document.getElementById("mob-log-modal");
+            const badge = document.getElementById("mob-log-badge");
+            if (modal && modal.classList.contains("hidden") && badge) {
+                badge.classList.remove("hidden");
+            }
+
+            // PC 필터 옵션 추가
+            const filter = document.getElementById("mob-log-filter");
+            if (filter && logEntry.client_id) {
+                const exists = [...filter.options].some(o => o.value === logEntry.client_id);
+                if (!exists) {
+                    const opt = document.createElement("option");
+                    opt.value = logEntry.client_id;
+                    opt.textContent = logEntry.client_id;
+                    filter.appendChild(opt);
+                }
+            }
+
+            renderMobLogs();
+        }
+
+        function renderMobLogs() {
+            const box = document.getElementById("mob-log-box");
+            const filter = document.getElementById("mob-log-filter");
+            if (!box) return;
+            const curFilter = filter ? filter.value : "ALL";
+            const filtered = mobLogs.filter(e => curFilter === "ALL" || e.client_id === curFilter);
+            const colors = { ERROR: "#ff6b6b", WARNING: "#ffd93d", INFO: "#6bcb77", DEBUG: "#adb5bd" };
+
+            box.innerHTML = filtered.map(e => `
+                <div style="color:${colors[e.level]||"#cbd5e1"};margin-bottom:4px;font-size:11px;word-break:break-all;">
+                    <span style="color:#64748b;">[${e.timestamp||""}]</span>
+                    <span style="color:#38bdf8;font-weight:bold;">[${e.client_id||"PC"}]</span>
+                    <span style="color:${colors[e.level]||"#cbd5e1"};font-weight:600;">[${e.level||"INFO"}]</span>
+                    <span>${e.message||""}</span>
+                </div>
+            `).join("");
+
+            if (mobLogAutoScroll) {
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        function openMobLogModal() {
+            const modal = document.getElementById("mob-log-modal");
+            const badge = document.getElementById("mob-log-badge");
+            if (modal) modal.classList.remove("hidden");
+            if (badge) badge.classList.add("hidden");
+            renderMobLogs();
+        }
+
+        function closeMobLogModal() {
+            const modal = document.getElementById("mob-log-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        function clearMobLogs() {
+            mobLogs = [];
+            renderMobLogs();
         }
     </script>
 
@@ -331,10 +436,75 @@
                     <label class="block text-slate-400 mb-1">텔레그램 Chat ID</label>
                     <input id="mcfg-tg-chatid" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none">
                 </div>
-                <div class="flex items-center justify-between pt-1">
-                    <span id="mob-settings-msg" class="text-[11px] text-amber-400 font-semibold"></span>
-                    <button onclick="saveMobSettings()" class="px-4 py-1.5 bg-indigo-600 active:bg-indigo-500 rounded-lg text-xs font-bold">저장하기</button>
+
+                <hr class="border-slate-800">
+
+                <div class="space-y-2">
+                    <span class="font-bold text-sm text-green-400 flex items-center gap-2"><i class="fa-solid fa-shield-dog"></i> Pica 감시 센터</span>
+                    <div class="flex gap-4 mb-2">
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="mcfg-pica-enabled" class="rounded"> <span class="text-xs text-slate-300">자동 감시</span></label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="mcfg-pica-auto-login" class="rounded"> <span class="text-xs text-slate-300">자동 로그인</span></label>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 text-[10px]">피카 실행 경로</label>
+                        <input id="mcfg-pica-path" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-[10px] outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-slate-400 mb-1 text-[10px]">프로세스 이름</label>
+                            <input id="mcfg-pica-process" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-[10px] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 text-[10px]">비밀번호</label>
+                            <input id="mcfg-pica-password" type="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-[10px] outline-none" placeholder="비밀번호">
+                        </div>
+                    </div>
                 </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-slate-800 mt-2 pt-3">
+                    <span id="mob-settings-msg" class="text-[11px] text-amber-400 font-semibold"></span>
+                    <button onclick="saveMobSettings()" class="px-4 py-1.5 bg-indigo-600 active:bg-indigo-500 rounded-lg text-xs font-bold">전체 저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔴 실시간 클라이언트 로그 모달 (설정 옆 톱니바퀴 fa-gears 클릭 시 표시) -->
+    <div id="mob-log-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col h-[85vh] overflow-hidden">
+            <!-- 모달 헤더 -->
+            <div class="p-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-gears text-rose-500"></i>
+                    <h3 class="font-bold text-sm text-white">실시간 클라이언트 로그</h3>
+                </div>
+                <button onclick="closeMobLogModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- 컨트롤 바 (필터, 지우기, 자동스크롤) -->
+            <div class="p-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center gap-2 shrink-0 text-xs">
+                <select id="mob-log-filter" onchange="renderMobLogs()" class="bg-slate-950 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-xs outline-none">
+                    <option value="ALL">전체 PC</option>
+                </select>
+                <button onclick="clearMobLogs()" class="px-2.5 py-1 bg-slate-800 active:bg-slate-700 text-slate-300 rounded-lg font-semibold border border-slate-700">
+                    지우기
+                </button>
+                <button id="mob-autoscroll-btn" onclick="mobLogAutoScroll=!mobLogAutoScroll;this.innerText=mobLogAutoScroll?'자동스크롤 ON':'자동스크롤 OFF';this.className=mobLogAutoScroll?'px-2.5 py-1 bg-emerald-950 text-emerald-400 rounded-lg font-semibold border border-emerald-800':'px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg font-semibold border border-slate-700';" class="px-2.5 py-1 bg-emerald-950 text-emerald-400 rounded-lg font-semibold border border-emerald-800">
+                    자동스크롤 ON
+                </button>
+            </div>
+
+            <!-- 로그 내용 영역 -->
+            <div id="mob-log-box" class="flex-1 overflow-y-auto p-3 bg-black/60 font-mono select-text" style="font-size:11px;line-height:1.5;">
+                <div class="text-slate-500 text-center py-6 text-xs">클라이언트 로그를 대기 중입니다...</div>
+            </div>
+
+            <!-- 모달 푸터 -->
+            <div class="p-2.5 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400 shrink-0">
+                <span>클라이언트 실시간 이벤트 자동 수신</span>
+                <button onclick="closeMobLogModal()" class="px-3.5 py-1 bg-slate-800 text-slate-200 rounded-lg font-bold">닫기</button>
             </div>
         </div>
     </div>

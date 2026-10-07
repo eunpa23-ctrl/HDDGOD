@@ -69,7 +69,7 @@ class PicaWatchdog:
             except Exception as e:
                 logger.error(f"직접 텔레그램 발송 실패: {e}")
 
-    def perform_login_uia(self):
+    def perform_login_uia(self, max_retries=30):
         """UIA를 사용하여 PicaLive 로그인 창을 찾고 비밀번호 입력 및 OK 클릭"""
         try:
             import ctypes
@@ -79,14 +79,29 @@ class PicaWatchdog:
                 user32.SetThreadDesktop(hDesk)
 
             login_win = None
-            for _ in range(30):
+            for _ in range(max_retries):
                 try:
-                    win = Desktop(backend="uia").window(title="PicaLive")
-                    if win.exists(timeout=0.5):
-                        pwd = win.child_window(auto_id="txtPwd", control_type="Edit")
-                        if pwd.exists(timeout=0.5):
-                            login_win = win
-                            break
+                    # 'PicaLive' 또는 '로그인' 타이틀을 가진 창 찾기 (안정성 강화)
+                    windows = Desktop(backend="uia").windows()
+                    win = None
+                    for w in windows:
+                        if w.window_text() in ["PicaLive", "로그인"] or "PicaLive" in w.window_text():
+                            pwd = w.child_window(auto_id="txtPwd", control_type="Edit")
+                            if pwd.exists(timeout=0.1):
+                                win = w
+                                break
+                    if win:
+                        login_win = win
+                        break
+                    
+                    # 기존 방식 호환성 유지
+                    if not win:
+                        win_fallback = Desktop(backend="uia").window(title="PicaLive")
+                        if win_fallback.exists(timeout=0.2):
+                            pwd = win_fallback.child_window(auto_id="txtPwd", control_type="Edit")
+                            if pwd.exists(timeout=0.2):
+                                login_win = win_fallback
+                                break
                 except Exception:
                     pass
                 time.sleep(1)
@@ -102,7 +117,8 @@ class PicaWatchdog:
                 logger.info("🔑 PicaLive UIA 자동 로그인 성공 (비밀번호 입력 및 확인 클릭)")
                 return True
             else:
-                logger.warning("PicaLive 로그인 창을 30초 내에 찾지 못함 (이미 로그인되었거나 지연)")
+                if max_retries > 1:
+                    logger.warning("PicaLive 로그인 창을 찾지 못함 (이미 로그인되었거나 지연)")
         except Exception as e:
             logger.error(f"PicaLive 로그인 자동화 오류: {e}")
         return False
@@ -132,7 +148,7 @@ class PicaWatchdog:
                         
                         # 4. 로그인 창 감지 및 자동 로그인
                         if self.auto_login_enabled and self.password:
-                            await asyncio.to_thread(self.perform_login_uia)
+                            await asyncio.to_thread(self.perform_login_uia, 30)
                             
                         logger.info("✅ PicaLive 자동 복구 완료")
                         # 5. 복구 성공 텔레그램 발송
@@ -143,6 +159,11 @@ class PicaWatchdog:
                         
                     # 연속 재실행 방지 대기
                     await asyncio.sleep(20)
+                else:
+                    # 프로세스는 실행 중이나 로그인 창에 머물러 있는 경우 (예: 서버 재시작 후 Pica가 로그아웃 상태일 때)
+                    if self.auto_login_enabled and self.password:
+                        # max_retries=1 로 설정하여 짧게 검사
+                        await asyncio.to_thread(self.perform_login_uia, 1)
             
             await asyncio.sleep(self.watch_interval)
 

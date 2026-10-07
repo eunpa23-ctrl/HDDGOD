@@ -43,11 +43,10 @@ with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(full_path, rel_path)
 print(f"Created {zip_path} ({os.path.getsize(zip_path):,} bytes)")
 
-# 3. 배포 대상 위치 동기화
+# 3. 배포 대상 위치 동기화 (로컬 PC 및 서버 배포 디렉터리만 유지)
 destinations = [
     os.path.join(ROOT_DIR, "deploy", "ClientDeploy"),
-    os.path.join(ROOT_DIR, "dist", "deploy", "ClientDeploy"),
-    r"G:\내 드라이브\PROJECT\HDDGOD\deploy\ClientDeploy"
+    os.path.join(ROOT_DIR, "dist", "deploy", "ClientDeploy")
 ]
 
 for dest in destinations:

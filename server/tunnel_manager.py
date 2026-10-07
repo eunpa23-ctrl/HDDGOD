@@ -4,7 +4,7 @@ r"""
 G:\내 드라이브\PROJECT\HDDGOD\server\tunnel_manager.py
 
 매장 외부나 스마트폰(LTE/5G)에서 포트포워딩이나 복잡한 공유기 설정 없이
-원클릭/QR코드로 제우스 대시보드에 실시간 접속할 수 있도록 지원합니다.
+원클릭/QR코드로 제우스 HDD PROTECTOR 대시보드에 실시간 접속할 수 있도록 지원합니다.
 """
 import os
 import re
@@ -24,10 +24,24 @@ class TunnelManager:
         self.process: Optional[asyncio.subprocess.Process] = None
         self._task: Optional[asyncio.Task] = None
 
-        # tools/cloudflared.exe 경로 탐색
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(base_dir)
-        self.bin_path = os.path.join(project_root, "tools", "cloudflared.exe")
+        import sys
+        candidates = []
+        if getattr(sys, 'frozen', False):
+            if hasattr(sys, '_MEIPASS'):
+                candidates.append(os.path.join(sys._MEIPASS, "tools", "cloudflared.exe"))
+            candidates.append(os.path.join(os.path.dirname(sys.executable), "tools", "cloudflared.exe"))
+            candidates.append(os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "tools", "cloudflared.exe"))
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(base_dir)
+            candidates.append(os.path.join(project_root, "tools", "cloudflared.exe"))
+        
+        found = None
+        for c in candidates:
+            if os.path.exists(c):
+                found = c
+                break
+        self.bin_path = found or candidates[0]
 
     @staticmethod
     def get_local_ip() -> str:

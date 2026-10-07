@@ -742,8 +742,11 @@ async def get_version():
 
 @app.get("/api/download/update")
 async def download_update():
-    """최신 클라이언트 실행 파일 다운로드"""
+    """최신 클라이언트 실행 파일 또는 패키지 다운로드"""
     from fastapi.responses import FileResponse
+    zip_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "ZeusAgent.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(zip_path, filename="ZeusAgent.zip")
     exe_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
     if os.path.exists(exe_path):
         return FileResponse(exe_path, filename="ZeusAgent.exe")

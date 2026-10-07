@@ -122,15 +122,6 @@ class ZeusClientAgent:
         # 4. 팟플레이어 및 넷플릭스 격리 프로필 예외 등록
         UWFController.apply_exclusions()
 
-        # 5. 바탕화면 필수 아이콘 자동 복구 & 배경화면 영구 유지
-        try:
-            from client.desktop_guard import DesktopGuard
-            DesktopGuard.restore_saved_wallpaper()
-            DesktopGuard.sync_desktop_icons()
-            DesktopGuard.start_wallpaper_watcher()
-        except Exception as e:
-            logger.warning(f"바탕화면/아이콘 관리자 구동 중 예외: {e}")
-
         logger.info("=== 제우스 부팅 시퀀스 완료 ===")
 
     def start_netflix_routine(self) -> None:
@@ -382,7 +373,7 @@ class ZeusClientAgent:
         return ROOT_DIR
 
     def check_and_apply_update(self, force=False):
-        """서버와 버전을 비교하고 새 버전이 있거나 force=True면 덮어쓰기 업데이트 수행"""
+        """서버와 버전을 비교하고 새 버전이 있거나 force=True면 덮어쓰기 업데이트 수행 (GUI 포함)"""
         import requests
         try:
             app_dir = self.get_app_dir()
@@ -407,19 +398,69 @@ class ZeusClientAgent:
                 reason = "강제 업데이트 명령" if force else f"현재: {current_version} -> 최신: {latest_version}"
                 logger.info(f"🔄 클라이언트 업데이트 진행! ({reason})")
                 
+                # 업데이트 진행상황 UI 생성
+                import tkinter as tk
+                from tkinter import ttk
+                root = tk.Tk()
+                root.title("제우스 에이전트 패치 업데이트")
+                root.geometry("450x180")
+                root.attributes("-topmost", True)
+                root.eval('tk::PlaceWindow . center')
+                
+                lbl = tk.Label(root, text=f"제우스 에이전트 업데이트 시작...\n버전 {current_version} -> {latest_version}\n다운로드 중입니다. 잠시만 기다려주세요.", font=("맑은 고딕", 11))
+                lbl.pack(pady=15)
+                
+                progress = ttk.Progressbar(root, orient="horizontal", length=350, mode="determinate")
+                progress.pack(pady=10)
+                
+                pct_lbl = tk.Label(root, text="0%", font=("맑은 고딕", 10, "bold"))
+                pct_lbl.pack()
+                
+                root.update()
+
                 # 새 실행 파일 다운로드 (안정적인 30초 타임아웃)
                 exe_res = requests.get(f"{server_url}/api/download/update", stream=True, timeout=30)
                 if exe_res.status_code == 200:
+                    total_length = exe_res.headers.get('content-length')
                     new_exe_path = os.path.join(app_dir, "ZeusAgent_new.exe")
+                    
                     with open(new_exe_path, "wb") as f:
-                        for chunk in exe_res.iter_content(chunk_size=65536):
-                            if chunk:
-                                f.write(chunk)
+                        if total_length is None:
+                            progress.config(mode="indeterminate")
+                            progress.start()
+                            for chunk in exe_res.iter_content(chunk_size=65536):
+                                if chunk:
+                                    f.write(chunk)
+                                    root.update()
+                        else:
+                            total_length = int(total_length)
+                            downloaded = 0
+                            for chunk in exe_res.iter_content(chunk_size=65536):
+                                if chunk:
+                                    f.write(chunk)
+                                    downloaded += len(chunk)
+                                    pct = int((downloaded / total_length) * 100)
+                                    progress['value'] = pct
+                                    pct_lbl.config(text=f"{pct}%")
+                                    root.update()
                     
                     # 파일 다운로드 완전성 검증 (최소 5MB 이상)
                     if not os.path.exists(new_exe_path) or os.path.getsize(new_exe_path) < 5000000:
                         logger.error("업데이트 파일 다운로드 불완전 (크기 미달), 업데이트 중단")
+                        root.destroy()
                         return
+
+                    lbl.config(text="다운로드 완료! 에이전트를 재시작합니다...")
+                    progress['value'] = 100
+                    pct_lbl.config(text="100%")
+                    root.update()
+                    import time
+                    time.sleep(1.5)
+                    root.destroy()
+
+                    # 업데이트 플래그 생성 (업데이트 직후 UI 표시용)
+                    with open(os.path.join(app_dir, "just_updated.flag"), "w", encoding="utf-8") as f:
+                        f.write(latest_version)
 
                     # 새 버전 파일 쓰기
                     new_ver_path = os.path.join(app_dir, "version_new.txt")
@@ -433,10 +474,17 @@ cd /d "%~dp0"
 ping 127.0.0.1 -n 3 >nul
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
+if exist "temp" rd /s /q "temp" >nul 2>&1
+
+:: zip 패키지가 다운로드된 경우 즉시 압축 해제
+if exist "ZeusAgent_new.zip" (
+    tar -xf "ZeusAgent_new.zip" -C "%~dp0" >nul 2>&1
+    del "ZeusAgent_new.zip" >nul 2>&1
+)
 
 set RETRY=0
 :RETRY_MOVE
-if not exist "ZeusAgent_new.exe" goto LAUNCH
+if not exist "ZeusAgent_new.exe" goto UNBLOCK
 move /y "ZeusAgent_new.exe" "ZeusAgent.exe" >nul 2>&1
 if errorlevel 1 (
     set /a RETRY+=1
@@ -445,6 +493,9 @@ if errorlevel 1 (
         goto RETRY_MOVE
     )
 )
+
+:UNBLOCK
+powershell -Command "Get-ChildItem -Path '%~dp0' -Recurse | Unblock-File" >nul 2>&1
 
 :MOVE_VER
 if exist "version_new.txt" move /y "version_new.txt" "version.txt" >nul 2>&1
@@ -457,12 +508,46 @@ del "%~f0"
                     with open(bat_path, "w", encoding="cp949") as f:
                         f.write(bat_content)
 
+                    # 트레이 아이콘이 있으면 먼저 명시적으로 정지하여 고스트 아이콘 방지
+                    if hasattr(self, 'tray') and self.tray and getattr(self.tray, 'icon', None):
+                        try:
+                            self.tray.icon.stop()
+                        except Exception:
+                            pass
+
                     # 배치 파일 실행 후 현재 프로세스 완전 종료
                     import subprocess
                     subprocess.Popen(bat_path, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
                     os._exit(0)
         except Exception as e:
             logger.error(f"업데이트 확인 중 오류: {e}")
+
+    def show_update_complete_window(self):
+        import tkinter as tk
+        from tkinter import messagebox
+        from client.uwf_controller import UWFController
+        import os
+        
+        version_path = os.path.join(self.get_app_dir(), "version.txt")
+        current_version = "알 수 없음"
+        if os.path.exists(version_path):
+            with open(version_path, "r", encoding="utf-8") as f:
+                current_version = f.read().strip()
+                
+        uwf_st = UWFController.get_status()
+        if uwf_st == "PROTECTED":
+            uwf_msg = "보존 모드 (상태 변화 없음 - 안전함)"
+        elif uwf_st == "MAINTENANCE":
+            uwf_msg = "유지보수 모드 (상태 변화 없음 - 설정 저장 가능)"
+        else:
+            uwf_msg = f"{uwf_st}"
+            
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        msg = f"✅ 제우스 에이전트 업데이트가 성공적으로 완료되었습니다!\n\n현재 적용된 버전: {current_version}\nUWF 디스크 보호 상태: {uwf_msg}"
+        messagebox.showinfo("업데이트 완료", msg, parent=root)
+        root.destroy()
 
     def start(self):
         """에이전트 전체 구동"""
@@ -471,6 +556,15 @@ del "%~f0"
             self.check_and_apply_update()
         except Exception as e:
             logger.warning(f"업데이트 체크 중 예외: {e}")
+
+        # 0.5 업데이트 완료 플래그 확인 및 완료창 띄우기
+        try:
+            flag_path = os.path.join(self.get_app_dir(), "just_updated.flag")
+            if os.path.exists(flag_path):
+                os.remove(flag_path)
+                self.show_update_complete_window()
+        except Exception as e:
+            logger.warning(f"업데이트 완료 플래그 확인 중 예외: {e}")
 
         # 1. 윈도우 부팅 안전 정책 실행
         try:
@@ -486,8 +580,8 @@ del "%~f0"
 
         # 3. 트레이 아이콘 백그라운드 쓰레드 실행
         try:
-            tray = ClientTrayUI(on_restart_netflix=self.start_netflix_routine)
-            threading.Thread(target=tray.run_tray, daemon=True).start()
+            self.tray = ClientTrayUI(on_restart_netflix=self.start_netflix_routine)
+            threading.Thread(target=self.tray.run_tray, daemon=True).start()
         except Exception as e:
             logger.warning(f"트레이 아이콘 구동 중 예외: {e}")
 

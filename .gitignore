@@ -29,3 +29,6 @@ logs/
 # 서버 상태/로그 파일
 server/.supervisor_status.json
 startup_log.txt
+
+deploy/ClientDeploy/ZeusAgent/
+deploy/ClientDeploy/ZeusAgent.zip

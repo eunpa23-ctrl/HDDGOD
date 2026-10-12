@@ -525,6 +525,15 @@ class ZeusClientAgent:
 setlocal enabledelayedexpansion
 
 :: ========================================================
+:: [0] 관리자 권한 자동 승격 (SYSTEM 실행 시 바로 통과)
+:: ========================================================
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    powershell -NoProfile -Command "Start-Process cmd.exe -ArgumentList '/c', '\"%~f0\"' -Verb RunAs -WindowStyle Hidden"
+    exit /b 0
+)
+
+:: ========================================================
 :: [1] PyInstaller 임시 환경변수 완전 초기화
 :: ========================================================
 set _MEIPASS2=
@@ -537,9 +546,8 @@ set PYINSTALLER_STRICT_UNLOAD_MODE=
 :: ========================================================
 cd /d "%~dp0"
 
-:: 3초 대기 후 기존 프로세스 및 스케줄러 종료
+:: 3초 대기 후 기존 프로세스 종료
 ping 127.0.0.1 -n 4 >nul
-schtasks /end /tn "ZeusClientAgent" >nul 2>&1
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
 
@@ -558,6 +566,8 @@ if errorlevel 1 (
         ping 127.0.0.1 -n 2 >nul
         goto RETRY_MOVE
     )
+    echo [update.bat] ERROR: ZeusAgent.exe 교체 실패 >> "%~dp0bat_debug.log"
+    goto LAUNCH
 )
 
 :MOVE_VER
@@ -566,8 +576,9 @@ if exist "%~dp0version_new.txt" move /y "%~dp0version_new.txt" "%~dp0version.txt
 :: UWF 보호 상태에서도 디스크 영구 저장 (커밋)
 where uwfmgr.exe >nul 2>&1
 if not errorlevel 1 (
-    uwfmgr.exe file commit "%~dp0ZeusAgent.exe" >nul 2>&1
-    uwfmgr.exe file commit "%~dp0version.txt" >nul 2>&1
+    echo [update.bat] UWF commit 시도 중... >> "%~dp0bat_debug.log"
+    uwfmgr.exe file commit "%~dp0ZeusAgent.exe" >> "%~dp0bat_debug.log" 2>&1
+    uwfmgr.exe file commit "%~dp0version.txt" >> "%~dp0bat_debug.log" 2>&1
 )
 
 :LAUNCH

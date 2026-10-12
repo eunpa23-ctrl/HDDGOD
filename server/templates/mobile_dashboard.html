@@ -464,11 +464,21 @@
 
         async function triggerMobOtaUpdate() {
             const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
-            let confirmMsg = "전체 PC에 클라이언트 무인 업데이트 명령을 전송하시겠습니까?";
             if (protectedList.length > 0) {
-                confirmMsg = `⚠️ [보호 모드 PC 감지 안내]\n\n현재 온라인 PC 중 ${protectedList.length}대가 순간복구 '보호 모드' 상태입니다.\n보호 모드 PC는 영구 저장을 위해 자동으로 유지보수 모드로 전환 후 재부팅됩니다.\n\n전체 PC 무인 업데이트를 진행하시겠습니까?`;
+                const ok = confirm(
+                    `⚠️ [순간복구 보호 모드 감지]\n\n` +
+                    `현재 보호모드 클라이언트가 ${protectedList.length}대 있습니다.\n` +
+                    `보호모드에서는 업데이트가 되지 않습니다.\n\n` +
+                    `유지보수 모드로 변경할까요? (확인 시 재부팅 후 자동 업데이트)`
+                );
+                if (ok) {
+                    await fetch('/api/command_all/DISABLE_UWF', { method: 'POST' });
+                    alert(`✅ 전체 PC에 유지보수 모드 전환 및 재부팅 명령을 전송했습니다.\n재부팅 후 자동으로 최신 버전이 설치됩니다.`);
+                }
+                return;
             }
-            if (!confirm(confirmMsg)) return;
+
+            if (!confirm("전체 PC에 클라이언트 무인 업데이트 명령을 전송하시겠습니까?")) return;
             try {
                 const res = await fetch('/api/settings/update_client', {
                     method: 'POST',

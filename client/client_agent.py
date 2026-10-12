@@ -605,7 +605,7 @@ del "%~f0"
                     # [Windows 독립 실행 보장] PowerShell Start-Process로 독립 세션 분리 구동
                     try:
                         subprocess.run(
-                            f'powershell -Command "Start-Process cmd.exe -ArgumentList '/c', '{bat_path}' -WindowStyle Hidden"',
+                            f'powershell -Command \"Start-Process cmd.exe -ArgumentList \'/c\', \'{bat_path}\' -WindowStyle Hidden\"',
                             shell=True,
                             creationflags=0x08000000
                         )

@@ -11,6 +11,7 @@ import uuid
 import json
 import threading
 import logging
+import subprocess
 import asyncio
 import websockets
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -536,25 +537,16 @@ set PYINSTALLER_STRICT_UNLOAD_MODE=
 :: ========================================================
 cd /d "%~dp0"
 
-:: 1초 대기 후 기존 프로세스 강제 종료 및 완전 정지 확인
-ping 127.0.0.1 -n 2 >nul
+:: 3초 대기 후 기존 프로세스 및 스케줄러 종료
+ping 127.0.0.1 -n 4 >nul
 schtasks /end /tn "ZeusClientAgent" >nul 2>&1
-set KILL_TRY=0
-:KILL_LOOP
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
-tasklist /FI "IMAGENAME eq ZeusAgent.exe" 2>nul | find /I "ZeusAgent.exe" >nul
-if not errorlevel 1 (
-    set /a KILL_TRY+=1
-    if !KILL_TRY! lss 10 (
-        goto KILL_LOOP
-    )
-)
 
 :: 잔여 temp 임시 폴더 삭제
 if exist "%~dp0temp" rmdir /s /q "%~dp0temp" >nul 2>&1
 
-:: 새 실행 파일 교체 시도 (최대 30회, 1초 간격 재시도)
+:: 새 실행 파일 교체 시도 (최대 30회)
 set RETRY=0
 :RETRY_MOVE
 if not exist "%~dp0ZeusAgent_new.exe" goto MOVE_VER
@@ -580,9 +572,8 @@ if not errorlevel 1 (
 
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
-schtasks /run /tn "ZeusClientAgent" >nul 2>&1
-if errorlevel 1 start "" "%~dp0ZeusAgent.exe"
-del "%~f0"
+start "" /D "%~dp0" "%~dp0ZeusAgent.exe"
+exit /b 0
 """
                     with open(bat_path, "w", encoding="cp949") as f:
                         f.write(bat_content)
@@ -602,17 +593,19 @@ del "%~f0"
                     for k in keys_to_remove:
                         clean_env.pop(k, None)
 
-                    # [Windows 독립 실행 보장] PowerShell Start-Process로 독립 세션 분리 구동
+                    # [Windows 완벽 독립 백그라운드 구동] 
+                    # DETACHED_PROCESS (0x00000008) | CREATE_NEW_PROCESS_GROUP (0x00000200) 플래그로 
+                    # 부모 프로세스(ZeusAgent.exe)가 즉시 종료되어도 update.bat가 백그라운드에서 끝까지 완벽 실행됨
                     try:
-                        cmd = [
-                            "powershell.exe",
-                            "-NoProfile",
-                            "-ExecutionPolicy", "Bypass",
-                            "-WindowStyle", "Hidden",
-                            "-Command",
-                            f'Start-Process cmd.exe -ArgumentList "/c", "{bat_path}" -WindowStyle Hidden'
-                        ]
-                        subprocess.run(cmd, creationflags=0x08000000)
+                        DETACHED_FLAGS = 0x00000008 | 0x00000200
+                        subprocess.Popen(
+                            ["cmd.exe", "/c", bat_path],
+                            creationflags=DETACHED_FLAGS,
+                            close_fds=True,
+                            cwd=app_dir,
+                            env=clean_env
+                        )
+                        logger.info("🚀 update.bat 백그라운드 독립 프로세스 실행 성공!")
                     except Exception as ex:
                         logger.error(f"update.bat 실행 실패: {ex}")
 

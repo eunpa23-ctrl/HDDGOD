@@ -604,11 +604,15 @@ del "%~f0"
 
                     # [Windows 독립 실행 보장] PowerShell Start-Process로 독립 세션 분리 구동
                     try:
-                        subprocess.run(
-                            f'powershell -Command \"Start-Process cmd.exe -ArgumentList \'/c\', \'{bat_path}\' -WindowStyle Hidden\"',
-                            shell=True,
-                            creationflags=0x08000000
-                        )
+                        cmd = [
+                            "powershell.exe",
+                            "-NoProfile",
+                            "-ExecutionPolicy", "Bypass",
+                            "-WindowStyle", "Hidden",
+                            "-Command",
+                            f'Start-Process cmd.exe -ArgumentList "/c", "{bat_path}" -WindowStyle Hidden'
+                        ]
+                        subprocess.run(cmd, creationflags=0x08000000)
                     except Exception as ex:
                         logger.error(f"update.bat 실행 실패: {ex}")
 

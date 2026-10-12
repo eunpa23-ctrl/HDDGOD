@@ -82,7 +82,7 @@ def set_windows_autostart(enable: bool) -> bool:
         import winreg
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
         if enable:
-            exe_target = r"C:\Users\USER\Documents\HDDGOD\dist\ZeusServer.exe"
+            exe_target = r"C:\HDDGOD\dist\ZeusServer.exe"
             if getattr(sys, 'frozen', False):
                 exe_target = sys.executable
             elif os.path.exists(os.path.join(PROJECT_ROOT, "dist", "ZeusServer.exe")):
@@ -834,8 +834,8 @@ async def save_settings(request: Request):
     if "telegram_threshold" in data:
         cfg.set("TELEGRAM", "ALERT_THRESHOLD_PERCENT", str(data["telegram_threshold"]).strip())
 
-    # G드라이브 및 C드라이브 config.ini 이중 동기화
-    for cf in [cfg_file, r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini"]:
+    # C:\HDDGOD 및 문서 config.ini 동기화
+    for cf in [cfg_file, r"C:\HDDGOD\deploy\ClientDeploy\core\config.ini", r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini"]:
         try:
             os.makedirs(os.path.dirname(cf), exist_ok=True)
             with open(cf, "w", encoding="utf-8") as f:
@@ -843,11 +843,11 @@ async def save_settings(request: Request):
         except Exception:
             pass
 
-    # 대시보드 바로가기(.url) URL 최신화 (G:, C: 및 바탕화면)
+    # 대시보드 바로가기(.url) URL 최신화 (C:\HDDGOD 및 바탕화면)
     t_ip = str(data.get("client_server_ip", "")).strip() or "192.168.0.100"
     t_port = str(data.get("server_port", "")).strip() or "8000"
     sc_content = f"[InternetShortcut]\nURL=http://{t_ip}:{t_port}\n"
-    for sc_dir in [PROJECT_ROOT, r"C:\Users\USER\Documents\HDDGOD", os.path.join(os.path.expanduser("~"), "Desktop")]:
+    for sc_dir in [PROJECT_ROOT, r"C:\HDDGOD", r"C:\Users\USER\Documents\HDDGOD", os.path.join(os.path.expanduser("~"), "Desktop")]:
         try:
             with open(os.path.join(sc_dir, "제우스 HDD PROTECTOR_관제_대시보드.url"), "w", encoding="utf-8") as sf:
                 sf.write(sc_content)
@@ -1015,10 +1015,10 @@ async def telegram_alert_loop():
 async def notify_tunnel_url_to_telegram():
     import requests
     logger.info("텔레그램 주소 알림 스레드 시작!")
-    for i in range(15):
+    for i in range(60):
         await asyncio.sleep(2)
         info = tunnel_manager.get_info()
-        logger.info(f"터널 상태 확인 중... [{i}/15] {info}")
+        logger.info(f"터널 상태 확인 중... [{i}/60] {info}")
         if info.get("status") == "ready" and info.get("public_url"):
             url = info["public_url"]
             msg = f"""📱 [제우스 모바일 관제소]
@@ -1057,7 +1057,7 @@ async def get_pica_status():
 async def save_pica_settings(request: Request):
     data = await request.json()
     cfg_file = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "config.ini")
-    main_cfg_file = r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini"
+    main_cfg_file = r"C:\HDDGOD\deploy\ClientDeploy\core\config.ini"
     
     import configparser
     cfg = configparser.ConfigParser()

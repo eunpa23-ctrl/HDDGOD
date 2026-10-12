@@ -374,6 +374,19 @@ class ZeusClientAgent:
 
     def check_and_apply_update(self, force=False):
         """서버와 버전을 비교하고 새 버전이 있거나 force=True면 덮어쓰기 업데이트 수행 (GUI 포함)"""
+        from client.uwf_controller import UWFController
+
+        # =====================================================================
+        # [무한 재부팅 방지 핵심 가드!]
+        # 보호 모드 상태에서는 다운로드해도 재부팅 시 롤백되므로 부팅 시 자동 업데이트 절대 금지!
+        # (관리자가 대시보드에서 강제로 원격 업데이트 명령을 보냈을 때만 force=True로 허용)
+        # =====================================================================
+        current_uwf = UWFController.get_status()
+        if current_uwf == "PROTECTED" and not force:
+            logger.info("🛡️ [안전 가드] 현재 디스크 보호 모드(PROTECTED) 가동 중입니다.")
+            logger.info("     재부팅 롤백 루프 방지를 위해 부팅 시 자동 업데이트를 안전하게 건너뜁니다.")
+            return
+
         import requests
         try:
             app_dir = self.get_app_dir()
@@ -387,46 +400,57 @@ class ZeusClientAgent:
                 except Exception:
                     pass
 
-            # 서버 최신 버전 조회
+            # 서버 최신 버전 조회 (부팅 초기 네트워크 안정화 대기: 최대 3회 재시도)
             server_url = f"http://{self.server_ip}:{self.server_port}"
-            res = requests.get(f"{server_url}/api/version", timeout=3)
-            if res.status_code != 200:
+            res = None
+            for attempt in range(3):
+                try:
+                    res = requests.get(f"{server_url}/api/version", timeout=4)
+                    if res.status_code == 200:
+                        break
+                except Exception:
+                    pass
+                import time
+                time.sleep(2)
+
+            if not res or res.status_code != 200:
                 return
             latest_version = res.text.strip().replace('"', '').replace("'", "").replace('\ufeff', '').strip()
 
             if force or (latest_version and latest_version != current_version):
-                # UWF 보호 모드 검사: PROTECTED 상태에서는 업데이트 다운로드 및 재부팅 차단 (무한 재부팅 루프 방지)
-                try:
-                    from client.uwf_controller import UWFController
-                    uwf_st = UWFController.get_status()
-                    if uwf_st == "PROTECTED" and not force:
-                        logger.warning("⚠️ UWF 보호 모드(PROTECTED) 활성화 상태입니다. 재부팅 시 롤백되므로 자동 업데이트를 건너뜁니다 (유지보수 모드에서만 업데이트 적용 가능).")
-                        return
-                except Exception as uwf_err:
-                    logger.debug(f"UWF 상태 확인 예외: {uwf_err}")
-
                 reason = "강제 업데이트 명령" if force else f"현재: {current_version} -> 최신: {latest_version}"
                 logger.info(f"🔄 클라이언트 업데이트 진행! ({reason})")
                 
-                # 업데이트 진행상황 UI 생성
-                import tkinter as tk
-                from tkinter import ttk
-                root = tk.Tk()
-                root.title("제우스 에이전트 패치 업데이트")
-                root.geometry("450x180")
-                root.attributes("-topmost", True)
-                root.eval('tk::PlaceWindow . center')
+                # 원격 강제 명령(force=True)일 경우 백그라운드 스레드 크래시를 방지하기 위해 GUI 생성 건너뜀
+                use_gui = not force
+                root = None
+                progress = None
+                pct_lbl = None
+                lbl = None
                 
-                lbl = tk.Label(root, text=f"제우스 에이전트 업데이트 시작...\n버전 {current_version} -> {latest_version}\n다운로드 중입니다. 잠시만 기다려주세요.", font=("맑은 고딕", 11))
-                lbl.pack(pady=15)
-                
-                progress = ttk.Progressbar(root, orient="horizontal", length=350, mode="determinate")
-                progress.pack(pady=10)
-                
-                pct_lbl = tk.Label(root, text="0%", font=("맑은 고딕", 10, "bold"))
-                pct_lbl.pack()
-                
-                root.update()
+                if use_gui:
+                    try:
+                        import tkinter as tk
+                        from tkinter import ttk
+                        root = tk.Tk()
+                        root.title("제우스 에이전트 패치 업데이트")
+                        root.geometry("450x180")
+                        root.attributes("-topmost", True)
+                        root.eval('tk::PlaceWindow . center')
+                        
+                        lbl = tk.Label(root, text=f"제우스 에이전트 업데이트 시작...\n버전 {current_version} -> {latest_version}\n다운로드 중입니다. 잠시만 기다려주세요.", font=("맑은 고딕", 11))
+                        lbl.pack(pady=15)
+                        
+                        progress = ttk.Progressbar(root, orient="horizontal", length=350, mode="determinate")
+                        progress.pack(pady=10)
+                        
+                        pct_lbl = tk.Label(root, text="0%", font=("맑은 고딕", 10, "bold"))
+                        pct_lbl.pack()
+                        
+                        root.update()
+                    except Exception:
+                        use_gui = False
+                        root = None
 
                 # 새 실행 파일 다운로드 (안정적인 30초 타임아웃)
                 exe_res = requests.get(f"{server_url}/api/download/update", stream=True, timeout=30)
@@ -436,12 +460,14 @@ class ZeusClientAgent:
                     
                     with open(new_exe_path, "wb") as f:
                         if total_length is None:
-                            progress.config(mode="indeterminate")
-                            progress.start()
+                            if use_gui and progress:
+                                progress.config(mode="indeterminate")
+                                progress.start()
                             for chunk in exe_res.iter_content(chunk_size=65536):
                                 if chunk:
                                     f.write(chunk)
-                                    root.update()
+                                    if use_gui and root:
+                                        root.update()
                         else:
                             total_length = int(total_length)
                             downloaded = 0
@@ -449,24 +475,27 @@ class ZeusClientAgent:
                                 if chunk:
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    pct = int((downloaded / total_length) * 100)
-                                    progress['value'] = pct
-                                    pct_lbl.config(text=f"{pct}%")
-                                    root.update()
+                                    if use_gui and progress and root:
+                                        pct = int((downloaded / total_length) * 100)
+                                        progress['value'] = pct
+                                        pct_lbl.config(text=f"{pct}%")
+                                        root.update()
                     
                     # 파일 다운로드 완전성 검증 (최소 5MB 이상)
                     if not os.path.exists(new_exe_path) or os.path.getsize(new_exe_path) < 5000000:
                         logger.error("업데이트 파일 다운로드 불완전 (크기 미달), 업데이트 중단")
-                        root.destroy()
+                        if use_gui and root:
+                            root.destroy()
                         return
 
-                    lbl.config(text="다운로드 완료! 에이전트를 재시작합니다...")
-                    progress['value'] = 100
-                    pct_lbl.config(text="100%")
-                    root.update()
-                    import time
-                    time.sleep(1.5)
-                    root.destroy()
+                    if use_gui and root:
+                        lbl.config(text="다운로드 완료! 에이전트를 재시작합니다...")
+                        progress['value'] = 100
+                        pct_lbl.config(text="100%")
+                        root.update()
+                        import time
+                        time.sleep(1)
+                        root.destroy()
 
                     # 업데이트 플래그 생성 (업데이트 직후 UI 표시용)
                     with open(os.path.join(app_dir, "just_updated.flag"), "w", encoding="utf-8") as f:
@@ -477,46 +506,64 @@ class ZeusClientAgent:
                     with open(new_ver_path, "w", encoding="utf-8") as f:
                         f.write(latest_version)
 
-                    # 업데이트 배치 파일 생성 (무인 무중단 재시도 루프)
+                    # 1. 업데이트 배치 파일 생성 (견고한 무인 교체 루프)
                     bat_path = os.path.join(app_dir, "update.bat")
                     bat_content = f"""@echo off
 setlocal enabledelayedexpansion
 
 :: ========================================================
-:: [핵심!] PyInstaller 환경변수 멸균 (DLL 로드 에러 원천 차단)
+:: [1] PyInstaller 임시 환경변수 완전 초기화
 :: ========================================================
 set _MEIPASS2=
 set _MEIPASS=
+set _PYI_APPLICATION_HOME_DIR=
 set PYINSTALLER_STRICT_UNLOAD_MODE=
 
+:: ========================================================
+:: [2] 작업 디렉터리를 에이전트 폴더로 명시적 이동
+:: ========================================================
 cd /d "%~dp0"
-ping 127.0.0.1 -n 3 >nul
+
+:: 1초 대기 후 기존 프로세스 강제 종료 및 완전 정지 확인
+ping 127.0.0.1 -n 2 >nul
+set KILL_TRY=0
+:KILL_LOOP
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
-
-:: zip 패키지가 다운로드된 경우 즉시 압축 해제
-if exist "%~dp0ZeusAgent_new.zip" (
-    tar -xf "%~dp0ZeusAgent_new.zip" -C "%~dp0" >nul 2>&1
-    del "%~dp0ZeusAgent_new.zip" >nul 2>&1
+tasklist /FI "IMAGENAME eq ZeusAgent.exe" 2>nul | find /I "ZeusAgent.exe" >nul
+if not errorlevel 1 (
+    set /a KILL_TRY+=1
+    if !KILL_TRY! lss 10 (
+        goto KILL_LOOP
+    )
 )
 
+:: 잔여 temp 임시 폴더 삭제
+if exist "%~dp0temp" rmdir /s /q "%~dp0temp" >nul 2>&1
+
+:: 새 실행 파일 교체 시도 (최대 30회, 1초 간격 재시도)
 set RETRY=0
 :RETRY_MOVE
-if not exist "%~dp0ZeusAgent_new.exe" goto UNBLOCK
+if not exist "%~dp0ZeusAgent_new.exe" goto MOVE_VER
+del /f /q "%~dp0ZeusAgent.exe" >nul 2>&1
 move /y "%~dp0ZeusAgent_new.exe" "%~dp0ZeusAgent.exe" >nul 2>&1
 if errorlevel 1 (
     set /a RETRY+=1
-    if !RETRY! lss 20 (
+    if !RETRY! lss 30 (
         ping 127.0.0.1 -n 2 >nul
         goto RETRY_MOVE
     )
 )
 
-:UNBLOCK
-powershell -Command "Get-ChildItem -Path '%~dp0' -Recurse | Unblock-File" >nul 2>&1
-
 :MOVE_VER
 if exist "%~dp0version_new.txt" move /y "%~dp0version_new.txt" "%~dp0version.txt" >nul 2>&1
+
+:: UWF 보호 상태에서도 디스크 영구 저장 (커밋)
+where uwfmgr.exe >nul 2>&1
+if not errorlevel 1 (
+    uwfmgr.exe file commit "%~dp0ZeusAgent.exe" >nul 2>&1
+    uwfmgr.exe file commit "%~dp0version.txt" >nul 2>&1
+)
 
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
@@ -526,22 +573,29 @@ del "%~f0"
                     with open(bat_path, "w", encoding="cp949") as f:
                         f.write(bat_content)
 
-                    # 트레이 아이콘이 있으면 먼저 명시적으로 정지하여 고스트 아이콘 방지
-                    if hasattr(self, 'tray') and self.tray and getattr(self.tray, 'icon', None):
+                    # 트레이 아이콘 정지
+                    if hasattr(self, "tray") and self.tray and getattr(self.tray, "icon", None):
                         try:
                             self.tray.icon.stop()
                         except Exception:
                             pass
 
-                    # PyInstaller 환경변수 상속 방지 (새 프로세스가 구버전 임시폴더를 찾다 뻗는 버그 방지)
+                    # 2. 파이썬 환경변수 멸균 및 완전 독립 분리 프로세스로 실행
                     clean_env = os.environ.copy()
-                    keys_to_remove = [k for k in clean_env.keys() if k.startswith('_PYI') or k.startswith('_MEI') or k.startswith('PYINSTALLER')]
+                    keys_to_remove = [k for k in clean_env.keys() if k.startswith("_PYI") or k.startswith("_MEI") or k.startswith("PYINSTALLER")]
                     for k in keys_to_remove:
                         clean_env.pop(k, None)
 
-                    # 독립 프로세스로 분리 실행 (부모 종료 시 자식 증발 방지)
-                    DETACHED_FLAGS = 0x00000008 | 0x00000200 # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-                    subprocess.Popen(bat_path, shell=True, creationflags=DETACHED_FLAGS, env=clean_env)
+                    # DETACHED_PROCESS(0x8) | CREATE_NEW_PROCESS_GROUP(0x200)
+                    DETACHED_FLAGS = 0x00000008 | 0x00000200
+                    subprocess.Popen(
+                        ["cmd.exe", "/c", bat_path],
+                        creationflags=DETACHED_FLAGS,
+                        close_fds=True,
+                        cwd=app_dir,
+                        env=clean_env
+                    )
+
                     import time
                     time.sleep(0.5)
                     os._exit(0)
@@ -549,31 +603,31 @@ del "%~f0"
             logger.error(f"업데이트 확인 중 오류: {e}")
 
     def show_update_complete_window(self):
-        import tkinter as tk
-        from tkinter import messagebox
-        from client.uwf_controller import UWFController
-        import os
-        
-        version_path = os.path.join(self.get_app_dir(), "version.txt")
-        current_version = "알 수 없음"
-        if os.path.exists(version_path):
-            with open(version_path, "r", encoding="utf-8") as f:
-                current_version = f.read().strip()
-                
-        uwf_st = UWFController.get_status()
-        if uwf_st == "PROTECTED":
-            uwf_msg = "보존 모드 (상태 변화 없음 - 안전함)"
-        elif uwf_st == "MAINTENANCE":
-            uwf_msg = "유지보수 모드 (상태 변화 없음 - 설정 저장 가능)"
-        else:
-            uwf_msg = f"{uwf_st}"
+        try:
+            import tkinter as tk
+            from client.uwf_controller import UWFController
+            import os
             
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        msg = f"✅ 제우스 에이전트 업데이트가 성공적으로 완료되었습니다!\n\n현재 적용된 버전: {current_version}\nUWF 디스크 보호 상태: {uwf_msg}"
-        messagebox.showinfo("업데이트 완료", msg, parent=root)
-        root.destroy()
+            version_path = os.path.join(self.get_app_dir(), "version.txt")
+            current_version = "알 수 없음"
+            if os.path.exists(version_path):
+                with open(version_path, "r", encoding="utf-8") as f:
+                    current_version = f.read().strip()
+                    
+            uwf_st = UWFController.get_status()
+            uwf_msg = "보존 모드" if uwf_st == "PROTECTED" else f"{uwf_st}"
+            
+            root = tk.Tk()
+            root.title("업데이트 완료")
+            root.geometry("380x100")
+            root.attributes("-topmost", True)
+            root.eval('tk::PlaceWindow . center')
+            lbl = tk.Label(root, text=f"✅ 제우스 에이전트 v{current_version} 패치 완료!\n(UWF 상태: {uwf_msg})", font=("맑은 고딕", 10))
+            lbl.pack(pady=20)
+            root.after(2000, root.destroy)  # 2초 후 자동 소멸
+            root.mainloop()
+        except Exception as e:
+            logger.warning(f"완료창 표시 생략: {e}")
 
     def start(self):
         """에이전트 전체 구동"""
@@ -583,12 +637,22 @@ del "%~f0"
         except Exception as e:
             logger.warning(f"업데이트 체크 중 예외: {e}")
 
-        # 0.5 업데이트 완료 플래그 확인 및 완료창 띄우기
+        # 0.5 업데이트 완료 플래그 정리 (절대 자동 재부팅 금지 -> 무한 루프 원천 차단)
         try:
             flag_path = os.path.join(self.get_app_dir(), "just_updated.flag")
             if os.path.exists(flag_path):
-                os.remove(flag_path)
-                self.show_update_complete_window()
+                try:
+                    os.remove(flag_path)
+                except Exception:
+                    pass
+                # UWF 환경에서도 영구 삭제 시도
+                try:
+                    subprocess.run(f'uwfmgr.exe file commit-delete "{flag_path}"', shell=True, capture_output=True, creationflags=0x08000000)
+                except Exception:
+                    pass
+                logger.info("🛡️ [업데이트 완료] 최신 버전 정상 가동 시작!")
+                # 완료 토스트 창을 백그라운드 스레드에서 2초간 표시 (통신 블로킹 없이 사용자에게 시각적 확인 제공)
+                threading.Thread(target=self.show_update_complete_window, daemon=True).start()
         except Exception as e:
             logger.warning(f"업데이트 완료 플래그 확인 중 예외: {e}")
 

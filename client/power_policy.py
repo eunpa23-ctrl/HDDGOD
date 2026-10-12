@@ -25,7 +25,7 @@ class PowerPolicy:
                 check=False,
                 encoding="cp949",
                 errors="ignore"
-            )
+            , creationflags=0x08000000)
             return res.stdout.strip()
         except Exception as e:
             logger.error(f"명령어 실패 {cmd_list}: {e}")
@@ -121,7 +121,7 @@ class PowerPolicy:
     def restart_explorer(cls) -> None:
         """작업표시줄 재시작 (시작메뉴 정책 즉각 새로고침)"""
         try:
-            subprocess.run(["taskkill", "/F", "/IM", "explorer.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["taskkill", "/F", "/IM", "explorer.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=0x08000000)
             subprocess.Popen(["explorer.exe"])
             logger.info("작업표시줄(explorer.exe) 새로고침 완료")
         except Exception as e:

@@ -1,36 +1,30 @@
 @echo off
-chcp 65001 >nul
-title [제우스 HDD PROTECTOR] 클라이언트 ZeusAgent 폴더 배포 빌더
+title ZeusAgent Builder
 cls
 echo ================================================================
-echo   ⚡ 제우스 HDD PROTECTOR - 클라이언트 폴더(onedir) 패키지 빌드
+echo   ZeusAgent Client Builder (OneFile)
 echo ================================================================
 echo.
-
 cd /d "%~dp0.."
-
-echo [*] PyInstaller 설치 확인...
+echo [*] Checking PyInstaller...
 python -m pip install -q pyinstaller
-
-echo [*] ZeusAgent 폴더 컴파일 시작 (약 30초 소요)...
-pyinstaller --noconfirm --onedir --windowed --name "ZeusAgent" ^
-    --hidden-import "pystray._win32" ^
-    --add-data "common;common" ^
-    --add-data "client;client" ^
-    run_client.py
-
-if exist "dist\ZeusAgent\ZeusAgent.exe" (
+echo [*] Compiling ZeusAgent (takes ~30s)...
+pyinstaller --clean --noconfirm --onefile --windowed --name "ZeusAgent" --hidden-import "pystray._win32" --add-data "common;common" --add-data "client;client" --add-binary "deploy\ClientDeploy\core\vcruntime140.dll;." --add-binary "deploy\ClientDeploy\core\vcruntime140_1.dll;." run_client.py
+if exist "dist\ZeusAgent.exe" (
     echo.
-    echo [*] 빌드 완료! 패키징 및 배포 동기화 중...
-    python deploy\package_and_deploy.py
+    echo [*] Build Complete! Copying to deploy folder...
+    if not exist "deploy\ClientDeploy\core" mkdir "deploy\ClientDeploy\core"
+    copy /y "dist\ZeusAgent.exe" "deploy\ClientDeploy\core\ZeusAgent.exe" >nul 2>&1
+    if exist "dist\deploy\ClientDeploy\core" copy /y "dist\ZeusAgent.exe" "dist\deploy\ClientDeploy\core\ZeusAgent.exe" >nul 2>&1
+    if exist "dist\deploy\ClientDeploy\ZeusAgent.zip" del /f /q "dist\deploy\ClientDeploy\ZeusAgent.zip" >nul 2>&1
+    if exist "deploy\ClientDeploy\ZeusAgent.zip" del /f /q "deploy\ClientDeploy\ZeusAgent.zip" >nul 2>&1
     echo.
     echo ================================================================
-    echo  🎉 [성공] ZeusAgent 폴더 및 ZeusAgent.zip 배포가 완료되었습니다!
+    echo  [SUCCESS] ZeusAgent.exe is ready!
     echo ================================================================
 ) else (
     echo.
-    echo [오류] 빌드에 실패했습니다. 파이썬 환경을 확인해주세요.
+    echo [ERROR] Build failed.
 )
-
 echo.
 pause

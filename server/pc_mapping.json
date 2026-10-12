@@ -4,10 +4,10 @@
     "id": "PC-01",
     "name": "PC 1번",
     "ip": "192.168.0.91",
-    "mac": "e8:2a:44:b7:9c:38",
+    "mac": "70:85:c2:82:31:a2",
     "status": "OFFLINE",
-    "uwf": "DISABLED",
-    "netflix": "RUNNING",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
     "real_cid": null
   },
   {
@@ -48,10 +48,10 @@
     "id": "PC-05",
     "name": "PC 5번",
     "ip": "192.168.0.95",
-    "mac": "e8:2a:44:b7:9c:38",
+    "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "DISABLED",
-    "netflix": "RUNNING",
+    "uwf": "UNKNOWN",
+    "netflix": "CLOSED",
     "real_cid": null
   },
   {

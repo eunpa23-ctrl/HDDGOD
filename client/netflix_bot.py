@@ -85,32 +85,20 @@ class NetflixBot:
             except Exception as e:
                 logger.debug(f"아이콘 복사/다운로드 건너뜀: {e}")
 
-        # 1. 실행기 타깃 결정:
-        # 피카(PicaLive/PicaAir) 관리프로그램이 바탕화면의 chrome.exe 바로가기를 감지하여
-        # 인자(Arguments)에 한게임/미디어웹 광고 URL을 강제 삽입하는 것을 방지하기 위해
-        # 타깃을 항상 ZeusAgent.exe --launch-netflix 로 생성합니다.
+        # [핵심 방어 1] TargetPath를 chrome.exe 대신 ZeusAgent.exe로 고정!
+        # 피카(Pica) 관리프로그램이 chrome.exe를 감지하여 한게임 등 제휴 광고 링크를 덮어쓰는 것을 원천 차단
         zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
-        if os.path.exists(zeus_exe):
-            target_path = zeus_exe
-            target_args = "--launch-netflix"
-            work_dir = r"C:\ZeusAgent"
-        elif chrome_exe and chrome_exe != "chrome.exe" and os.path.exists(chrome_exe):
-            target_path = chrome_exe
-            target_args = f'--remote-debugging-port={self.cdp_port} --user-data-dir="{self.profile_dir}" --start-maximized --no-first-run --no-default-browser-check --disable-popup-blocking "{self.start_url}"'
-            work_dir = os.path.dirname(chrome_exe)
-        else:
-            pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
-            launcher_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launch_netflix.py")
-            target_path = pythonw_exe
-            target_args = f'"{launcher_py}"'
-            work_dir = os.path.dirname(launcher_py)
+        target_path = zeus_exe if os.path.exists(zeus_exe) else sys.executable
+        target_args = "--launch-netflix"
+        work_dir = os.path.dirname(target_path)
 
-        # 2. 바탕화면 바로가기(.lnk) 생성 (사용자 및 공용 바탕화면)
-        desktop_dirs = []
+        # 2. 바탕화면 바로가기(.lnk) 보장 및 중복 방지 (기존 바로가기가 있으면 해당 파일 덮어쓰기)
         user_desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+        public_desktop = os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "Desktop")
+
+        desktop_dirs = []
         if os.path.exists(user_desktop):
             desktop_dirs.append(user_desktop)
-        public_desktop = os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "Desktop")
         if os.path.exists(public_desktop):
             desktop_dirs.append(public_desktop)
 
@@ -119,6 +107,10 @@ class NetflixBot:
         for d_dir in desktop_dirs:
             lnk_path = os.path.join(d_dir, "넷플릭스.lnk")
             try:
+                # [핵심 방어 2] 기존 바로가기가 읽기 전용이어도 갱신 가능하도록 일시 해제 후 저장
+                if os.path.exists(lnk_path):
+                    subprocess.run(f'attrib -r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
+
                 ps_script = f"""
                 $ws = New-Object -ComObject WScript.Shell
                 $s = $ws.CreateShortcut('{lnk_path}')
@@ -127,13 +119,15 @@ class NetflixBot:
                 $s.WorkingDirectory = '{work_dir}'
                 if (Test-Path '{final_icon}') {{ $s.IconLocation = '{final_icon},0' }}
                 $s.Save()
-                attrib +r '{lnk_path}'
                 """
-                subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5)
-            except Exception as e:
-                logger.warning(f"바로가기 생성 건너뜀 ({lnk_path}): {e}")
+                subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5, creationflags=0x08000000)
 
-        logger.info("바탕화면 [넷플릭스.lnk] 바로가기 보장 완료")
+                # [핵심 방어 3] 바로가기 파일에 읽기 전용(+r)을 걸어 피카의 변조 차단
+                subprocess.run(f'attrib +r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
+                logger.info(f"바탕화면 [넷플릭스.lnk] 피카 광고 방어형 바로가기 보장 완료: {lnk_path}")
+            except Exception as e:
+                logger.warning(f"바로가기 생성/갱신 건너뜀 ({lnk_path}): {e}")
+
         return True
 
     def _clean_chrome_profile(self):

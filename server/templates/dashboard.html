@@ -693,7 +693,7 @@
                             ⚡ 1초 복구
                         </button>
                         <button onclick="toggleUwf('${pc.id}', '${pc.uwf}')" class="py-1 rounded font-bold transition flex items-center justify-center gap-1 ${isProtected ? 'bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30' : 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30'}" title="${isProtected ? '유지보수 모드로 전환 (새 게임 설치/패치 가능)' : '현재 상태를 기본 상태로 영구 저장하고 보호 시작'}">
-                            ${isProtected ? '<i class="fa-solid fa-wrench"></i> 유지보수' : '<i class="fa-solid fa-floppy-disk"></i> 세팅저장&보호'}
+                            ${isProtected ? '<i class="fa-solid fa-wrench"></i> 유지보수 전환' : '<i class="fa-solid fa-floppy-disk"></i> 세팅저장&보호'}
                         </button>
                         <button onclick="sendPcCommand('${pc.id}', 'WOL')" class="py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/40 rounded text-indigo-300 transition flex items-center justify-center gap-1">
                             🔌 WOL 켜기
@@ -828,6 +828,23 @@
         }
 
         function sendCommandAll(action) {
+            if (action === 'UPDATE_AGENT') {
+                const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
+                if (protectedList.length > 0) {
+                    const ok = confirm(
+                        `⚠️ [전체 PC 업데이트 안내]\n\n` +
+                        `현재 온라인 PC 중 ${protectedList.length}대가 순간복구 '보호 모드' 상태입니다.\n` +
+                        `보호 모드인 PC는 업데이트 파일을 받아도 다음 재부팅 시 이전 버전으로 되돌아갑니다.\n\n` +
+                        `👉 영구 적용을 위해 전체 PC를 먼저 [유지보수 모드]로 전환(재부팅)하시겠습니까?\n` +
+                        `• [확인] 누름: 전체 PC를 유지보수 모드로 전환 후 재부팅 (부팅 시 최신 버전 자동 설치)\n` +
+                        `• [취소] 누름: 업데이트 취소`
+                    );
+                    if (ok) {
+                        fetch(`/api/command_all/DISABLE_UWF`, { method: 'POST' });
+                    }
+                    return;
+                }
+            }
             if (confirm(`전체 PC에 [${action}] 명령을 실행하시겠습니까?`)) {
                 fetch(`/api/command_all/${action}`, { method: 'POST' });
             }
@@ -1072,7 +1089,12 @@
 
         async function triggerOtaUpdateFromModal() {
             const ver = document.getElementById('cfg-client-version').value.trim();
-            if (!confirm(`버전 [${ver}]으로 전체 클라이언트 PC에 무인 자동 업데이트를 전송하시겠습니까?\n\n클라이언트가 새 바이너리를 다운로드받아 스스로 재시작합니다.`)) return;
+            const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
+            let confirmMsg = `버전 [${ver}]으로 전체 클라이언트 PC에 무인 자동 업데이트를 전송하시겠습니까?\n\n클라이언트가 새 바이너리를 다운로드받아 스스로 재시작합니다.`;
+            if (protectedList.length > 0) {
+                confirmMsg = `⚠️ [보호 모드 PC 감지 안내]\n\n현재 온라인 PC 중 ${protectedList.length}대가 순간복구 '보호 모드' 상태입니다.\n보호 모드 PC는 영구 저장을 위해 자동으로 유지보수 모드로 전환 후 재부팅됩니다.\n\n전체 PC에 버전 [${ver}] 무인 업데이트를 진행하시겠습니까?`;
+            }
+            if (!confirm(confirmMsg)) return;
 
             try {
                 const res = await fetch('/api/settings/update_client', {

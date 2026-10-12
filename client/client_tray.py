@@ -127,20 +127,20 @@ class ClientTrayUI:
     def build_menu(self, is_protected: bool):
         """현재 보호/유지보수 상태에 맞춘 맞춤형 우클릭 트레이 메뉴 생성"""
         version = self.get_version()
+        status_text = "🛡️ [현재 상태: 보호 중] (초록 방패)" if is_protected else "🔧 [현재 상태: 유지보수 모드] (주황 방패)"
         items = [
-            pystray.MenuItem(f"🛡️ 제우스 HDD PROTECTOR (v{version})", lambda: None, enabled=False),
+            pystray.MenuItem(f"제우스 HDD PROTECTOR (v{version})", lambda: None, enabled=False),
+            pystray.MenuItem(status_text, lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
         ]
         if is_protected:
-            items.append(pystray.MenuItem("🔧 [유지보수 모드] 보호 해제 후 재부팅", lambda: self.handle_maintenance_click()))
+            items.append(pystray.MenuItem("🔧 [유지보수 모드로 전환] 보호 해제 후 재부팅", lambda: self.handle_maintenance_click()))
         else:
-            items.append(pystray.MenuItem("💾 [세팅저장&보호] 현재상태 저장 후 보호 재부팅", lambda: self.handle_protect_click()))
+            items.append(pystray.MenuItem("💾 [보호 모드로 전환] 세팅저장 후 보호 재부팅", lambda: self.handle_protect_click()))
 
         items.extend([
             pystray.MenuItem("⚡ [1초 복구] 즉시 재부팅 복구", lambda: self.handle_restore_click()),
             pystray.MenuItem("🎬 [넷플릭스] 다시 실행", lambda: self.handle_netflix_click()),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("🔒 상태: " + ("보호 중 (초록 방패)" if is_protected else "유지보수 모드 (주황 방패)"), lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("❌ 프로그램 종료", lambda: self.handle_exit_click()),
         ])

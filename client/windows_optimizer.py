@@ -111,7 +111,7 @@ class WindowsOptimizer:
                 ["schtasks.exe", "/change", "/tn", task, "/disable"],
                 capture_output=True,
                 check=False
-            )
+            , creationflags=0x08000000)
 
     @classmethod
     def optimize_all_on_boot(cls) -> None:

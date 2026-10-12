@@ -31,12 +31,38 @@ if ctypes.windll.kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
     sys.exit(0)
 # ─────────────────────────────────────────────────────────────────
 
+class SafeStream:
+    def __init__(self, target):
+        self.target = target
+    def write(self, s):
+        try:
+            if self.target:
+                self.target.write(s)
+        except Exception:
+            pass
+    def flush(self):
+        try:
+            if self.target:
+                self.target.flush()
+        except Exception:
+            pass
+    def isatty(self):
+        try:
+            return self.target.isatty() if self.target else False
+        except Exception:
+            return False
+
 if sys.platform == "win32":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        if sys.stdout is not None:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if sys.stderr is not None:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
+
+sys.stdout = SafeStream(sys.stdout)
+sys.stderr = SafeStream(sys.stderr)
 
 # 자동 패키지 검사 및 누락 시 packages/ 폴더에서 오프라인 자동 설치
 from common.auto_installer import ensure_dependencies

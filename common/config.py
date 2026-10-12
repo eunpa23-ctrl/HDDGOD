@@ -19,6 +19,7 @@ if getattr(sys, 'frozen', False):
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 candidates.append(os.path.join(BASE_DIR, "deploy", "ClientDeploy", "core", "config.ini"))
+candidates.append(r"C:\HDDGOD\deploy\ClientDeploy\core\config.ini")
 candidates.append(r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini")
 
 CONFIG_PATH = next((p for p in candidates if os.path.exists(p)), candidates[0])

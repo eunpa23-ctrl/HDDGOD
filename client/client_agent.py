@@ -601,12 +601,22 @@ del "%~f0"
                     for k in keys_to_remove:
                         clean_env.pop(k, None)
 
-                    # CREATE_NO_WINDOW(0x08000000) | CREATE_NEW_PROCESS_GROUP(0x200)
-                    # cmd.exe가 콘솔 부재로 즉시 죽는 DETACHED_PROCESS(0x8) 대신 무창 독립 프로세스로 구동
-                    SPAWN_FLAGS = 0x08000000 | 0x00000200
+                    # [Windows 독립 실행 보장 1] 1회성 스케줄러로 update.bat 비동기 트리거
+                    try:
+                        subprocess.run(
+                            f'schtasks /create /tn "ZeusUpdateTask" /tr "\"{bat_path}\"" /sc once /st 00:00 /f /ru "System"',
+                            shell=True, capture_output=True, creationflags=0x08000000
+                        )
+                        subprocess.run('schtasks /run /tn "ZeusUpdateTask"', shell=True, capture_output=True, creationflags=0x08000000)
+                        subprocess.run('schtasks /delete /tn "ZeusUpdateTask" /f', shell=True, capture_output=True, creationflags=0x08000000)
+                    except Exception:
+                        pass
+
+                    # [Windows 독립 실행 보장 2] 보조 폴백: cmd.exe start 무창 독립 구동
                     subprocess.Popen(
-                        ["cmd.exe", "/c", bat_path],
-                        creationflags=SPAWN_FLAGS,
+                        f'cmd.exe /c start "" /b "{bat_path}"',
+                        shell=True,
+                        creationflags=0x08000000 | 0x00000200,
                         close_fds=True,
                         cwd=app_dir,
                         env=clean_env

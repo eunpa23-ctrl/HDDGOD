@@ -66,13 +66,13 @@ class NetflixBot:
                 return path
         return "chrome.exe"
 
-    def ensure_desktop_shortcut(self) -> bool:
-        """바탕화면에 넷플릭스 전용 아이콘 바로가기(.lnk) 생성"""
+    def ensure_desktop_shortcut(self, only_if_missing: bool = False) -> bool:
+        """바탕화면에 넷플릭스 단독 바로가기(.lnk) 보장 및 덮어쓰기"""
         chrome_exe = self.find_chrome_path()
         icon_path = os.path.join(self.profile_dir, "netflix.ico")
         local_ico = r"C:\ZeusAgent\netflix.ico"
 
-        # 아이콘 파일 확보 (로컬 배포본 우선 복사 -> 인터넷 다운로드 시도)
+        # 아이콘 파일 확보
         if not os.path.exists(icon_path):
             try:
                 os.makedirs(self.profile_dir, exist_ok=True)
@@ -85,14 +85,11 @@ class NetflixBot:
             except Exception as e:
                 logger.debug(f"아이콘 복사/다운로드 건너뜀: {e}")
 
-        # [핵심 방어 1] TargetPath를 chrome.exe 대신 ZeusAgent.exe로 고정!
-        # 피카(Pica) 관리프로그램이 chrome.exe를 감지하여 한게임 등 제휴 광고 링크를 덮어쓰는 것을 원천 차단
         zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
         target_path = zeus_exe if os.path.exists(zeus_exe) else sys.executable
         target_args = "--launch-netflix"
         work_dir = os.path.dirname(target_path)
 
-        # 2. 바탕화면 바로가기(.lnk) 보장 및 중복 방지 (기존 바로가기가 있으면 해당 파일 덮어쓰기)
         user_desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
         public_desktop = os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "Desktop")
 
@@ -107,8 +104,13 @@ class NetflixBot:
         for d_dir in desktop_dirs:
             lnk_path = os.path.join(d_dir, "넷플릭스.lnk")
             try:
-                # [핵심 방어 2] 기존 바로가기가 읽기 전용이어도 갱신 가능하도록 일시 해제 후 저장
-                if os.path.exists(lnk_path):
+                exists = os.path.exists(lnk_path)
+                # 업데이트 시점 등에서 기존 아이콘이 없을 때만 생성하도록 요청받은 경우
+                if only_if_missing and exists:
+                    continue
+
+                # 기존 바로가기가 있으면 읽기 전용 속성 해제 후 안전하게 덮어쓰기
+                if exists:
                     subprocess.run(f'attrib -r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
 
                 ps_script = f"""
@@ -122,11 +124,11 @@ class NetflixBot:
                 """
                 subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5, creationflags=0x08000000)
 
-                # [핵심 방어 3] 바로가기 파일에 읽기 전용(+r)을 걸어 피카의 변조 차단
+                # 덮어쓰기 완료 후 피카 등 변조 차단을 위해 다시 읽기 전용(+r) 보호
                 subprocess.run(f'attrib +r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
-                logger.info(f"바탕화면 [넷플릭스.lnk] 피카 광고 방어형 바로가기 보장 완료: {lnk_path}")
+                logger.info(f"바탕화면 [넷플릭스.lnk] 덮어쓰기 및 보존 완료: {lnk_path}")
             except Exception as e:
-                logger.warning(f"바로가기 생성/갱신 건너뜀 ({lnk_path}): {e}")
+                logger.warning(f"바로가기 생성/덮어쓰기 건너뜀 ({lnk_path}): {e}")
 
         return True
 

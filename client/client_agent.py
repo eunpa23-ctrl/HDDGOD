@@ -538,6 +538,7 @@ cd /d "%~dp0"
 
 :: 1초 대기 후 기존 프로세스 강제 종료 및 완전 정지 확인
 ping 127.0.0.1 -n 2 >nul
+schtasks /end /tn "ZeusClientAgent" >nul 2>&1
 set KILL_TRY=0
 :KILL_LOOP
 taskkill /F /IM ZeusAgent.exe >nul 2>&1

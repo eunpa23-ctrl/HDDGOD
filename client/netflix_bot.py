@@ -101,34 +101,36 @@ class NetflixBot:
 
         final_icon = icon_path if os.path.exists(icon_path) else (local_ico if os.path.exists(local_ico) else target_path)
 
+        # 사용자 바탕화면 또는 공용 바탕화면 중 어디든 넷플릭스.lnk가 이미 존재하면 건너뜀 (없을 때만 생성)
         for d_dir in desktop_dirs:
-            lnk_path = os.path.join(d_dir, "넷플릭스.lnk")
-            try:
-                exists = os.path.exists(lnk_path)
-                # 업데이트 시점 등에서 기존 아이콘이 없을 때만 생성하도록 요청받은 경우
-                if only_if_missing and exists:
-                    continue
+            chk_path = os.path.join(d_dir, "넷플릭스.lnk")
+            if os.path.exists(chk_path):
+                logger.info(f"바탕화면에 넷플릭스 아이콘이 이미 존재하므로 생성을 건너뜁니다: {chk_path}")
+                return True
 
-                # 기존 바로가기가 있으면 읽기 전용 속성 해제 후 안전하게 덮어쓰기
-                if exists:
-                    subprocess.run(f'attrib -r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
+        # 둘 다 없을 때만 생성 (기본적으로 public_desktop 우선, 없으면 user_desktop)
+        target_desktop = public_desktop if os.path.exists(public_desktop) else (user_desktop if os.path.exists(user_desktop) else None)
+        if not target_desktop:
+            return False
 
-                ps_script = f"""
-                $ws = New-Object -ComObject WScript.Shell
-                $s = $ws.CreateShortcut('{lnk_path}')
-                $s.TargetPath = '{target_path}'
-                $s.Arguments = '{target_args}'
-                $s.WorkingDirectory = '{work_dir}'
-                if (Test-Path '{final_icon}') {{ $s.IconLocation = '{final_icon},0' }}
-                $s.Save()
-                """
-                subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5, creationflags=0x08000000)
+        lnk_path = os.path.join(target_desktop, "넷플릭스.lnk")
+        try:
+            ps_script = f"""
+            $ws = New-Object -ComObject WScript.Shell
+            $s = $ws.CreateShortcut('{lnk_path}')
+            $s.TargetPath = '{target_path}'
+            $s.Arguments = '{target_args}'
+            $s.WorkingDirectory = '{work_dir}'
+            if (Test-Path '{final_icon}') {{ $s.IconLocation = '{final_icon},0' }}
+            $s.Save()
+            """
+            subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5, creationflags=0x08000000)
 
-                # 덮어쓰기 완료 후 피카 등 변조 차단을 위해 다시 읽기 전용(+r) 보호
-                subprocess.run(f'attrib +r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
-                logger.info(f"바탕화면 [넷플릭스.lnk] 덮어쓰기 및 보존 완료: {lnk_path}")
-            except Exception as e:
-                logger.warning(f"바로가기 생성/덮어쓰기 건너뜀 ({lnk_path}): {e}")
+            # 생성 완료 후 변조 방지 읽기 전용(+r) 보호
+            subprocess.run(f'attrib +r "{lnk_path}"', shell=True, capture_output=True, creationflags=0x08000000)
+            logger.info(f"바탕화면 [넷플릭스.lnk] 신규 생성 완료: {lnk_path}")
+        except Exception as e:
+            logger.warning(f"바로가기 신규 생성 실패 ({lnk_path}): {e}")
 
         return True
 

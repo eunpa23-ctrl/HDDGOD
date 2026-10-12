@@ -601,11 +601,12 @@ del "%~f0"
                     for k in keys_to_remove:
                         clean_env.pop(k, None)
 
-                    # DETACHED_PROCESS(0x8) | CREATE_NEW_PROCESS_GROUP(0x200)
-                    DETACHED_FLAGS = 0x00000008 | 0x00000200
+                    # CREATE_NO_WINDOW(0x08000000) | CREATE_NEW_PROCESS_GROUP(0x200)
+                    # cmd.exe가 콘솔 부재로 즉시 죽는 DETACHED_PROCESS(0x8) 대신 무창 독립 프로세스로 구동
+                    SPAWN_FLAGS = 0x08000000 | 0x00000200
                     subprocess.Popen(
                         ["cmd.exe", "/c", bat_path],
-                        creationflags=DETACHED_FLAGS,
+                        creationflags=SPAWN_FLAGS,
                         close_fds=True,
                         cwd=app_dir,
                         env=clean_env

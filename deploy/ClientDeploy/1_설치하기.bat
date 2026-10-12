@@ -47,8 +47,11 @@ echo   - Windows Pro 감지: UWF 순간복구 완전 활성화를 위해 Enterprise 기능 잠금 
 echo   - 잠금 해제 작업 진행 중입니다. 잠시만 기다려주세요 (약 10~15초 소요)...
 cscript //nologo C:\Windows\System32\slmgr.vbs /ipk NPPR9-FWDCX-D2C8J-H872K-2YT43 >nul 2>&1
 echo   - UWF 기능(Client-UnifiedWriteFilter) 자동 활성화 중 (DISM)...
-dism /online /enable-feature /featurename:Client-UnifiedWriteFilter /all /norestart >nul 2>&1
-where uwfmgr.exe >nul 2>&1 && uwfmgr volume protect C: >nul 2>&1
+dism /online /enable-feature /featurename:Client-UnifiedWriteFilter /all /norestart
+echo   - UWF 기능 활성화 완료!
+echo   - C: 드라이브 순간복구 볼륨 보호 바인딩 중...
+where uwfmgr.exe >nul 2>&1 && uwfmgr volume protect C:
+echo   - C: 드라이브 보호 바인딩 완료!
 ping 127.0.0.1 -n 6 >nul
 echo   - Enterprise 기능 잠금 해제 완료!
 

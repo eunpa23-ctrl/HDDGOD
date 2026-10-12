@@ -93,6 +93,26 @@ class ClientTrayUI:
         if self.prompt_admin_auth() and self.on_restart_netflix:
             self.on_restart_netflix()
 
+    def handle_open_deploy_folder(self) -> None:
+        """설치/배포 폴더(네트워크 공유 또는 로컬 설치 폴더) 탐색기 열기"""
+        import os
+        import subprocess
+        share_path = r"\\192.168.0.100\HDDGOD\deploy\ClientDeploy"
+        local_path = r"C:\ZeusAgent"
+        target = share_path if os.path.exists(share_path) else local_path
+        try:
+            subprocess.Popen(f'explorer.exe "{target}"', shell=True)
+        except Exception:
+            pass
+
+    def handle_open_dashboard(self) -> None:
+        """카운터 관제 대시보드 브라우저 열기"""
+        import webbrowser
+        try:
+            webbrowser.open("http://192.168.0.100:8000")
+        except Exception:
+            pass
+
     def handle_exit_click(self) -> None:
         """관리자 인증 후 클라이언트 프로그램 완전 종료"""
         if self.prompt_admin_auth():
@@ -141,6 +161,9 @@ class ClientTrayUI:
         items.extend([
             pystray.MenuItem("⚡ [1초 복구] 즉시 재부팅 복구", lambda: self.handle_restore_click()),
             pystray.MenuItem("🎬 [넷플릭스] 다시 실행", lambda: self.handle_netflix_click()),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("📁 [설치/배포 폴더 열기]", lambda: self.handle_open_deploy_folder()),
+            pystray.MenuItem("🌐 [관제 대시보드 열기]", lambda: self.handle_open_dashboard()),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("❌ 프로그램 종료", lambda: self.handle_exit_click()),
         ])

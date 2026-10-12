@@ -86,23 +86,24 @@ class NetflixBot:
                 logger.debug(f"아이콘 복사/다운로드 건너뜀: {e}")
 
         # 1. 실행기 타깃 결정:
-        # 크롬/엣지 실행 파일이 존재하면 직접 CDP 인자 장착하여 바로가기 생성 (딜레이 제로 즉시 기동)
-        if chrome_exe and chrome_exe != "chrome.exe" and os.path.exists(chrome_exe):
+        # 피카(PicaLive/PicaAir) 관리프로그램이 바탕화면의 chrome.exe 바로가기를 감지하여
+        # 인자(Arguments)에 한게임/미디어웹 광고 URL을 강제 삽입하는 것을 방지하기 위해
+        # 타깃을 항상 ZeusAgent.exe --launch-netflix 로 생성합니다.
+        zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
+        if os.path.exists(zeus_exe):
+            target_path = zeus_exe
+            target_args = "--launch-netflix"
+            work_dir = r"C:\ZeusAgent"
+        elif chrome_exe and chrome_exe != "chrome.exe" and os.path.exists(chrome_exe):
             target_path = chrome_exe
             target_args = f'--remote-debugging-port={self.cdp_port} --user-data-dir="{self.profile_dir}" --start-maximized --no-first-run --no-default-browser-check --disable-popup-blocking "{self.start_url}"'
             work_dir = os.path.dirname(chrome_exe)
         else:
-            zeus_exe = r"C:\ZeusAgent\ZeusAgent.exe"
-            if os.path.exists(zeus_exe):
-                target_path = zeus_exe
-                target_args = "--launch-netflix"
-                work_dir = r"C:\ZeusAgent"
-            else:
-                pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
-                launcher_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launch_netflix.py")
-                target_path = pythonw_exe
-                target_args = f'"{launcher_py}"'
-                work_dir = os.path.dirname(launcher_py)
+            pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
+            launcher_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launch_netflix.py")
+            target_path = pythonw_exe
+            target_args = f'"{launcher_py}"'
+            work_dir = os.path.dirname(launcher_py)
 
         # 2. 바탕화면 바로가기(.lnk) 생성 (사용자 및 공용 바탕화면)
         desktop_dirs = []
@@ -126,6 +127,7 @@ class NetflixBot:
                 $s.WorkingDirectory = '{work_dir}'
                 if (Test-Path '{final_icon}') {{ $s.IconLocation = '{final_icon},0' }}
                 $s.Save()
+                attrib +r '{lnk_path}'
                 """
                 subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, timeout=5)
             except Exception as e:

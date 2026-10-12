@@ -395,6 +395,16 @@ class ZeusClientAgent:
             latest_version = res.text.strip().replace('"', '').replace("'", "").replace('\ufeff', '').strip()
 
             if force or (latest_version and latest_version != current_version):
+                # UWF 보호 모드 검사: PROTECTED 상태에서는 업데이트 다운로드 및 재부팅 차단 (무한 재부팅 루프 방지)
+                try:
+                    from client.uwf_controller import UWFController
+                    uwf_st = UWFController.get_status()
+                    if uwf_st == "PROTECTED" and not force:
+                        logger.warning("⚠️ UWF 보호 모드(PROTECTED) 활성화 상태입니다. 재부팅 시 롤백되므로 자동 업데이트를 건너뜁니다 (유지보수 모드에서만 업데이트 적용 가능).")
+                        return
+                except Exception as uwf_err:
+                    logger.debug(f"UWF 상태 확인 예외: {uwf_err}")
+
                 reason = "강제 업데이트 명령" if force else f"현재: {current_version} -> 최신: {latest_version}"
                 logger.info(f"🔄 클라이언트 업데이트 진행! ({reason})")
                 
@@ -470,25 +480,33 @@ class ZeusClientAgent:
                     # 업데이트 배치 파일 생성 (무인 무중단 재시도 루프)
                     bat_path = os.path.join(app_dir, "update.bat")
                     bat_content = f"""@echo off
+setlocal enabledelayedexpansion
+
+:: ========================================================
+:: [핵심!] PyInstaller 환경변수 멸균 (DLL 로드 에러 원천 차단)
+:: ========================================================
+set _MEIPASS2=
+set _MEIPASS=
+set PYINSTALLER_STRICT_UNLOAD_MODE=
+
 cd /d "%~dp0"
 ping 127.0.0.1 -n 3 >nul
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
-if exist "temp" rd /s /q "temp" >nul 2>&1
 
 :: zip 패키지가 다운로드된 경우 즉시 압축 해제
-if exist "ZeusAgent_new.zip" (
-    tar -xf "ZeusAgent_new.zip" -C "%~dp0" >nul 2>&1
-    del "ZeusAgent_new.zip" >nul 2>&1
+if exist "%~dp0ZeusAgent_new.zip" (
+    tar -xf "%~dp0ZeusAgent_new.zip" -C "%~dp0" >nul 2>&1
+    del "%~dp0ZeusAgent_new.zip" >nul 2>&1
 )
 
 set RETRY=0
 :RETRY_MOVE
-if not exist "ZeusAgent_new.exe" goto UNBLOCK
-move /y "ZeusAgent_new.exe" "ZeusAgent.exe" >nul 2>&1
+if not exist "%~dp0ZeusAgent_new.exe" goto UNBLOCK
+move /y "%~dp0ZeusAgent_new.exe" "%~dp0ZeusAgent.exe" >nul 2>&1
 if errorlevel 1 (
     set /a RETRY+=1
-    if %RETRY% lss 15 (
+    if !RETRY! lss 20 (
         ping 127.0.0.1 -n 2 >nul
         goto RETRY_MOVE
     )
@@ -498,7 +516,7 @@ if errorlevel 1 (
 powershell -Command "Get-ChildItem -Path '%~dp0' -Recurse | Unblock-File" >nul 2>&1
 
 :MOVE_VER
-if exist "version_new.txt" move /y "version_new.txt" "version.txt" >nul 2>&1
+if exist "%~dp0version_new.txt" move /y "%~dp0version_new.txt" "%~dp0version.txt" >nul 2>&1
 
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
@@ -515,9 +533,17 @@ del "%~f0"
                         except Exception:
                             pass
 
-                    # 배치 파일 실행 후 현재 프로세스 완전 종료
-                    import subprocess
-                    subprocess.Popen(bat_path, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                    # PyInstaller 환경변수 상속 방지 (새 프로세스가 구버전 임시폴더를 찾다 뻗는 버그 방지)
+                    clean_env = os.environ.copy()
+                    keys_to_remove = [k for k in clean_env.keys() if k.startswith('_PYI') or k.startswith('_MEI') or k.startswith('PYINSTALLER')]
+                    for k in keys_to_remove:
+                        clean_env.pop(k, None)
+
+                    # 독립 프로세스로 분리 실행 (부모 종료 시 자식 증발 방지)
+                    DETACHED_FLAGS = 0x00000008 | 0x00000200 # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+                    subprocess.Popen(bat_path, shell=True, creationflags=DETACHED_FLAGS, env=clean_env)
+                    import time
+                    time.sleep(0.5)
                     os._exit(0)
         except Exception as e:
             logger.error(f"업데이트 확인 중 오류: {e}")

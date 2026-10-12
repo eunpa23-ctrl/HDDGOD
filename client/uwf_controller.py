@@ -53,15 +53,32 @@ class UWFController:
     @classmethod
     def get_status(cls) -> str:
         """현재 UWF 필터 상태 조회 (PROTECTED / MAINTENANCE / DISABLED)"""
+        # 1. WMI (root\standardcimv2\embedded\UWF_Filter) 우선 직접 조회 (uwfmgr.exe 오류 환경 대비)
+        try:
+            cmd = "Get-CimInstance -Namespace 'root\\standardcimv2\\embedded' -ClassName 'UWF_Filter' -ErrorAction SilentlyContinue | Select-Object -Property CurrentEnabled, NextEnabled | ConvertTo-Json"
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, text=True, check=False, creationflags=creationflags)
+            if res.stdout and res.stdout.strip():
+                import json
+                data = json.loads(res.stdout.strip())
+                curr = data.get("CurrentEnabled", False)
+                nxt = data.get("NextEnabled", False)
+                if curr and nxt:
+                    return UWFStatus.PROTECTED
+                elif not curr or not nxt:
+                    return UWFStatus.MAINTENANCE
+        except Exception as e:
+            logger.debug(f"WMI UWF 상태 조회 예외: {e}")
+
         if not cls.is_uwf_supported():
             return cls._simulated_status if cls._simulated_status else UWFStatus.DISABLED
 
+        # 2. uwfmgr.exe CLI 폴백
         output = cls.run_cmd(["uwfmgr.exe", "get-config"])
         if not output:
             return cls._simulated_status if cls._simulated_status else UWFStatus.DISABLED
 
         out_lower = output.lower()
-        # 현재 세션 및 다음 부팅 세션 확인
         if "filter state: on" in out_lower or "필터 상태: 설정" in output or "필터 상태: 켜짐" in output:
             if "next session: off" in out_lower or "다음 세션: 해제" in output:
                 return UWFStatus.MAINTENANCE
@@ -81,6 +98,13 @@ class UWFController:
 
         cls.run_cmd(["uwfmgr.exe", "filter", "enable"])
         cls.run_cmd(["uwfmgr.exe", "volume", "protect", "c:"])
+        # WMI 보조 호출 (uwfmgr 실패 방어)
+        try:
+            cmd = "Get-CimInstance -Namespace 'root\\standardcimv2\\embedded' -ClassName 'UWF_Filter' | ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName 'Enable' }; Get-CimInstance -Namespace 'root\\standardcimv2\\embedded' -ClassName 'UWF_Volume' | Where-Object { $_.DriveLetter -eq 'C:' } | ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName 'Protect' }"
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, check=False, creationflags=creationflags)
+        except Exception:
+            pass
         # RAM 오버레이 설정 (RAM 2048MB 할당)
         cls.run_cmd(["uwfmgr.exe", "overlay", "set-type", "RAM"])
         cls.run_cmd(["uwfmgr.exe", "overlay", "set-size", "2048"])
@@ -96,6 +120,13 @@ class UWFController:
             return True
 
         output = cls.run_cmd(["uwfmgr.exe", "filter", "disable"])
+        # WMI 보조 호출
+        try:
+            cmd = "Get-CimInstance -Namespace 'root\\standardcimv2\\embedded' -ClassName 'UWF_Filter' | ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName 'Disable' }"
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, check=False, creationflags=creationflags)
+        except Exception:
+            pass
         return "reboot" in output.lower() or "재부팅" in output or True
 
     @classmethod
@@ -133,17 +164,21 @@ class UWFController:
 
     @classmethod
     def reboot_to_maintenance(cls) -> None:
-        """보호 해제 후 유지보수 모드로 재부팅"""
+        """보호 해제 후 유지보수 모드로 재부팅 (레지스트리 플러시 안전 대기)"""
         cls.disable_protection()
-        logger.info("유지보수 모드로 재부팅 실행...")
-        cls.run_cmd(["shutdown.exe", "/r", "/t", "0", "/f"])
+        logger.info("유지보수 모드로 재부팅 실행 (2초 플러시 대기)...")
+        import time
+        time.sleep(2)
+        cls.run_cmd(["shutdown.exe", "/r", "/t", "3", "/f"])
 
     @classmethod
     def reboot_and_protect(cls) -> None:
-        """현재 세팅 저장 후 보호 모드로 재부팅 (새 기준점 고정)"""
+        """현재 세팅 저장 후 보호 모드로 재부팅 (레지스트리 플러시 안전 대기)"""
         cls.enable_protection()
-        logger.info("현재 상태 영구저장 및 보호 모드로 재부팅 실행...")
-        cls.run_cmd(["shutdown.exe", "/r", "/t", "0", "/f"])
+        logger.info("현재 상태 영구저장 및 보호 모드로 재부팅 실행 (2초 플러시 대기)...")
+        import time
+        time.sleep(2)
+        cls.run_cmd(["shutdown.exe", "/r", "/t", "3", "/f"])
 
 if __name__ == "__main__":
     print("현재 UWF 상태:", UWFController.get_status())

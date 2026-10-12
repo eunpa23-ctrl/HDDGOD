@@ -602,26 +602,15 @@ del "%~f0"
                     for k in keys_to_remove:
                         clean_env.pop(k, None)
 
-                    # [Windows 독립 실행 보장 1] 1회성 스케줄러로 update.bat 비동기 트리거
+                    # [Windows 독립 실행 보장] PowerShell Start-Process로 독립 세션 분리 구동
                     try:
                         subprocess.run(
-                            f'schtasks /create /tn "ZeusUpdateTask" /tr "\"{bat_path}\"" /sc once /st 00:00 /f /ru "System"',
-                            shell=True, capture_output=True, creationflags=0x08000000
+                            f'powershell -Command "Start-Process cmd.exe -ArgumentList '/c', '{bat_path}' -WindowStyle Hidden"',
+                            shell=True,
+                            creationflags=0x08000000
                         )
-                        subprocess.run('schtasks /run /tn "ZeusUpdateTask"', shell=True, capture_output=True, creationflags=0x08000000)
-                        subprocess.run('schtasks /delete /tn "ZeusUpdateTask" /f', shell=True, capture_output=True, creationflags=0x08000000)
-                    except Exception:
-                        pass
-
-                    # [Windows 독립 실행 보장 2] 보조 폴백: cmd.exe start 무창 독립 구동
-                    subprocess.Popen(
-                        f'cmd.exe /c start "" /b "{bat_path}"',
-                        shell=True,
-                        creationflags=0x08000000 | 0x00000200,
-                        close_fds=True,
-                        cwd=app_dir,
-                        env=clean_env
-                    )
+                    except Exception as ex:
+                        logger.error(f"update.bat 실행 실패: {ex}")
 
                     import time
                     time.sleep(0.5)

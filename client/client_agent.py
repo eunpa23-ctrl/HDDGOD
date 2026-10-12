@@ -171,6 +171,17 @@ class ZeusClientAgent:
 
         threading.Thread(target=routine, daemon=True).start()
 
+    def get_local_version(self) -> str:
+        """현재 에이전트 버전 조회"""
+        try:
+            ver_path = os.path.join(self.get_app_dir(), "version.txt")
+            if os.path.exists(ver_path):
+                with open(ver_path, "r", encoding="utf-8") as f:
+                    return f.read().strip()
+        except Exception:
+            pass
+        return "알 수 없음"
+
     async def run_heartbeat_loop(self, websocket):
         """3초 주기 하트비트 생존 신호 전송 및 OTP 상태 연동"""
         while True:
@@ -182,7 +193,8 @@ class ZeusClientAgent:
                     "mac": self.mac_addr,
                     "uwf_status": uwf_st,
                     "netflix_status": self.netflix_bot.current_status,
-                    "is_streaming": self.is_streaming_screen
+                    "is_streaming": self.is_streaming_screen,
+                    "version": self.get_local_version()
                 }
                 pkt = make_packet(PacketType.HEARTBEAT, payload)
                 await websocket.send(pkt)

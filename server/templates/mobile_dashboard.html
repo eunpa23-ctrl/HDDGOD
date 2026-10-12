@@ -113,6 +113,7 @@
                             <span id="dot-${pc.id}" class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-600'}"></span>
                             <span class="font-extrabold text-base text-white">${pc.name}</span>
                             <span id="ip-${pc.id}" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700/80 font-bold">${pc.ip}</span>
+                            <span id="ver-${pc.id}" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950/60 text-fuchsia-300 border border-fuchsia-800/40 font-bold">v${pc.version || '-'}</span>
                         </div>
                         <span id="badge-${pc.id}" class="text-[10px] px-2 py-0.5 rounded font-bold ${isOnline ? 'bg-emerald-950 border border-emerald-500/50 text-emerald-400' : 'bg-slate-800 text-slate-400'}">
                             ${isOnline ? '온라인' : '오프라인'}
@@ -226,6 +227,7 @@
                     pc.status = isOnline ? 'ONLINE' : 'OFFLINE';
                     if (isOnline) {
                         pc.uwf = (live.uwf_status || 'UNKNOWN').toUpperCase();
+                        pc.version = live.version || '알 수 없음';
                         pc.netflix = live.netflix_status || 'CLOSED';
                         if (live.ip) pc.ip = live.ip;
                         if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
@@ -252,6 +254,8 @@
                         badge.innerText = isOnline ? '온라인' : '오프라인';
                     }
                     if (ipEl && pc.ip) {
+                    const verEl = document.getElementById(`ver-${pc.id}`);
+                    if (verEl && isOnline) { verEl.innerText = `v${pc.version || '-'}`; }
                         ipEl.innerText = pc.ip;
                     }
                     if (uwfEl) {

@@ -427,7 +427,8 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 mac = data.get("mac", "")
                 uwf_st = data.get("uwf_status", "")
                 netflix_st = data.get("netflix_status", "")
-                watchdog.update_heartbeat(client_id, ip, mac, uwf_st, netflix_st)
+                ver_st = data.get("version", "")
+                watchdog.update_heartbeat(client_id, ip, mac, uwf_st, netflix_st, ver_st)
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!

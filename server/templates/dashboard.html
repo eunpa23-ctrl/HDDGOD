@@ -621,6 +621,7 @@
                     pc.status = 'ONLINE';
                     pc.real_cid = live.client_id;
                     pc.uwf = live.uwf_status || 'UNKNOWN';
+                    pc.version = live.version || '알 수 없음';
                     pc.netflix = live.netflix_status || 'CLOSED';
                     if (live.ip) pc.ip = live.ip;
                     if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
@@ -679,6 +680,10 @@
                         <div class="flex justify-between">
                             <span>UWF 보호:</span>
                             ${uwfBadgeHtml}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>에이전트 버전:</span>
+                            <span class="font-mono font-bold text-xs ${isOnline ? 'text-fuchsia-400 bg-fuchsia-950/40 px-1.5 py-0.5 rounded border border-fuchsia-800/40' : 'text-slate-500'}">v${pc.version || '-'}</span>
                         </div>
                         <div class="flex justify-between">
                             <span>넷플릭스:</span>
@@ -1088,23 +1093,36 @@
         }
 
         async function triggerOtaUpdateFromModal() {
-            const ver = document.getElementById('cfg-client-version').value.trim();
-            const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
-            let confirmMsg = `버전 [${ver}]으로 전체 클라이언트 PC에 무인 자동 업데이트를 전송하시겠습니까?\n\n클라이언트가 새 바이너리를 다운로드받아 스스로 재시작합니다.`;
+            const ver = document.getElementById("cfg-client-version").value.trim();
+            const protectedList = pcList.filter(p => p.status === "ONLINE" && p.uwf === "PROTECTED");
             if (protectedList.length > 0) {
-                confirmMsg = `⚠️ [보호 모드 PC 감지 안내]\n\n현재 온라인 PC 중 ${protectedList.length}대가 순간복구 '보호 모드' 상태입니다.\n보호 모드 PC는 영구 저장을 위해 자동으로 유지보수 모드로 전환 후 재부팅됩니다.\n\n전체 PC에 버전 [${ver}] 무인 업데이트를 진행하시겠습니까?`;
+                const ok = confirm(
+                    `⚠️ [순간복구 보호 모드 감지 안내]\n\n` +
+                    `현재 온라인 PC 중 ${protectedList.length}대가 순간복구 [보호 모드] 상태입니다.\n` +
+                    `보호 모드에서는 업데이트를 진행해도 PC 재부팅 시 이전 버전으로 되돌아갑니다!\n\n` +
+                    `👉 디스크 영구 저장을 위해 클라이언트를 [유지보수 모드]로 변경 후 재부팅하시겠습니까?\n` +
+                    `(재부팅 후 유지보수 모드로 구동되면 버전 [${ver}]이 자동으로 영구 업데이트됩니다.)\n\n` +
+                    `• [확인] 누름: 전체 PC를 유지보수 모드로 전환 후 재부팅 (부팅 후 자동 업데이트)\n` +
+                    `• [취소] 누름: 업데이트 취소`
+                );
+                if (ok) {
+                    await fetch("/api/command_all/DISABLE_UWF", { method: "POST" });
+                    alert(`✅ 전체 PC에 [유지보수 모드 전환 및 재부팅] 명령을 전송했습니다.\n재부팅 후 버전 [${ver}]이 자동으로 설치됩니다.`);
+                }
+                return;
             }
-            if (!confirm(confirmMsg)) return;
+
+            if (!confirm(`버전 [${ver}]으로 전체 클라이언트 PC에 무인 자동 업데이트를 전송하시겠습니까?\n\n클라이언트가 새 바이너리를 다운로드받아 스스로 재시작합니다.`)) return;
 
             try {
-                const res = await fetch('/api/settings/update_client', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                const res = await fetch("/api/settings/update_client", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ new_version: ver })
                 });
                 const data = await res.json();
                 alert(`🚀 ${data.message}`);
-            } catch (e) {
+            } catch (e) { 
                 alert("업데이트 전송 실패: " + e);
             }
         }

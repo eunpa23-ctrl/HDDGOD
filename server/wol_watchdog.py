@@ -55,14 +55,15 @@ class WOLWatchdog:
             logger.error(f"WOL 패킷 발송 실패: {e}")
             return False
 
-    def update_heartbeat(self, client_id: str, ip: str, mac: str, uwf_status: str, netflix_status: str) -> None:
-        """클라이언트로부터 수신된 생존 신호 기록"""
+    def update_heartbeat(self, client_id: str, ip: str, mac: str, uwf_status: str, netflix_status: str, version: str = "") -> None:
+        """클라이언트로부터 수신된 생존 신호 기록 (에이전트 버전 포함)"""
         self.clients[client_id] = {
             "client_id": client_id,
             "ip": ip,
             "mac": mac,
             "uwf_status": uwf_status,
             "netflix_status": netflix_status,
+            "version": version or "알 수 없음",
             "last_seen": time.time(),
             "status": "ONLINE",
             "is_normal_shutdown": False

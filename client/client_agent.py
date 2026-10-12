@@ -579,11 +579,14 @@ if not errorlevel 1 (
 
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
-start "" "%~dp0ZeusAgent.exe"
+schtasks /run /tn "ZeusClientAgent" >nul 2>&1
+if errorlevel 1 start "" "%~dp0ZeusAgent.exe"
 del "%~f0"
 """
                     with open(bat_path, "w", encoding="cp949") as f:
                         f.write(bat_content)
+                        f.flush()
+                        os.fsync(f.fileno())
 
                     # 트레이 아이콘 정지
                     if hasattr(self, "tray") and self.tray and getattr(self.tray, "icon", None):

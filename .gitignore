@@ -32,3 +32,10 @@ startup_log.txt
 
 deploy/ClientDeploy/ZeusAgent/
 deploy/ClientDeploy/ZeusAgent.zip
+
+# 보안 토큰 제외
+*github_token*.txt
+*token.txt
+*.lnk
+*.jpg
+*.png

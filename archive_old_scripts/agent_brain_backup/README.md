@@ -11,9 +11,19 @@
 - GitHub 저장소: `https://github.com/eunpa23-ctrl/HDDGOD`
 
 ## 📦 현재 최신 빌드 및 배포 구조
-- 빌드 방식: PyInstaller `--onedir` (폴더 통째 배포 모드, v1.0.23)
-- 배포 위치: `deploy/ClientDeploy/ZeusAgent/` 및 `ZeusAgent.zip`
-- 설치 방식: `install.bat` (Unblock-File + Add-MpPreference 디펜더 예외 자동 탑재)
+- 최신 빌드 버전: **v3.8.20** (`ZeusAgent.exe`, 단일 실행 파일 24.9MB)
+- 배포 위치: `deploy/ClientDeploy/core/ZeusAgent.exe`
+- 설치 방식: `1_설치하기.bat` (관리자 권한, CP949 인코딩, UWF 자동 감지/활성화)
 - 원격 제어: `screen_streamer.py` (DPI 보정 + 마우스 커서 선명 오버레이 합성)
 
-자세한 성공 내역은 `제우스_최종성공_현황.md`를 참고하세요.
+## 🗂️ 역대 대화 세션 히스토리
+| 세션 | 기간 | 대화 수 | 핵심 주제 | 세부 기록 |
+|:---:|:---:|:---:|:---|:---:|
+| **세션 1** | 2026.09.29 ~ 10.01 | 8개 | 초기 구글 드라이브 연동, 대시보드 UI 및 자동 시작 기본 구현 | [세션 1 바로가기](conversation://6ef6e5c7-01ac-4682-af9c-03da133515af) |
+| **세션 2** | 2026.10.01 ~ 10.07 | 195개 | 넷플릭스 2단계/OTP 연동 성공, 마우스 커서 싱크, 가상 클라이언트, 한글 경로 탈피 (`C:\HDDGOD`) | [세션 2 바로가기](conversation://36085afd-6c99-45b2-8ff8-4ac77cbb1e5b) |
+| **세션 3** | 2026.10.07 | 4개 | 에이전트 빌드 스킬(`build-zeus`) 정의 및 복구(UWF) 도입 기획 | [세션 3 바로가기](conversation://6934b8be-2723-4e47-9fdf-ade264c36413) |
+| **세션 4** | 2026.10.11 ~ 10.12 | 8개 | 원격 클라이언트 신규 설치 디버깅 (`C:\ZeusAgent` 경로 확정 및 서버-클라이언트 분리) | [세션 4 기록 문서](file:///C:/HDDGOD/archive_old_scripts/agent_brain_backup/세션4_대화기록_클라이언트_배포_디버깅.md) / [세션 4 바로가기](conversation://53b1306c-9da6-49d0-8714-e8f5f1e48c20) |
+| **세션 5** | 2026.10.06 ~ 현재 | 82개+ | **(현재 진행 세션)** 순간복구(UWF) 보호/유지보수 연동, v3.8.20 무인 OTA 배포, 서버 데몬화 | [세션 5 바로가기](conversation://873170df-e274-4167-9f52-81820d74701b) |
+
+자세한 성공 내역은 `제우스_최종성공_현황.md` 및 `세션4_대화기록_클라이언트_배포_디버깅.md`를 참고하세요.
+

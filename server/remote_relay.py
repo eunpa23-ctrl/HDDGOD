@@ -28,12 +28,16 @@ class RemoteRelay:
             if not self.viewers[client_id]:
                 del self.viewers[client_id]
 
-    async def broadcast_frame(self, client_id: str, frame_base64: str):
-        """클라이언트 PC에서 전송된 화면 프레임을 모든 뷰어에게 중계"""
+    async def broadcast_frame(self, client_id: str, frame_data):
+        """클라이언트 PC에서 전송된 화면 프레임과 메타데이터를 모든 뷰어에게 중계합니다."""
         if client_id not in self.viewers:
             return
         dead_sockets = set()
-        msg = frame_base64
+        import json
+        if isinstance(frame_data, dict):
+            msg = json.dumps(frame_data)
+        else:
+            msg = str(frame_data)
         for ws in self.viewers[client_id]:
             try:
                 await ws.send_text(msg)

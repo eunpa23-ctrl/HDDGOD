@@ -37,9 +37,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ZeusServer")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(BASE_DIR)
-MAPPING_FILE = os.path.join(BASE_DIR, "pc_mapping.json")
+async def send_telegram_msg(msg: str):
+    """텔레그램 메시지 발송 헬퍼"""
+    from common.config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+        try:
+            import requests
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            await asyncio.to_thread(requests.post, url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg}, timeout=5)
+        except Exception as e:
+            logger.error(f"텔레그램 발송 실패: {e}")
+
+import sys
+def get_resource_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, 'server')
+    return os.path.dirname(os.path.abspath(__file__))
+
+def get_root_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+BASE_DIR = get_resource_dir()
+PROJECT_ROOT = get_root_dir()
+
+# pc_mapping.json과 아이콘 폴더 등은 실제 실행 파일 옆에 저장되어야 함 (읽기/쓰기)
+MAPPING_FILE = os.path.join(PROJECT_ROOT, "server", "pc_mapping.json")
+os.makedirs(os.path.join(PROJECT_ROOT, "server"), exist_ok=True)
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 def check_windows_autostart() -> bool:
@@ -57,8 +82,12 @@ def set_windows_autostart(enable: bool) -> bool:
         import winreg
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
         if enable:
-            vbs_path = os.path.join(PROJECT_ROOT, "서버실행.vbs")
-            cmd = f'wscript.exe "{vbs_path}"'
+            exe_target = r"C:\Users\USER\Documents\HDDGOD\dist\ZeusServer.exe"
+            if getattr(sys, 'frozen', False):
+                exe_target = sys.executable
+            elif os.path.exists(os.path.join(PROJECT_ROOT, "dist", "ZeusServer.exe")):
+                exe_target = os.path.join(PROJECT_ROOT, "dist", "ZeusServer.exe")
+            cmd = f'"{exe_target}"'
             winreg.SetValueEx(key, "ZeusServer", 0, winreg.REG_SZ, cmd)
             logger.info(f"윈도우 시작프로그램 등록 완료: {cmd}")
         else:
@@ -74,7 +103,7 @@ def set_windows_autostart(enable: bool) -> bool:
         return False
 
 def check_supervisor_active() -> bool:
-    status_file = os.path.join(BASE_DIR, ".supervisor_status.json")
+    status_file = os.path.join(PROJECT_ROOT, "server", ".supervisor_status.json")
     if os.path.exists(status_file):
         try:
             with open(status_file, "r", encoding="utf-8") as f:
@@ -90,6 +119,30 @@ def check_supervisor_active() -> bool:
             pass
     return False
 
+def kill_duplicate_servers():
+    """현재 PID를 제외한 다른 ZeusServer 프로세스를 모두 강제 종료 (중복 실행 방지)"""
+    current_pid = os.getpid()
+    current_exe = sys.executable  # 현재 실행 EXE 경로
+    killed = []
+    try:
+        for proc in psutil.process_iter(['pid', 'name', 'exe', 'create_time']):
+            try:
+                if proc.pid == current_pid:
+                    continue
+                pname = (proc.info.get('name') or '').lower()
+                pexe  = (proc.info.get('exe')  or '').lower()
+                if 'zeusserver' in pname or 'zeusserver' in pexe:
+                    proc.kill()
+                    killed.append(proc.pid)
+                    logger.warning(f"🔪 중복 ZeusServer 프로세스 강제 종료: PID {proc.pid}")
+            except Exception:
+                pass
+    except Exception as e:
+        logger.error(f"중복 프로세스 제거 실패: {e}")
+    if killed:
+        import time as _t; _t.sleep(1)  # 포트 해제 대기
+
+
 @asynccontextmanager
 async def lifespan(app):
     # ── 서버 시작 ────────────────────────────────────────────────
@@ -99,15 +152,37 @@ async def lifespan(app):
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         asyncio.create_task(telegram_alert_loop())
     asyncio.create_task(auto_optimize_loop())
+    from server.pica_watchdog import pica_dog
+    from common.config import config as cfg
+    pica_dog.load_config(cfg)
+    pica_dog.telegram_callback = send_telegram_msg
+    if pica_dog.is_enabled:
+        pica_dog.start()
+
+    # 윈도우 작업표시줄 시스템 트레이 아이콘 백그라운드 구동
+    try:
+        from server.server_tray import start_server_tray_thread
+        start_server_tray_thread(SERVER_PORT)
+        logger.info("⚡ 제우스 관제 서버 트레이 아이콘 데몬 가동 완료")
+    except Exception as e:
+        logger.warning(f"트레이 아이콘 시작 건너뜀: {e}")
+
     logger.info(f"🚀 제우스 중앙 관제 서버 가동 완료: http://{SERVER_HOST}:{SERVER_PORT}")
     yield
     # ── 서버 종료 ────────────────────────────────────────────────
+    try:
+        from server.server_tray import server_tray
+        if server_tray.icon:
+            server_tray.icon.stop()
+    except Exception:
+        pass
+    pica_dog.stop()
     tunnel_manager.stop()
     logger.info("🛑 제우스 중앙 관제 서버 종료 및 터널 정리 완료")
 
 app = FastAPI(title="제우스 HDD PROTECTOR 통합 관제 서버", lifespan=lifespan)
 
-MASTER_ICONS_DIR = os.path.join(BASE_DIR, "master_icons")
+MASTER_ICONS_DIR = os.path.join(PROJECT_ROOT, "server", "master_icons")
 os.makedirs(MASTER_ICONS_DIR, exist_ok=True)
 app.mount("/icons", StaticFiles(directory=MASTER_ICONS_DIR), name="icons")
 
@@ -245,6 +320,9 @@ async def get_mobile_dashboard(request: Request):
         name="mobile_dashboard.html",
         context={
             "initial_pc_list": json.dumps(pc_list, ensure_ascii=False),
+
+
+
             "pc_count": len(pc_list)
         }
     )
@@ -279,7 +357,7 @@ async def get_remote_view(request: Request, client_id: str):
     else:
         logger.warning(f"[{client_id}] 원격 제어 대상 클라이언트를 찾을 수 없음 (오프라인)")
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request,
         name="remote_view.html",
         context={
@@ -290,6 +368,10 @@ async def get_remote_view(request: Request, client_id: str):
             "is_online": is_online
         }
     )
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.get("/api/rdp/{client_id}")
 async def get_rdp_file(client_id: str):
@@ -353,8 +435,18 @@ async def client_websocket(websocket: WebSocket, client_id: str):
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!
-                logger.info(f"[{client_id}] 넷플릭스 OTP 요청 수신! 네이트 메일 자동 조회 트리거...")
+                logger.info(f"[{client_id}] 넷플릭스 OTP 요청 수신! 네이버 메일 자동 조회 트리거...")
                 asyncio.create_task(handle_auto_otp_flow(client_id))
+
+            elif p_type == PacketType.CREDENTIAL_REQUEST:
+                # 넷플릭스 다중 계정 자동 분배 및 보안(Zero-Trust) 요청
+                from server.netflix_account_manager import account_manager
+                acc = await account_manager.get_credential(client_id)
+                if acc:
+                    await websocket.send_text(make_packet(PacketType.CREDENTIAL_RESPONSE, {
+                        "email": acc["email"],
+                        "password": acc["password"]
+                    }))
 
             elif p_type == PacketType.SCREEN_FRAME:
                 # 원격 제어 화면 프레임 릴레이 (실제 ID 및 매핑된 모든 좌석 채널로 동시 중계)
@@ -391,7 +483,7 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 import json as _json
                 await asyncio.gather(
                     *[ws.send_text(_json.dumps(log_entry, ensure_ascii=False))
-                      for ws in list(dashboard_connections) if ws],
+                      for ws in list(dashboard_subscribers) if ws],
                     return_exceptions=True
                 )
                 # 파일 저장 (PC별 로그 파일)
@@ -521,16 +613,42 @@ async def send_command_all(action: str):
 
 @app.post("/api/optimize_memory")
 async def optimize_memory():
+    """윈도우 OS의 전체 프로세스 유휴 캐시 메모리를 안전하게 회수 (EmptyWorkingSet)"""
     import gc
     import ctypes
-    # 파이썬 내부 쓰레기 수집기 강제 실행
+    import psutil
+
     gc.collect()
-    # 윈도우 API를 호출해 프로세스 잉여 메모리를 OS에 즉각 반환
-    try:
-        ctypes.windll.kernel32.SetProcessWorkingSetSize(ctypes.windll.kernel32.GetCurrentProcess(), -1, -1)
-    except Exception as e:
-        logger.warning(f"메모리 반환 에러: {e}")
-    return {"status": "ok"}
+    before_vm = psutil.virtual_memory()
+
+    kernel32 = ctypes.windll.kernel32
+    psapi = ctypes.windll.psapi
+    trimmed_count = 0
+
+    for proc in psutil.process_iter(['pid']):
+        try:
+            pid = proc.info['pid']
+            if pid <= 4:
+                continue
+            h_process = kernel32.OpenProcess(0x001F0FFF, False, pid)
+            if h_process:
+                if psapi.EmptyWorkingSet(h_process):
+                    trimmed_count += 1
+                kernel32.CloseHandle(h_process)
+        except Exception:
+            pass
+
+    after_vm = psutil.virtual_memory()
+    freed_mb = round((before_vm.used - after_vm.used) / (1024 * 1024), 1)
+    logger.info(f"⚡ [메모리 최적화 완료] {trimmed_count}개 프로세스 정리, {freed_mb}MB 메모리 즉시 확보 (현재 점유율: {after_vm.percent}%)")
+
+    return {
+        "status": "ok",
+        "trimmed_count": trimmed_count,
+        "freed_mb": freed_mb,
+        "current_ram_percent": after_vm.percent,
+        "available_gb": round(after_vm.available / (1024**3), 2)
+    }
 
 @app.post("/api/wol_all")
 async def send_wol_all():
@@ -561,6 +679,102 @@ async def save_mapping(request: Request):
 async def get_tunnel_info():
     """스마트폰 원격 접속 정보 및 QR코드용 네트워크 주소 반환"""
     return tunnel_manager.get_info()
+
+# ── 🤖 안티그래비티 AI 자율 모니터링 & 원격 진단 API ───────────────────────────────
+@app.get("/api/ai/health_report")
+async def get_ai_health_report():
+    """안티그래비티 AI가 1~8번 PC의 하트비트, UWF 상태, 넷플릭스 상태, 통신 상태를 실시간 진단"""
+    mapping = load_pc_mapping()
+    report = []
+    now = time.time()
+
+    for p in mapping:
+        cid = p.get("id")
+        actual_cid = get_actual_client_id(cid)
+        c_info = watchdog.clients.get(actual_cid, {})
+        last_seen = c_info.get("last_seen", 0)
+        elapsed = round(now - last_seen, 1) if last_seen > 0 else -1
+
+        is_connected = actual_cid in active_clients
+        uwf_st = c_info.get("uwf_status", p.get("uwf", "UNKNOWN"))
+        netflix_st = c_info.get("netflix_status", p.get("netflix", "UNKNOWN"))
+
+        # 위험 요인 자동 진단
+        issues = []
+        if is_connected:
+            if elapsed > 6.0:
+                issues.append(f"하트비트 지연 ({elapsed}초 경과)")
+            if str(uwf_st).upper() not in ["PROTECTED", "UWF_ENABLED"]:
+                issues.append(f"⚠️ UWF 보호 모드 풀림/비정상 감지: {uwf_st}")
+        else:
+            issues.append("오프라인 (미접속)")
+
+        report.append({
+            "seat": p.get("seat"),
+            "id": cid,
+            "name": p.get("name"),
+            "ip": c_info.get("ip", p.get("ip")),
+            "mac": c_info.get("mac", p.get("mac")),
+            "is_online": is_connected,
+            "uwf_status": uwf_st,
+            "netflix_status": netflix_st,
+            "heartbeat_elapsed_sec": elapsed,
+            "issues": issues
+        })
+
+    # 전체 시스템 상태 요약
+    online_count = sum(1 for r in report if r["is_online"])
+    protected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() in ["PROTECTED", "UWF_ENABLED"])
+    unprotected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() not in ["PROTECTED", "UWF_ENABLED"])
+
+    return {
+        "status": "ok",
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "summary": {
+            "total_registered": len(mapping),
+            "online_count": online_count,
+            "protected_count": protected_count,
+            "warning_unprotected_online": unprotected_count
+        },
+        "pcs": report
+    }
+
+@app.get("/api/ai/client_logs/{client_id}")
+async def get_ai_client_logs(client_id: str, lines: int = 50):
+    """안티그래비티 AI가 특정 PC의 실시간 수신 로그 또는 크래시 리포트를 분석"""
+    actual_cid = get_actual_client_id(client_id)
+    log_dir = os.path.join(PROJECT_ROOT, "server", "client_logs")
+    log_path = os.path.join(log_dir, f"{actual_cid}.log")
+    
+    recent_logs = []
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+                recent_logs = [line.strip() for line in all_lines[-lines:]]
+        except Exception as e:
+            recent_logs = [f"로그 읽기 오류: {e}"]
+
+    # 에러 리포트도 함께 조회
+    error_log_path = os.path.join(PROJECT_ROOT, "server", "error_reports.log")
+    recent_errors = []
+    if os.path.exists(error_log_path):
+        try:
+            with open(error_log_path, "r", encoding="utf-8", errors="replace") as f:
+                err_lines = f.readlines()
+                for line in err_lines[-100:]:
+                    if client_id in line or actual_cid in line:
+                        recent_errors.append(line.strip())
+        except Exception:
+            pass
+
+    return {
+        "client_id": client_id,
+        "actual_client_id": actual_cid,
+        "log_count": len(recent_logs),
+        "logs": recent_logs,
+        "error_reports": recent_errors
+    }
 
 # --- 서버 생명주기 (시작/종료 이벤트) ---
 
@@ -628,11 +842,14 @@ async def get_version():
 
 @app.get("/api/download/update")
 async def download_update():
-    """최신 클라이언트 실행 파일 다운로드"""
+    """최신 클라이언트 실행 파일 또는 패키지 다운로드"""
     from fastapi.responses import FileResponse
     exe_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
     if os.path.exists(exe_path):
         return FileResponse(exe_path, filename="ZeusAgent.exe")
+    zip_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "ZeusAgent.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(zip_path, filename="ZeusAgent.zip")
     return HTMLResponse("Update file not found", status_code=404)
 
 # ── 환경설정(Settings) 통합 관리 REST API ───────────────────────
@@ -732,7 +949,7 @@ async def save_settings(request: Request):
     sc_content = f"[InternetShortcut]\nURL=http://{t_ip}:{t_port}\n"
     for sc_dir in [PROJECT_ROOT, r"C:\Users\USER\Documents\HDDGOD", os.path.join(os.path.expanduser("~"), "Desktop")]:
         try:
-            with open(os.path.join(sc_dir, "제우스_관제_대시보드.url"), "w", encoding="utf-8") as sf:
+            with open(os.path.join(sc_dir, "제우스 HDD PROTECTOR_관제_대시보드.url"), "w", encoding="utf-8") as sf:
                 sf.write(sc_content)
         except Exception:
             pass
@@ -774,12 +991,13 @@ async def trigger_client_update(request: Request):
             except Exception:
                 pass
 
-    # 전체 클라이언트에 UPDATE_AGENT 명령 전송
+    # 전체 클라이언트에 UPDATE_AGENT 명령 전송 (순차적 0.3초 스태거로 대역폭 폭주 방지)
     count = 0
     for cid, ws in active_clients.items():
         cmd = make_packet(PacketType.COMMAND, {"action": CommandType.UPDATE_AGENT})
         await ws.send_text(cmd)
         count += 1
+        await asyncio.sleep(0.3)
 
     return {
         "status": "ok",
@@ -811,21 +1029,86 @@ async def test_telegram(request: Request):
 # ─────────────────────────────────────────────────────────
 
 async def telegram_alert_loop():
-    """서버 CPU/RAM 사용량 감시 및 텔레그램 경고 발송 (5분 쿨타임)"""
-    last_alert_time = 0
+    """서버 CPU/RAM 사용량 정밀 감시 및 지능형 알림/자동 최적화 데몬
+    - 0.001초 순간 스파이크(착시) 필터링 (최소 30초 이상 실제 초과 시에만 발송)
+    - RAM 85% 초과 감지 시 자동으로 EmptyWorkingSet 최적화 1차 선제 실행
+    - CPU와 RAM 알림을 명확히 분리하여 오해 방지
+    """
+    RAM_ALERT_THRESHOLD = 85.0   # RAM 경고 임계치 (%)
+    CPU_ALERT_THRESHOLD = 85.0   # CPU 경고 임계치 (%)
+
+    last_cpu_alert_time = 0
+    last_ram_alert_time = 0
+    consecutive_high_cpu = 0
+    consecutive_high_ram = 0
+
     while True:
         try:
-            cpu_usage = psutil.cpu_percent(interval=None)
-            ram_usage = psutil.virtual_memory().percent
-            
-            if cpu_usage >= TELEGRAM_ALERT_THRESHOLD or ram_usage >= TELEGRAM_ALERT_THRESHOLD:
-                current_time = time.time()
-                if current_time - last_alert_time > 300:  # 5분 쿨타임
-                    msg = f"⚠️ [제우스 서버 경고]\n서버 자원 사용량이 임계치를 초과했습니다!\n\n💻 CPU: {cpu_usage}%\n🧠 RAM: {ram_usage}%"
-                    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-                    requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg})
-                    logger.warning(f"텔레그램 경고 발송 완료: CPU {cpu_usage}%, RAM {ram_usage}%")
-                    last_alert_time = current_time
+            # 1초 평균 CPU 측정 (interval=None의 찰나 스파이크 제거)
+            cpu_usage = await asyncio.to_thread(psutil.cpu_percent, 1.0)
+            ram_info = psutil.virtual_memory()
+            ram_usage = ram_info.percent
+            ram_used_gb = round(ram_info.used / (1024**3), 2)
+            ram_total_gb = round(ram_info.total / (1024**3), 2)
+            current_time = time.time()
+
+            # 매 사이클 실측값 로깅 (이걸로 왜 알림이 왔는지 정확히 추적 가능)
+            logger.info(f"[모니터] CPU: {cpu_usage}% | RAM: {ram_used_gb}GB/{ram_total_gb}GB ({ram_usage}%) | 연속고CPU: {consecutive_high_cpu} | 연속고RAM: {consecutive_high_ram}")
+
+            # 1. CPU 고부하 감시 (임계치 이상이 3회 연속 = 30초 이상 지속될 때만)
+            if cpu_usage >= CPU_ALERT_THRESHOLD:
+                consecutive_high_cpu += 1
+            else:
+                consecutive_high_cpu = 0
+
+            if consecutive_high_cpu >= 3:
+                if current_time - last_cpu_alert_time > 600:  # 10분 쿨타임
+                    msg = (
+                        f"⚠️ [제우스 서버 경고 - CPU 지속 과부하]\n"
+                        f"카운터 PC CPU가 30초 이상 고부하 상태입니다!\n\n"
+                        f"💻 실측 CPU: {cpu_usage}% (지속)\n"
+                        f"🧠 현재 RAM: {ram_used_gb}GB / {ram_total_gb}GB ({ram_usage}%)"
+                    )
+                    await send_telegram_msg(msg)
+                    logger.warning(f"텔레그램 CPU 과부하 알림 발송: CPU {cpu_usage}%")
+                    last_cpu_alert_time = current_time
+                    consecutive_high_cpu = 0
+
+            # 2. RAM 고부하 감시 (임계치 이상이 3회 연속 = 30초 이상 지속될 때만)
+            if ram_usage >= RAM_ALERT_THRESHOLD:
+                consecutive_high_ram += 1
+            else:
+                consecutive_high_ram = 0
+
+            if consecutive_high_ram >= 3:
+                # 임계치 초과 시 먼저 안전 메모리 트림(EmptyWorkingSet) 자동 실행 시도!
+                logger.warning(f"🚨 RAM 사용량 {ram_usage}% 감지! 자동 메모리 비우기 선제 실행...")
+                try:
+                    await optimize_memory()
+                    # 최적화 후 재측정
+                    after_ram = psutil.virtual_memory().percent
+                    logger.info(f"선제 메모리 최적화 완료: {ram_usage}% -> {after_ram}%")
+                    if after_ram < 80.0:
+                        # 최적화로 해결되었으면 사장님께 경고 문자 안 보내고 조용히 해결!
+                        consecutive_high_ram = 0
+                        await asyncio.sleep(10)
+                        continue
+                except Exception as opt_err:
+                    logger.error(f"선제 최적화 실패: {opt_err}")
+
+                if current_time - last_ram_alert_time > 600:  # 10분 쿨타임
+                    msg = (
+                        f"⚠️ [제우스 서버 경고 - RAM 부족 위험]\n"
+                        f"카운터 PC 물리 메모리가 지속적으로 {RAM_ALERT_THRESHOLD}%를 초과했습니다!\n\n"
+                        f"🧠 실제 사용 RAM: {ram_used_gb}GB / {ram_total_gb}GB ({ram_usage}%)\n"
+                        f"💻 현재 CPU: {cpu_usage}%\n"
+                        f"💡 서버가 유휴 메모리 자동 회수를 시도했습니다."
+                    )
+                    await send_telegram_msg(msg)
+                    logger.warning(f"텔레그램 RAM 부족 알림 발송: RAM {ram_usage}%")
+                    last_ram_alert_time = current_time
+                    consecutive_high_ram = 0
+
         except Exception as e:
             logger.error(f"텔레그램 알림 루프 오류: {e}")
         await asyncio.sleep(10)
@@ -856,3 +1139,62 @@ async def notify_tunnel_url_to_telegram():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server_core:app", host=SERVER_HOST, port=SERVER_PORT, reload=False)
+@app.get("/api/pica/status")
+async def get_pica_status():
+    from server.pica_watchdog import pica_dog
+    return {
+        "is_enabled": pica_dog.is_enabled,
+        "is_running": pica_dog.is_running,
+        "process_running": pica_dog.is_process_running(),
+        "program_path": pica_dog.program_path,
+        "process_name": pica_dog.process_name,
+        "watch_interval": pica_dog.watch_interval,
+        "restart_delay": pica_dog.restart_delay,
+        "auto_login_enabled": pica_dog.auto_login_enabled,
+        "password_masked": "*" * len(pica_dog.password) if pica_dog.password else ""
+    }
+
+@app.post("/api/pica/settings")
+async def save_pica_settings(request: Request):
+    data = await request.json()
+    cfg_file = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "config.ini")
+    main_cfg_file = r"C:\Users\USER\Documents\HDDGOD\deploy\ClientDeploy\core\config.ini"
+    
+    import configparser
+    cfg = configparser.ConfigParser()
+    target_read = cfg_file if os.path.exists(cfg_file) else main_cfg_file
+    if os.path.exists(target_read):
+        cfg.read(target_read, encoding="utf-8")
+        
+    if not cfg.has_section("PICA"):
+        cfg.add_section("PICA")
+        
+    cfg.set("PICA", "ENABLED", str(data.get("is_enabled", False)))
+    if "program_path" in data and data["program_path"]:
+        cfg.set("PICA", "PATH", data["program_path"])
+    if "process_name" in data and data["process_name"]:
+        cfg.set("PICA", "PROCESS_NAME", data["process_name"])
+    if "auto_login_enabled" in data:
+        cfg.set("PICA", "AUTO_LOGIN", str(data["auto_login_enabled"]))
+    if "password" in data and data["password"] and data["password"] != "***":
+        cfg.set("PICA", "PASSWORD", data["password"])
+        
+    for cf in set([cfg_file, main_cfg_file]):
+        try:
+            os.makedirs(os.path.dirname(cf), exist_ok=True)
+            with open(cf, "w", encoding="utf-8") as f:
+                cfg.write(f)
+        except Exception as e:
+            logger.error(f"PICA config 저장 실패 ({cf}): {e}")
+        
+    from server.pica_watchdog import pica_dog
+    pica_dog.load_config(cfg)
+    
+    if pica_dog.is_enabled:
+        pica_dog.start()
+    else:
+        pica_dog.stop()
+        
+    return {"status": "ok"}
+
+

@@ -252,11 +252,27 @@ def save_pc_mapping(mapping_data):
             logger.error(f"pc_mapping.json 저장 실패: {e}")
             return False
 
+def resolve_seat_for_ip_or_mac(ip: str = "", mac: str = "") -> Optional[str]:
+    """클라이언트의 IP 또는 MAC 주소를 기반으로 pc_mapping에 등록된 고유 좌석 ID(예: PC-02) 검색"""
+    if not ip and not mac:
+        return None
+    pcs = load_pc_mapping()
+    if ip:
+        for p in pcs:
+            if p.get("ip") == ip:
+                return p.get("id")
+    if mac and mac != "00:00:00:00:00:00":
+        for p in pcs:
+            if p.get("mac", "").lower() == mac.lower():
+                return p.get("id")
+    return None
+
 def get_actual_client_id(target_id: str) -> str:
     """좌석 ID(PC-01 등) 또는 호스트명을 실제 WebSocket 연결된 active_clients ID로 변환"""
     if target_id in active_clients:
         return target_id
 
+    # 1. target_id가 PC-01 형식일 때, 해당 PC 매핑 정보의 IP로 active_clients 검색
     pcs = load_pc_mapping()
     target_ip = None
     target_mac = None
@@ -280,7 +296,13 @@ def get_actual_client_id(target_id: str) -> str:
             if c_info.get("mac", "").lower() == target_mac.lower():
                 return cid
 
-    # 3. 로컬 테스트 및 단일 클라이언트 매핑 (1번방 열었을 때 접속자가 1명이면 자동 매칭)
+    # 3. 호스트명 매칭 (hostname 속성 확인)
+    for cid in active_clients:
+        c_info = watchdog.clients.get(cid, {})
+        if c_info.get("hostname") == target_id:
+            return cid
+
+    # 4. 로컬 테스트 및 단일 클라이언트 매핑 (1번방 열었을 때 접속자가 1명이면 자동 매칭)
     if len(active_clients) == 1 and (target_id in ["PC-01", "1", "PC-1"] or target_id not in watchdog.clients):
         return next(iter(active_clients.keys()))
 
@@ -409,10 +431,21 @@ async def get_otp_page(request: Request, client_id: str):
 
 @app.websocket("/ws/client/{client_id}")
 async def client_websocket(websocket: WebSocket, client_id: str):
-    """클라이언트 PC 에이전트 전용 통신 채널"""
+    """클라이언트 PC 에이전트 전용 통신 채널 (IP/좌석 기반 중복 호스트명 분리 처리)"""
     await websocket.accept()
-    active_clients[client_id] = websocket
-    logger.info(f"클라이언트 연결 승인: {client_id}")
+    client_ip = websocket.client.host if websocket.client else ""
+
+    # 1. IP 기반 매핑된 좌석 ID 확인 (예: 192.168.0.92 -> PC-02)
+    seat_id = resolve_seat_for_ip_or_mac(ip=client_ip)
+    # 중복 호스트명(복제본) 충돌 방지를 위한 고유 세션 키 결정
+    session_key = seat_id if seat_id else (f"{client_id}_{client_ip}" if client_ip else client_id)
+
+    # 기존 세션 등록 (좌석 ID 또는 IP 조합 고유 키)
+    active_clients[session_key] = websocket
+    if client_id not in active_clients:
+        active_clients[client_id] = websocket
+
+    logger.info(f"클라이언트 연결 승인: {client_id} (IP: {client_ip}, 좌석: {seat_id}, 세션키: {session_key})")
 
     try:
         while True:
@@ -422,23 +455,35 @@ async def client_websocket(websocket: WebSocket, client_id: str):
             data = packet.get("data", {})
 
             if p_type == PacketType.HEARTBEAT:
-                # 3초 하트비트 수신 및 감시자 업데이트
-                ip = data.get("ip", "")
+                # 3초 하트비트 수신 및 감시자 업데이트 (버전 정보 및 호스트명 포함)
+                reported_ip = data.get("ip", "") or client_ip
                 mac = data.get("mac", "")
                 uwf_st = data.get("uwf_status", "")
                 netflix_st = data.get("netflix_status", "")
                 ver_st = data.get("version", "")
-                watchdog.update_heartbeat(client_id, ip, mac, uwf_st, netflix_st, ver_st)
+
+                # 좌석 ID 재검증 (MAC 또는 reported_ip로 매핑된 경우)
+                if not seat_id:
+                    seat_id = resolve_seat_for_ip_or_mac(ip=reported_ip, mac=mac)
+                    if seat_id and seat_id != session_key:
+                        active_clients[seat_id] = websocket
+
+                target_watchdog_id = seat_id if seat_id else session_key
+                watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id)
+                if session_key != target_watchdog_id:
+                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id)
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!
-                logger.info(f"[{client_id}] 넷플릭스 OTP 요청 수신! 네이버 메일 자동 조회 트리거...")
-                asyncio.create_task(handle_auto_otp_flow(client_id))
+                otp_target = seat_id or session_key or client_id
+                logger.info(f"[{otp_target}] 넷플릭스 OTP 요청 수신! 네이버 메일 자동 조회 트리거...")
+                asyncio.create_task(handle_auto_otp_flow(otp_target))
 
             elif p_type == PacketType.CREDENTIAL_REQUEST:
                 # 넷플릭스 다중 계정 자동 분배 및 보안(Zero-Trust) 요청
                 from server.netflix_account_manager import account_manager
-                acc = await account_manager.get_credential(client_id)
+                acc_target = seat_id or session_key or client_id
+                acc = await account_manager.get_credential(acc_target)
                 if acc:
                     await websocket.send_text(make_packet(PacketType.CREDENTIAL_RESPONSE, {
                         "email": acc["email"],
@@ -446,21 +491,20 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                     }))
 
             elif p_type == PacketType.SCREEN_FRAME:
-                # 원격 제어 화면 프레임 릴레이 (실제 ID 및 매핑된 모든 좌석 채널로 동시 중계)
+                # 원격 제어 화면 프레임 릴레이 (좌석 ID, 세션키, 호스트명 동시 중계)
                 frame = data.get("frame", "")
-                await remote_relay.broadcast_frame(client_id, frame)
-                try:
-                    for p in load_pc_mapping():
-                        if get_actual_client_id(p.get("id")) == client_id:
-                            await remote_relay.broadcast_frame(p.get("id"), frame)
-                except Exception:
-                    pass
+                await remote_relay.broadcast_frame(session_key, frame)
+                if seat_id and seat_id != session_key:
+                    await remote_relay.broadcast_frame(seat_id, frame)
+                if client_id != session_key:
+                    await remote_relay.broadcast_frame(client_id, frame)
 
             elif p_type == PacketType.ERROR_REPORT:
                 error_msg = data.get("error", "Unknown error")
                 trace = data.get("traceback", "")
-                log_entry = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Client: {client_id} | Error: {error_msg}\n{trace}\n"
-                logger.error(f"🚨 [텔레메트리] 클라이언트 {client_id} 오류 보고 수신:\n{error_msg}")
+                log_tag = seat_id or session_key or client_id
+                log_entry = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Client: {log_tag} ({client_ip}) | Error: {error_msg}\n{trace}\n"
+                logger.error(f"🚨 [텔레메트리] 클라이언트 {log_tag} 오류 보고 수신:\n{error_msg}")
                 with open(os.path.join(PROJECT_ROOT, "server", "error_reports.log"), "a", encoding="utf-8") as f:
                     f.write(log_entry + "-"*60 + "\n")
 
@@ -469,9 +513,10 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 level = data.get("level", "INFO")
                 msg = data.get("message", "")
                 ts = data.get("timestamp", time.strftime("%H:%M:%S"))
+                log_tag = seat_id or session_key or client_id
                 log_entry = {
                     "type": "log",
-                    "client_id": client_id,
+                    "client_id": log_tag,
                     "level": level,
                     "message": msg,
                     "timestamp": ts
@@ -486,14 +531,18 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 # 파일 저장 (PC별 로그 파일)
                 log_dir = os.path.join(PROJECT_ROOT, "server", "client_logs")
                 os.makedirs(log_dir, exist_ok=True)
-                log_path = os.path.join(log_dir, f"{client_id}.log")
+                log_path = os.path.join(log_dir, f"{log_tag}.log")
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(f"[{ts}] [{level}] {msg}\n")
 
     except WebSocketDisconnect:
-        logger.warning(f"클라이언트 연결 종료: {client_id}")
+        logger.warning(f"클라이언트 연결 종료: {client_id} (세션: {session_key})")
     finally:
-        if client_id in active_clients:
+        if active_clients.get(session_key) == websocket:
+            del active_clients[session_key]
+        if seat_id and active_clients.get(seat_id) == websocket:
+            del active_clients[seat_id]
+        if active_clients.get(client_id) == websocket:
             del active_clients[client_id]
 
 async def handle_auto_otp_flow(client_id: str):
@@ -1096,5 +1145,104 @@ async def save_pica_settings(request: Request):
         pica_dog.stop()
         
     return {"status": "ok"}
+
+# ── 🤖 안티그래비티 AI 자율 모니터링 & 원격 진단 API ───────────────────────
+@app.get("/api/ai/health_report")
+async def get_ai_health_report():
+    """안티그래비티 AI가 1~8번 PC의 하트비트, UWF 상태, 넷플릭스 상태, 통신 상태를 실시간 진단"""
+    mapping = load_pc_mapping()
+    report = []
+    now = time.time()
+
+    for p in mapping:
+        cid = p.get("id")
+        actual_cid = get_actual_client_id(cid)
+        c_info = watchdog.clients.get(actual_cid, {})
+        last_seen = c_info.get("last_seen", 0)
+        elapsed = round(now - last_seen, 1) if last_seen > 0 else -1
+
+        is_connected = actual_cid in active_clients
+        uwf_st = c_info.get("uwf_status", p.get("uwf", "UNKNOWN"))
+        netflix_st = c_info.get("netflix_status", p.get("netflix", "UNKNOWN"))
+        ver_st = c_info.get("version", p.get("version", "-"))
+
+        # 위험 요인 자동 진단
+        issues = []
+        if is_connected:
+            if elapsed > 6.0:
+                issues.append(f"하트비트 지연 ({elapsed}초 경과)")
+            if str(uwf_st).upper() not in ["PROTECTED", "UWF_ENABLED"]:
+                issues.append(f"⚠️ UWF 보호 모드 미적용/비정상 감지: {uwf_st}")
+        else:
+            issues.append("오프라인 (미접속)")
+
+        report.append({
+            "seat": p.get("seat"),
+            "id": cid,
+            "name": p.get("name"),
+            "ip": c_info.get("ip", p.get("ip")),
+            "mac": c_info.get("mac", p.get("mac")),
+            "is_online": is_connected,
+            "uwf_status": uwf_st,
+            "netflix_status": netflix_st,
+            "version": ver_st,
+            "heartbeat_elapsed_sec": elapsed,
+            "issues": issues
+        })
+
+    # 전체 시스템 상태 요약
+    online_count = sum(1 for r in report if r["is_online"])
+    protected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() in ["PROTECTED", "UWF_ENABLED"])
+    unprotected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() not in ["PROTECTED", "UWF_ENABLED"])
+
+    return {
+        "status": "ok",
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "summary": {
+            "total_registered": len(mapping),
+            "online_count": online_count,
+            "protected_count": protected_count,
+            "warning_unprotected_online": unprotected_count
+        },
+        "pcs": report
+    }
+
+@app.get("/api/ai/client_logs/{client_id}")
+async def get_ai_client_logs(client_id: str, lines: int = 50):
+    """안티그래비티 AI가 특정 PC의 실시간 수신 로그 또는 크래시 리포트를 분석"""
+    actual_cid = get_actual_client_id(client_id)
+    log_dir = os.path.join(PROJECT_ROOT, "server", "client_logs")
+    log_path = os.path.join(log_dir, f"{actual_cid}.log")
+    
+    recent_logs = []
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+                recent_logs = [line.strip() for line in all_lines[-lines:]]
+        except Exception as e:
+            recent_logs = [f"로그 읽기 오류: {e}"]
+
+    # 에러 리포트도 함께 조회
+    error_log_path = os.path.join(PROJECT_ROOT, "server", "error_reports.log")
+    recent_errors = []
+    if os.path.exists(error_log_path):
+        try:
+            with open(error_log_path, "r", encoding="utf-8", errors="replace") as f:
+                err_lines = f.readlines()
+                for line in err_lines[-100:]:
+                    if client_id in line or actual_cid in line:
+                        recent_errors.append(line.strip())
+        except Exception:
+            pass
+
+    return {
+        "client_id": client_id,
+        "actual_client_id": actual_cid,
+        "log_count": len(recent_logs),
+        "logs": recent_logs,
+        "error_reports": recent_errors
+    }
+
 
 

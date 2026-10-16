@@ -303,7 +303,7 @@
                 document.getElementById('mcfg-server-ip').value = data.client_server_ip || '192.168.0.100';
                 document.getElementById('mcfg-server-port').value = data.server_port || 8000;
                 document.getElementById('mcfg-admin-pwd').value = data.admin_password || '1234';
-                document.getElementById('mcfg-version').innerText = data.client_version || '3.8.0';
+                document.getElementById('mcfg-version').innerText = data.client_version || '3.9.0';
                 document.getElementById('mcfg-tg-chatid').value = data.telegram_chat_id || '';
 
                 // Pica 설정 별도 로드
@@ -534,7 +534,7 @@
                     <span class="font-bold text-slate-300 flex items-center gap-1.5">
                         <i class="fa-solid fa-cloud-arrow-down text-fuchsia-400"></i> 클라이언트 버전
                     </span>
-                    <span id="mcfg-version" class="font-mono text-fuchsia-300 font-bold">3.8.0</span>
+                    <span id="mcfg-version" class="font-mono text-fuchsia-300 font-bold">3.9.0</span>
                 </div>
                 <button onclick="triggerMobOtaUpdate()" class="w-full py-2 bg-gradient-to-r from-fuchsia-700 to-pink-600 rounded-xl text-xs font-bold active:from-fuchsia-600">
                     🚀 전체 PC 원격 무인 업데이트

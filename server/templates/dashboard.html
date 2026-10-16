@@ -18,10 +18,10 @@
             <span class="text-3xl text-amber-400"><i class="fa-solid fa-bolt-lightning"></i></span>
             <div>
                 <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                    제우스 HDD PROTECTOR
+                    제우스 통합 관제 센터
                     <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-semibold">24H 무인 관제 정상</span>
                 </h1>
-                <p class="text-xs text-slate-400">Windows 순간복구 & 넷플릭스 자동화 통합 관제 시스템</p>
+                <p class="text-xs text-slate-400">Windows 클라이언트 관리 & 넷플릭스 자동화 관제 시스템</p>
             </div>
         </div>
 
@@ -47,8 +47,8 @@
             <button onclick="sendCommandAll('UPDATE_AGENT')" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
                 <i class="fa-solid fa-download"></i> 전체 에이전트 업데이트
             </button>
-            <button onclick="sendCommandAll('REBOOT_RECOVER')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
-                <i class="fa-solid fa-rotate"></i> 전체 1초 복구
+            <button onclick="sendCommandAll('REBOOT')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> 전체 PC 재부팅
             </button>
             <button onclick="sendWolAll()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
                 <i class="fa-solid fa-power-off"></i> 전체 전원 켜기(WOL)
@@ -90,10 +90,10 @@
             </div>
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400 font-semibold">순간복구 엔진</p>
-                    <p class="text-base font-bold text-indigo-400 mt-1">Shadow Defender</p>
+                    <p class="text-xs text-slate-400 font-semibold">현재 꺼짐 (Offline)</p>
+                    <p id="stat-offline" class="text-2xl font-black text-slate-500">0 대</p>
                 </div>
-                <div class="w-10 h-10 bg-indigo-950/60 text-indigo-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="w-10 h-10 bg-slate-800 text-slate-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-power-off"></i></div>
             </div>
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                 <div>
@@ -629,6 +629,8 @@
 
             updateTotalStat();
             document.getElementById('stat-online').innerText = `${onlineCount} 대`;
+            const offEl = document.getElementById('stat-offline');
+            if (offEl) offEl.innerText = `${pcList.length - onlineCount} 대`;
             document.getElementById('stat-netflix').innerText = `${netflixCount} 대`;
 
             renderGrid();
@@ -656,10 +658,6 @@
 
                     <div class="text-[11px] text-slate-400 space-y-1 mb-3">
                         <div class="flex justify-between"><span>IP:</span><span class="font-mono text-slate-300">${pc.ip}</span></div>
-                        <div class="flex justify-between">
-                            <span>순간복구:</span>
-                            <span class="text-indigo-400 font-semibold">Shadow Defender 대기</span>
-                        </div>
                         <div class="flex justify-between items-center">
                             <span>에이전트 버전:</span>
                             <span class="font-mono font-bold text-xs ${isOnline ? 'text-fuchsia-400 bg-fuchsia-950/40 px-1.5 py-0.5 rounded border border-fuchsia-800/40' : 'text-slate-500'}">v${pc.version || '-'}</span>
@@ -673,8 +671,8 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
-                        <button onclick="sendPcCommand('${pc.id}', 'REBOOT_RECOVER')" class="py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition flex items-center justify-center gap-1 font-semibold" title="PC 즉시 재부팅 복구">
-                            ⚡ 1초 복구
+                        <button onclick="sendPcCommand('${pc.id}', 'REBOOT')" class="py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition flex items-center justify-center gap-1 font-semibold" title="PC 즉시 재부팅">
+                            <i class="fa-solid fa-rotate"></i> PC 재부팅
                         </button>
                         <button onclick="sendPcCommand('${pc.id}', 'UPDATE_AGENT')" class="py-1 bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-700/40 rounded text-fuchsia-300 font-bold transition flex items-center justify-center gap-1" title="에이전트 최신 버전 즉시 패치">
                             <i class="fa-solid fa-download"></i> 에이전트 패치

@@ -801,6 +801,15 @@ async def download_update():
         return FileResponse(exe_path, filename="ZeusAgent.exe")
     return HTMLResponse("Update file not found", status_code=404)
 
+@app.get("/api/download/vcredist")
+async def download_vcredist():
+    """Visual C++ 런타임(VC_redist.x64.exe) 다운로드"""
+    from fastapi.responses import FileResponse
+    vc_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "VC_redist.x64.exe")
+    if os.path.exists(vc_path):
+        return FileResponse(vc_path, filename="VC_redist.x64.exe")
+    return HTMLResponse("VC_redist file not found", status_code=404)
+
 # ── 환경설정(Settings) 통합 관리 REST API ───────────────────────
 @app.get("/api/settings")
 async def get_settings():

@@ -25,18 +25,18 @@ class CommandType:
     REBOOT_MAINTENANCE = "REBOOT_MAINTENANCE"
     SHUTDOWN = "SHUTDOWN"
     WOL = "WOL"
-    ENABLE_UWF = "ENABLE_UWF"
-    DISABLE_UWF = "DISABLE_UWF"
     RESTART_NETFLIX = "RESTART_NETFLIX"
     START_SCREEN_STREAM = "START_SCREEN_STREAM"
     STOP_SCREEN_STREAM = "STOP_SCREEN_STREAM"
     UPDATE_AGENT = "UPDATE_AGENT"
 
-class UWFStatus:
-    PROTECTED = "PROTECTED"       # UWF 보호 활성화 (초록 방패)
-    MAINTENANCE = "MAINTENANCE"   # 유지보수/해제 모드 (주황 방패)
+class RecoveryStatus:
+    ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     UNKNOWN = "UNKNOWN"
+
+# 하위 호환성 유지용 별칭
+UWFStatus = RecoveryStatus
 
 class NetflixStatus:
     LOGGED_IN = "LOGGED_IN"       # 정상 로그인 완료

@@ -20,9 +20,8 @@ if ROOT_DIR not in sys.path:
 
 from common.config import CLIENT_SERVER_IP, CLIENT_SERVER_PORT, HEARTBEAT_INTERVAL
 from common.protocol import (
-    PacketType, CommandType, UWFStatus, NetflixStatus, make_packet, parse_packet
+    PacketType, CommandType, NetflixStatus, make_packet, parse_packet
 )
-from client.uwf_controller import UWFController
 from client.power_policy import PowerPolicy
 from client.windows_optimizer import WindowsOptimizer
 from client.netflix_bot import NetflixBot
@@ -120,9 +119,6 @@ class ZeusClientAgent:
         # 3. MS 방해화면 박멸 & 자동 업데이트 강제 재부팅 차단
         WindowsOptimizer.optimize_all_on_boot()
 
-        # 4. 팟플레이어 및 넷플릭스 격리 프로필 예외 등록
-        UWFController.apply_exclusions()
-
         logger.info("=== 제우스 부팅 시퀀스 완료 ===")
 
     def start_netflix_routine(self) -> None:
@@ -187,12 +183,11 @@ class ZeusClientAgent:
         """3초 주기 하트비트 생존 신호 전송 및 OTP 상태 연동"""
         while True:
             try:
-                uwf_st = UWFController.get_status()
                 payload = {
                     "client_id": self.client_id,
                     "ip": self.local_ip,
                     "mac": self.mac_addr,
-                    "uwf_status": uwf_st,
+                    "uwf_status": "DISABLED",
                     "netflix_status": self.netflix_bot.current_status,
                     "is_streaming": self.is_streaming_screen,
                     "version": self.get_local_version()
@@ -237,21 +232,14 @@ class ZeusClientAgent:
                 action = data.get("action")
                 logger.info(f"서버 원격 명령 수신: {action}")
 
-                if action == CommandType.REBOOT or action == CommandType.REBOOT_RECOVER:
-                    asyncio.create_task(asyncio.to_thread(UWFController.reboot_restore))
-                elif action == CommandType.REBOOT_MAINTENANCE:
-                    asyncio.create_task(asyncio.to_thread(UWFController.reboot_to_maintenance))
+                if action in (CommandType.REBOOT, CommandType.REBOOT_RECOVER, CommandType.REBOOT_MAINTENANCE):
+                    logger.info("🔄 [원격 명령] PC 즉시 재부팅 실행...")
+                    asyncio.create_task(asyncio.to_thread(os.system, "shutdown /r /t 0 /f"))
                 elif action == CommandType.SHUTDOWN:
                     asyncio.create_task(asyncio.to_thread(os.system, "shutdown /s /t 0 /f"))
                 elif action == CommandType.RESTART_NETFLIX:
                     logger.info("관리 서버 원격 명령: 넷플릭스 강제 가동")
                     asyncio.create_task(asyncio.to_thread(self.netflix_bot.launch_chrome_with_cdp))
-                elif action == CommandType.ENABLE_UWF:
-                    logger.info("🛡️ [원격 명령] UWF 순간복구 보호 모드 활성화 시작...")
-                    asyncio.create_task(asyncio.to_thread(UWFController.reboot_and_protect))
-                elif action == CommandType.DISABLE_UWF:
-                    logger.info("🔧 [원격 명령] UWF 보호 해제 (유지보수 모드) 시작...")
-                    asyncio.create_task(asyncio.to_thread(UWFController.reboot_to_maintenance))
                 elif action == CommandType.UPDATE_AGENT:
                     logger.info("🔄 [원격 명령] 관리자 강제 클라이언트 업데이트 실행...")
                     asyncio.create_task(asyncio.to_thread(self.check_and_apply_update, True))
@@ -387,19 +375,6 @@ class ZeusClientAgent:
 
     def check_and_apply_update(self, force=False):
         """서버와 버전을 비교하고 새 버전이 있거나 force=True면 덮어쓰기 업데이트 수행 (GUI 포함)"""
-        from client.uwf_controller import UWFController
-
-        # =====================================================================
-        # [무한 재부팅 방지 핵심 가드!]
-        # 보호 모드 상태에서는 다운로드해도 재부팅 시 롤백되므로 부팅 시 자동 업데이트 절대 금지!
-        # (관리자가 대시보드에서 강제로 원격 업데이트 명령을 보냈을 때만 force=True로 허용)
-        # =====================================================================
-        current_uwf = UWFController.get_status()
-        if current_uwf == "PROTECTED" and not force:
-            logger.info("🛡️ [안전 가드] 현재 디스크 보호 모드(PROTECTED) 가동 중입니다.")
-            logger.info("     재부팅 롤백 루프 방지를 위해 부팅 시 자동 업데이트를 안전하게 건너뜁니다.")
-            return
-
         import requests
         try:
             app_dir = self.get_app_dir()
@@ -573,14 +548,6 @@ if errorlevel 1 (
 :MOVE_VER
 if exist "%~dp0version_new.txt" move /y "%~dp0version_new.txt" "%~dp0version.txt" >nul 2>&1
 
-:: UWF 보호 상태에서도 디스크 영구 저장 (커밋)
-where uwfmgr.exe >nul 2>&1
-if not errorlevel 1 (
-    echo [update.bat] UWF commit 시도 중... >> "%~dp0bat_debug.log"
-    uwfmgr.exe file commit "%~dp0ZeusAgent.exe" >> "%~dp0bat_debug.log" 2>&1
-    uwfmgr.exe file commit "%~dp0version.txt" >> "%~dp0bat_debug.log" 2>&1
-)
-
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
 start "" /D "%~dp0" "%~dp0ZeusAgent.exe"
@@ -629,7 +596,6 @@ exit /b 0
     def show_update_complete_window(self):
         try:
             import tkinter as tk
-            from client.uwf_controller import UWFController
             import os
             
             version_path = os.path.join(self.get_app_dir(), "version.txt")
@@ -637,16 +603,13 @@ exit /b 0
             if os.path.exists(version_path):
                 with open(version_path, "r", encoding="utf-8") as f:
                     current_version = f.read().strip()
-                    
-            uwf_st = UWFController.get_status()
-            uwf_msg = "보존 모드" if uwf_st == "PROTECTED" else f"{uwf_st}"
             
             root = tk.Tk()
             root.title("업데이트 완료")
             root.geometry("380x100")
             root.attributes("-topmost", True)
             root.eval('tk::PlaceWindow . center')
-            lbl = tk.Label(root, text=f"✅ 제우스 에이전트 v{current_version} 패치 완료!\n(UWF 상태: {uwf_msg})", font=("맑은 고딕", 10))
+            lbl = tk.Label(root, text=f"✅ 제우스 에이전트 v{current_version} 패치 완료!", font=("맑은 고딕", 10))
             lbl.pack(pady=20)
             root.after(2000, root.destroy)  # 2초 후 자동 소멸
             root.mainloop()
@@ -667,11 +630,6 @@ exit /b 0
             if os.path.exists(flag_path):
                 try:
                     os.remove(flag_path)
-                except Exception:
-                    pass
-                # UWF 환경에서도 영구 삭제 시도
-                try:
-                    subprocess.run(f'uwfmgr.exe file commit-delete "{flag_path}"', shell=True, capture_output=True, creationflags=0x08000000)
                 except Exception:
                     pass
                 logger.info("🛡️ [업데이트 완료] 최신 버전 정상 가동 시작!")

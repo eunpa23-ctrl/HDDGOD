@@ -231,7 +231,6 @@ def load_pc_mapping():
             "ip": f"192.168.0.{10 + i}",
             "mac": "00:00:00:00:00:00",
             "status": "OFFLINE",
-            "uwf": "UNKNOWN",
             "netflix": "CLOSED"
         })
     save_pc_mapping(default_list)
@@ -1149,7 +1148,7 @@ async def save_pica_settings(request: Request):
 # ── 🤖 안티그래비티 AI 자율 모니터링 & 원격 진단 API ───────────────────────
 @app.get("/api/ai/health_report")
 async def get_ai_health_report():
-    """안티그래비티 AI가 1~8번 PC의 하트비트, UWF 상태, 넷플릭스 상태, 통신 상태를 실시간 진단"""
+    """안티그래비티 AI가 1~8번 PC의 하트비트, 넷플릭스 상태, 통신 상태를 실시간 진단"""
     mapping = load_pc_mapping()
     report = []
     now = time.time()
@@ -1162,7 +1161,6 @@ async def get_ai_health_report():
         elapsed = round(now - last_seen, 1) if last_seen > 0 else -1
 
         is_connected = actual_cid in active_clients
-        uwf_st = c_info.get("uwf_status", p.get("uwf", "UNKNOWN"))
         netflix_st = c_info.get("netflix_status", p.get("netflix", "UNKNOWN"))
         ver_st = c_info.get("version", p.get("version", "-"))
 
@@ -1171,8 +1169,6 @@ async def get_ai_health_report():
         if is_connected:
             if elapsed > 6.0:
                 issues.append(f"하트비트 지연 ({elapsed}초 경과)")
-            if str(uwf_st).upper() not in ["PROTECTED", "UWF_ENABLED"]:
-                issues.append(f"⚠️ UWF 보호 모드 미적용/비정상 감지: {uwf_st}")
         else:
             issues.append("오프라인 (미접속)")
 
@@ -1183,7 +1179,6 @@ async def get_ai_health_report():
             "ip": c_info.get("ip", p.get("ip")),
             "mac": c_info.get("mac", p.get("mac")),
             "is_online": is_connected,
-            "uwf_status": uwf_st,
             "netflix_status": netflix_st,
             "version": ver_st,
             "heartbeat_elapsed_sec": elapsed,
@@ -1192,17 +1187,13 @@ async def get_ai_health_report():
 
     # 전체 시스템 상태 요약
     online_count = sum(1 for r in report if r["is_online"])
-    protected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() in ["PROTECTED", "UWF_ENABLED"])
-    unprotected_count = sum(1 for r in report if r["is_online"] and str(r["uwf_status"]).upper() not in ["PROTECTED", "UWF_ENABLED"])
 
     return {
         "status": "ok",
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "summary": {
             "total_registered": len(mapping),
-            "online_count": online_count,
-            "protected_count": protected_count,
-            "warning_unprotected_online": unprotected_count
+            "online_count": online_count
         },
         "pcs": report
     }

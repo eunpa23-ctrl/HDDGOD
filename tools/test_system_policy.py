@@ -59,10 +59,8 @@ def main():
     au_status = "🛡️ 강제 재부팅 차단 적용됨 (1)" if au == 1 else "⚪ 기본값"
     print(f"[4] 손님 이용 중 업데이트 재부팅: {au_status}")
 
-    # 5. UWF 순간복구 엔진 설치 여부
-    import shutil
-    uwf_exists = shutil.which("uwfmgr.exe") is not None or os.path.exists(r"C:\Windows\System32\uwfmgr.exe")
-    print(f"[5] Windows UWF 순간복구 엔진: {'🟢 설치됨 (정상 작동 가능)' if uwf_exists else '⚪ 미설치 (테스트 가상 모드로 동작)'}")
+    # 5. 순간복구 엔진 상태
+    print(f"[5] 순간복구 엔진: Shadow Defender (UWF 제거 완료)")
 
     print("=" * 65)
 

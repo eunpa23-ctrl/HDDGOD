@@ -5,19 +5,21 @@
     "name": "PC 1번",
     "ip": "192.168.0.91",
     "mac": "70:85:c2:82:31:a2",
-    "status": "OFFLINE",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-01",
+    "version": "3.9.0"
   },
   {
     "seat": 2,
     "id": "PC-02",
     "name": "PC 2번",
     "ip": "192.168.0.92",
-    "mac": "00:00:00:00:00:00",
-    "status": "OFFLINE",
+    "mac": "70:85:c2:6d:a4:48",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-02",
+    "version": "3.9.0"
   },
   {
     "seat": 3,
@@ -34,46 +36,61 @@
     "id": "PC-04",
     "name": "PC 4번",
     "ip": "192.168.0.94",
-    "mac": "00:00:00:00:00:00",
-    "status": "OFFLINE",
+    "mac": "70:85:c2:6d:a2:31",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-04",
+    "version": "3.9.0"
   },
   {
     "seat": 5,
     "id": "PC-05",
     "name": "PC 5번",
     "ip": "192.168.0.95",
-    "mac": "00:00:00:00:00:00",
-    "status": "OFFLINE",
+    "mac": "70:85:c2:70:bd:21",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-05",
+    "version": "3.9.0"
   },
   {
     "seat": 6,
     "id": "PC-06",
     "name": "PC 6번",
     "ip": "192.168.0.96",
-    "mac": "00:00:00:00:00:00",
-    "status": "OFFLINE",
+    "mac": "70:85:c2:6d:a4:2c",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-06",
+    "version": "3.9.0"
   },
   {
     "seat": 7,
     "id": "PC-07",
     "name": "PC 7번",
     "ip": "192.168.0.97",
-    "mac": "00:00:00:00:00:00",
-    "status": "OFFLINE",
+    "mac": "70:85:c2:6d:a1:6c",
+    "status": "ONLINE",
     "netflix": "CLOSED",
-    "real_cid": null
+    "real_cid": "PC-07",
+    "version": "3.9.0"
   },
   {
     "seat": 8,
     "id": "PC-08",
     "name": "PC 8번",
     "ip": "192.168.0.98",
+    "mac": "70:85:c2:6d:a2:39",
+    "status": "ONLINE",
+    "netflix": "CLOSED",
+    "real_cid": "PC-08",
+    "version": "3.9.0"
+  },
+  {
+    "seat": 9,
+    "id": "PC-09",
+    "name": "SERVER_MAIN",
+    "ip": "192.168.0.2",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
     "netflix": "CLOSED",

@@ -20,30 +20,45 @@ if %errorlevel% neq 0 (
 
 :STEP_VCREDIST
 echo [1/5] 필수 C++ 런타임(VC_redist.x64) 점검 및 자동 설치 중...
-set VCREDIST_INSTALLED=0
 reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v Installed >nul 2>&1
-if %errorlevel% equ 0 set VCREDIST_INSTALLED=1
-
-if "!VCREDIST_INSTALLED!"=="1" (
-    echo   - Visual C++ 2015-2022 x64 런타임이 정상 설치되어 있습니다.
-) else (
-    echo   - Visual C++ 런타임 미설치 감지 -> 무인 자동 설치 진행 중...
-    if exist "%~dp0VC_redist.x64.exe" (
-        start /wait "" "%~dp0VC_redist.x64.exe" /install /quiet /norestart
-    ) else if exist "VC_redist.x64.exe" (
-        start /wait "" "VC_redist.x64.exe" /install /quiet /norestart
-    ) else if exist "%~dp0core\VC_redist.x64.exe" (
-        start /wait "" "%~dp0core\VC_redist.x64.exe" /install /quiet /norestart
-    ) else (
-        echo   - 로컬 파일 부재: 관리 서버(192.168.0.100)로부터 자동 다운로드 시도...
-        powershell -NoProfile -Command "Invoke-WebRequest -Uri 'http://192.168.0.100:8000/api/download/vcredist' -OutFile '%TEMP%\VC_redist.x64.exe' -UseBasicParsing -TimeoutSec 45" >nul 2>&1
-        if exist "%TEMP%\VC_redist.x64.exe" (
-            start /wait "" "%TEMP%\VC_redist.x64.exe" /install /quiet /norestart
-            del /f /q "%TEMP%\VC_redist.x64.exe" >nul 2>&1
-        )
-    )
-    echo   - Visual C++ 런타임 설치 완료!
+if %errorlevel% equ 0 (
+    echo   - Visual C++ 2015-2022 x64 런타임이 이미 정상 설치되어 있습니다.
+    goto STEP_KILL
 )
+
+echo   - Visual C++ 런타임 미설치 감지. 자동 설치를 시작합니다...
+if exist "%~dp0VC_redist.x64.exe" goto RUN_LOCAL_VC
+if exist "VC_redist.x64.exe" goto RUN_REL_VC
+if exist "%~dp0core\VC_redist.x64.exe" goto RUN_CORE_VC
+goto DOWNLOAD_VC
+
+:RUN_LOCAL_VC
+echo   - 로컬 VC_redist.x64.exe 무인 설치 실행 중...
+start /wait "" "%~dp0VC_redist.x64.exe" /install /quiet /norestart
+goto VC_DONE
+
+:RUN_REL_VC
+echo   - 상대경로 VC_redist.x64.exe 무인 설치 실행 중...
+start /wait "" "VC_redist.x64.exe" /install /quiet /norestart
+goto VC_DONE
+
+:RUN_CORE_VC
+echo   - core 폴더 VC_redist.x64.exe 무인 설치 실행 중...
+start /wait "" "%~dp0core\VC_redist.x64.exe" /install /quiet /norestart
+goto VC_DONE
+
+:DOWNLOAD_VC
+echo   - 관리 서버(192.168.0.100)로부터 VC_redist 자동 다운로드 중...
+powershell -NoProfile -Command "Invoke-WebRequest -Uri 'http://192.168.0.100:8000/api/download/vcredist' -OutFile '%TEMP%\VC_redist.x64.exe' -UseBasicParsing -TimeoutSec 45" >nul 2>&1
+if exist "%TEMP%\VC_redist.x64.exe" (
+    echo   - 다운로드 완료. 무인 설치 진행 중...
+    start /wait "" "%TEMP%\VC_redist.x64.exe" /install /quiet /norestart
+    del /f /q "%TEMP%\VC_redist.x64.exe" >nul 2>&1
+)
+goto VC_DONE
+
+:VC_DONE
+echo   - Visual C++ 런타임 설치 완료!
 
 :STEP_KILL
 echo.

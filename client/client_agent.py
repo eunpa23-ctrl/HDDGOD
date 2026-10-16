@@ -243,6 +243,9 @@ class ZeusClientAgent:
                 elif action == CommandType.UPDATE_AGENT:
                     logger.info("🔄 [원격 명령] 관리자 강제 클라이언트 업데이트 실행...")
                     asyncio.create_task(asyncio.to_thread(self.check_and_apply_update, True))
+                elif action == CommandType.UNINSTALL_AGENT:
+                    logger.info("🗑️ [원격 명령] 제우스 클라이언트 원격 완전 삭제(언인스톨) 실행...")
+                    asyncio.create_task(asyncio.to_thread(self.uninstall_agent))
                 elif action == CommandType.START_SCREEN_STREAM:
                     logger.info("📡 [원격 제어] 화면 스트리밍 가동 명령 수신 -> 캡처 시작!")
                     self.is_streaming_screen = True
@@ -592,6 +595,88 @@ exit /b 0
                     os._exit(0)
         except Exception as e:
             logger.error(f"업데이트 확인 중 오류: {e}")
+
+    def uninstall_agent(self) -> None:
+        """클라이언트 원격 완전 삭제 및 시스템 원상 복구"""
+        try:
+            import tempfile
+            logger.info("🗑️ [언인스톨] 완전 삭제 스크립트 작성 및 독립 실행 준비...")
+            bat_content = r"""@echo off
+setlocal enabledelayedexpansion
+:: [1] 프로세스 종료 대기
+ping 127.0.0.1 -n 3 >nul
+taskkill /F /IM ZeusAgent.exe >nul 2>&1
+ping 127.0.0.1 -n 2 >nul
+
+:: [2] 시작프로그램 및 작업 스케줄러 등록 해제
+schtasks /delete /tn "ZeusAgent" /f >nul 2>&1
+schtasks /delete /tn "ZeusClientAgent" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "ZeusAgent" /f >nul 2>&1
+reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "ZeusAgent" /f >nul 2>&1
+
+:: [3] 방화벽 규칙 및 윈도우 디펜더 예외 해제
+netsh advfirewall firewall delete rule name="ZeusAgent" >nul 2>&1
+netsh advfirewall firewall delete rule name="ZeusAgent_Out" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; Remove-MpPreference -ExclusionPath 'C:\ZeusAgent'; Remove-MpPreference -ExclusionProcess 'ZeusAgent.exe'" >nul 2>&1
+
+:: [4] 바탕화면 바로가기 삭제
+if exist "%PUBLIC%\Desktop\넷플릭스.lnk" (
+    attrib -r -h -s "%PUBLIC%\Desktop\넷플릭스.lnk" >nul 2>&1
+    del /f /q "%PUBLIC%\Desktop\넷플릭스.lnk" >nul 2>&1
+)
+if exist "%USERPROFILE%\Desktop\넷플릭스.lnk" (
+    attrib -r -h -s "%USERPROFILE%\Desktop\넷플릭스.lnk" >nul 2>&1
+    del /f /q "%USERPROFILE%\Desktop\넷플릭스.lnk" >nul 2>&1
+)
+if exist "%ALLUSERSPROFILE%\Desktop\넷플릭스.lnk" (
+    attrib -r -h -s "%ALLUSERSPROFILE%\Desktop\넷플릭스.lnk" >nul 2>&1
+    del /f /q "%ALLUSERSPROFILE%\Desktop\넷플릭스.lnk" >nul 2>&1
+)
+
+:: [5] 설치 폴더(C:\ZeusAgent) 완전 삭제
+cd /d "%TEMP%"
+set RETRY=0
+:RETRY_DEL
+if not exist "C:\ZeusAgent" goto DONE
+rd /s /q "C:\ZeusAgent" >nul 2>&1
+if exist "C:\ZeusAgent" (
+    set /a RETRY+=1
+    if !RETRY! lss 10 (
+        ping 127.0.0.1 -n 2 >nul
+        goto RETRY_DEL
+    )
+)
+:DONE
+del "%~f0" >nul 2>&1
+exit /b 0
+"""
+            temp_dir = tempfile.gettempdir()
+            bat_path = os.path.join(temp_dir, "zeus_uninstall.bat")
+            with open(bat_path, "w", encoding="cp949") as f:
+                f.write(bat_content.replace("\r\n", "\n").replace("\n", "\r\n"))
+                f.flush()
+                os.fsync(f.fileno())
+
+            # 트레이 아이콘 종료
+            if hasattr(self, "tray") and self.tray and getattr(self.tray, "icon", None):
+                try:
+                    self.tray.icon.stop()
+                except Exception:
+                    pass
+
+            # 무창 분리 프로세스로 실행
+            DETACHED_FLAGS = 0x08000000 | 0x00000200
+            subprocess.Popen(
+                ["cmd.exe", "/c", bat_path],
+                creationflags=DETACHED_FLAGS,
+                close_fds=True
+            )
+            logger.info("🗑️ [언인스톨] 백그라운드 삭제 프로세스 기동 완료. 에이전트 종료.")
+            import time
+            time.sleep(0.5)
+            os._exit(0)
+        except Exception as e:
+            logger.error(f"원격 언인스톨 실행 실패: {e}")
 
     def show_update_complete_window(self):
         try:

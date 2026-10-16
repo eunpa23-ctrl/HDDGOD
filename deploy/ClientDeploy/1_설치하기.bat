@@ -43,6 +43,8 @@ copy /y "%~dp0core\config.ini" "C:\ZeusAgent\config.ini" >nul 2>&1
 copy /y "%~dp0core\version.txt" "C:\ZeusAgent\version.txt" >nul 2>&1
 copy /y "%~dp0core\netflix.ico" "C:\ZeusAgent\netflix.ico" >nul 2>&1
 copy /y "%~dp0core\*.dll" "C:\ZeusAgent\" >nul 2>&1
+copy /y "%~dp0core\3_삭제하기.bat" "C:\ZeusAgent\3_삭제하기.bat" >nul 2>&1
+copy /y "%~dp03_삭제하기.bat" "C:\ZeusAgent\3_삭제하기.bat" >nul 2>&1
 goto CHECK_CONFIG
 
 :COPY_CORE_REL
@@ -52,6 +54,8 @@ copy /y "core\config.ini" "C:\ZeusAgent\config.ini" >nul 2>&1
 copy /y "core\version.txt" "C:\ZeusAgent\version.txt" >nul 2>&1
 copy /y "core\netflix.ico" "C:\ZeusAgent\netflix.ico" >nul 2>&1
 copy /y "core\*.dll" "C:\ZeusAgent\" >nul 2>&1
+copy /y "core\3_삭제하기.bat" "C:\ZeusAgent\3_삭제하기.bat" >nul 2>&1
+copy /y "3_삭제하기.bat" "C:\ZeusAgent\3_삭제하기.bat" >nul 2>&1
 goto CHECK_CONFIG
 
 :COPY_ONEDIR
@@ -124,6 +128,7 @@ echo ================================================================
 echo   * [설치 완료] 제우스 클라이언트 에이전트 설치가 완료되었습니다!
 echo   - 작업표시줄 트레이 아이콘을 확인하세요.
 echo   - 카운터 관제 대시보드(192.168.0.100:8000)에서 ONLINE을 확인하세요.
+echo   - 프로그램 완전 삭제 시 [C:\ZeusAgent\3_삭제하기.bat] 를 실행하세요.
 echo ================================================================
 echo.
 popd >nul 2>&1

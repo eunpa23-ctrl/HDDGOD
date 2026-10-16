@@ -96,9 +96,14 @@
                             <span id="ip-${pc.id}" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700/80 font-bold">${pc.ip}</span>
                             <span id="ver-${pc.id}" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950/60 text-fuchsia-300 border border-fuchsia-800/40 font-bold">v${pc.version || '-'}</span>
                         </div>
-                        <span id="badge-${pc.id}" class="text-[10px] px-2 py-0.5 rounded font-bold ${isOnline ? 'bg-emerald-950 border border-emerald-500/50 text-emerald-400' : 'bg-slate-800 text-slate-400'}">
-                            ${isOnline ? '온라인' : '오프라인'}
-                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span id="badge-${pc.id}" class="text-[10px] px-2 py-0.5 rounded font-bold ${isOnline ? 'bg-emerald-950 border border-emerald-500/50 text-emerald-400' : 'bg-slate-800 text-slate-400'}">
+                                ${isOnline ? '온라인' : '오프라인'}
+                            </span>
+                            <button onclick="sendCommand('${pc.id}', 'UNINSTALL_AGENT')" class="text-slate-500 hover:text-rose-400 active:text-rose-300 p-1 text-xs" title="에이전트 원격 삭제">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 상세 정보 바: 넷플릭스 상태 -->
@@ -252,6 +257,7 @@
             if (cmd === 'REBOOT' || cmd === 'REBOOT_RECOVER') cmdName = 'PC 재부팅';
             else if (cmd === 'UPDATE_AGENT') cmdName = '클라이언트 무인 업데이트';
             else if (cmd === 'WOL') cmdName = '전원 켜기(WOL)';
+            else if (cmd === 'UNINSTALL_AGENT') cmdName = '⚠️ 에이전트 완전 삭제(언인스톨)';
 
             if (!confirm(`${label}에 '${cmdName}' 명령을 내리시겠습니까?`)) return;
             try {

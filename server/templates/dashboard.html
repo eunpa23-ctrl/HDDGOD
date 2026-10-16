@@ -651,9 +651,14 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-2">
                         <span class="font-extrabold text-sm text-white">${pc.name}</span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
-                            ${pc.status}
-                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                                ${pc.status}
+                            </span>
+                            <button onclick="confirmUninstall('${pc.id}', '${pc.name}')" class="text-slate-500 hover:text-rose-400 p-1 text-xs transition" title="에이전트 원격 완전 삭제 (언인스톨)">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="text-[11px] text-slate-400 space-y-1 mb-3">
@@ -794,6 +799,17 @@
 
         function sendPcCommand(clientId, action) {
             fetch(`/api/command/${clientId}/${action}`, { method: 'POST' });
+        }
+
+        function confirmUninstall(clientId, pcName) {
+            if (confirm(`⚠️ [경고] 정말로 [${pcName}]의 제우스 에이전트를 원격 완전 삭제(언인스톨)하시겠습니까?\n\n삭제 후에는 해당 PC에서 프로세스, 시작프로그램, 방화벽 규칙이 모두 제거되며 다시 직접 설치하기 전까지 원격 제어가 불가능합니다.`)) {
+                fetch(`/api/command/${clientId}/UNINSTALL_AGENT`, { method: 'POST' })
+                    .then(r => r.json())
+                    .then(res => {
+                        alert(`[${pcName}] 에이전트 원격 삭제 명령을 전송했습니다.`);
+                    })
+                    .catch(e => alert(`삭제 명령 실패: ${e}`));
+            }
         }
 
         function sendCommandAll(action) {

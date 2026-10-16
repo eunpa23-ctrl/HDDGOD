@@ -6,7 +6,6 @@
     "ip": "192.168.0.91",
     "mac": "70:85:c2:82:31:a2",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -17,7 +16,6 @@
     "ip": "192.168.0.92",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -28,7 +26,6 @@
     "ip": "192.168.0.93",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -39,7 +36,6 @@
     "ip": "192.168.0.94",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -50,7 +46,6 @@
     "ip": "192.168.0.95",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -61,7 +56,6 @@
     "ip": "192.168.0.96",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -72,7 +66,6 @@
     "ip": "192.168.0.97",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   },
@@ -83,7 +76,6 @@
     "ip": "192.168.0.98",
     "mac": "00:00:00:00:00:00",
     "status": "OFFLINE",
-    "uwf": "UNKNOWN",
     "netflix": "CLOSED",
     "real_cid": null
   }

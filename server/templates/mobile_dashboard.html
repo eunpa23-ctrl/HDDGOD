@@ -15,13 +15,10 @@
     <header class="sticky top-0 z-50 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-2">
             <i class="fa-solid fa-bolt text-amber-400 text-xl"></i>
-            <h1 class="text-xl font-bold tracking-tight">제우스 HDD PROTECTOR 모바일</h1>
+            <h1 class="text-xl font-bold tracking-tight">제우스 모바일 관제</h1>
         </div>
         <div class="flex gap-2">
-            <button onclick="sendCommand('ALL', 'ENABLE_UWF')" class="w-10 h-10 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center active:bg-emerald-800 shadow-[0_0_10px_rgba(16,185,129,0.3)]" title="전체 보호">
-                <i class="fa-solid fa-shield-halved"></i>
-            </button>
-            <button onclick="sendCommand('ALL', 'REBOOT_RECOVER')" class="w-10 h-10 rounded-full bg-sky-900 text-sky-400 flex items-center justify-center active:bg-sky-800 shadow-[0_0_10px_rgba(14,165,233,0.3)]" title="전체 복구">
+            <button onclick="sendCommand('ALL', 'REBOOT')" class="w-10 h-10 rounded-full bg-sky-900 text-sky-400 flex items-center justify-center active:bg-sky-800 shadow-[0_0_10px_rgba(14,165,233,0.3)]" title="전체 재부팅">
                 <i class="fa-solid fa-rotate"></i>
             </button>
             <button id="mob-mem-btn" onclick="optimizeMemoryMobile()" class="w-10 h-10 rounded-full bg-slate-800 text-emerald-400 flex items-center justify-center active:bg-slate-700 shadow-[0_0_10px_rgba(16,185,129,0.3)]" title="메모리 최적화">
@@ -73,21 +70,6 @@
         let pcList = {{ initial_pc_list | safe }};
         const container = document.getElementById('pc-list-container');
 
-        function getUwfBadgeHtml(uwf, isOnline) {
-            const st = (uwf || '').toUpperCase();
-            if (st === 'PROTECTED') {
-                return '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> 🛡️ 보호 중</span>';
-            } else if (st === 'MAINTENANCE') {
-                return '<span class="text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-wrench"></i> 🔧 유지보수</span>';
-            } else if (st === 'DISABLED') {
-                return '<span class="text-slate-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-shield"></i> ⚪ 보호 꺼짐</span>';
-            } else {
-                return isOnline 
-                    ? '<span class="text-slate-400 font-medium">⚪ 미설치 (대기)</span>'
-                    : '<span class="text-slate-500 font-medium">⚪ 오프라인</span>';
-            }
-        }
-
         function getNetflixBadgeHtml(netflix) {
             const nf = (netflix || '').toUpperCase();
             if (nf === 'RUNNING' || nf === 'LOGGED_IN') {
@@ -103,7 +85,6 @@
             container.innerHTML = '';
             pcList.forEach(pc => {
                 const isOnline = (pc.status === 'ONLINE');
-                const isProtected = (pc.uwf === 'PROTECTED');
 
                 const html = `
                 <div id="card-${pc.id}" class="bg-slate-900 border ${isOnline ? 'border-slate-700 shadow-lg' : 'border-slate-800 opacity-90'} rounded-2xl p-4 shadow-md flex flex-col gap-3 transition">
@@ -120,19 +101,17 @@
                         </span>
                     </div>
 
-                    <!-- 상세 정보 바: 보호 모드 상태 + 넷플릭스 상태 -->
+                    <!-- 상세 정보 바: 넷플릭스 상태 -->
                     <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-slate-400">보호상태:</span>
-                            <span id="uwf-${pc.id}">
-                                ${getUwfBadgeHtml(pc.uwf, isOnline)}
-                            </span>
-                        </div>
                         <div class="flex items-center gap-1.5">
                             <span class="text-slate-400">넷플릭스:</span>
                             <span id="netflix-${pc.id}">
                                 ${getNetflixBadgeHtml(pc.netflix)}
                             </span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-slate-400">통신:</span>
+                            <span class="${isOnline ? 'text-emerald-400 font-bold' : 'text-slate-500'}">${isOnline ? '온라인' : '오프라인'}</span>
                         </div>
                     </div>
 
@@ -141,11 +120,11 @@
                         <button onclick="window.open('/remote/${pc.id}', '_blank')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-slate-600 transition shadow">
                             <i class="fa-solid fa-desktop"></i> 원격
                         </button>
-                        <button onclick="sendCommand('${pc.id}', 'REBOOT_RECOVER')" class="py-2.5 bg-sky-900 hover:bg-sky-800 text-sky-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-sky-700 transition shadow">
-                            <i class="fa-solid fa-rotate"></i> 1초복구
+                        <button onclick="sendCommand('${pc.id}', 'REBOOT')" class="py-2.5 bg-sky-900 hover:bg-sky-800 text-sky-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-sky-700 transition shadow">
+                            <i class="fa-solid fa-rotate"></i> 재부팅
                         </button>
-                        <button id="uwf-btn-${pc.id}" onclick="toggleMobUwf('${pc.id}')" class="py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow ${isProtected ? 'bg-amber-900 hover:bg-amber-800 text-amber-200 active:bg-amber-700' : 'bg-emerald-900 hover:bg-emerald-800 text-emerald-200 active:bg-emerald-700'}">
-                            ${isProtected ? '<i class="fa-solid fa-wrench"></i> 유지전환' : '<i class="fa-solid fa-shield-halved"></i> 보호전환'}
+                        <button onclick="sendCommand('${pc.id}', 'WOL')" class="py-2.5 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-indigo-700 transition shadow">
+                            <i class="fa-solid fa-power-off"></i> WOL
                         </button>
                         <button onclick="sendCommand('${pc.id}', 'UPDATE_AGENT')" class="py-2.5 bg-fuchsia-900 hover:bg-fuchsia-800 text-fuchsia-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-fuchsia-700 transition shadow">
                             <i class="fa-solid fa-download"></i> 업뎃
@@ -226,7 +205,6 @@
                     const isOnline = Boolean(live && live.status === 'ONLINE');
                     pc.status = isOnline ? 'ONLINE' : 'OFFLINE';
                     if (isOnline) {
-                        pc.uwf = (live.uwf_status || 'UNKNOWN').toUpperCase();
                         pc.version = live.version || '알 수 없음';
                         pc.netflix = live.netflix_status || 'CLOSED';
                         if (live.ip) pc.ip = live.ip;
@@ -237,9 +215,7 @@
                     const dot = document.getElementById(`dot-${pc.id}`);
                     const badge = document.getElementById(`badge-${pc.id}`);
                     const ipEl = document.getElementById(`ip-${pc.id}`);
-                    const uwfEl = document.getElementById(`uwf-${pc.id}`);
                     const netflixEl = document.getElementById(`netflix-${pc.id}`);
-                    const uwfBtn = document.getElementById(`uwf-btn-${pc.id}`);
                     const card = document.getElementById(`card-${pc.id}`);
 
                     if (dot) {
@@ -254,25 +230,12 @@
                         badge.innerText = isOnline ? '온라인' : '오프라인';
                     }
                     if (ipEl && pc.ip) {
-                    const verEl = document.getElementById(`ver-${pc.id}`);
-                    if (verEl && isOnline) { verEl.innerText = `v${pc.version || '-'}`; }
+                        const verEl = document.getElementById(`ver-${pc.id}`);
+                        if (verEl && isOnline) { verEl.innerText = `v${pc.version || '-'}`; }
                         ipEl.innerText = pc.ip;
-                    }
-                    if (uwfEl) {
-                        uwfEl.innerHTML = getUwfBadgeHtml(pc.uwf, isOnline);
                     }
                     if (netflixEl) {
                         netflixEl.innerHTML = getNetflixBadgeHtml(pc.netflix);
-                    }
-                    if (uwfBtn) {
-                        const isProt = (pc.uwf === 'PROTECTED');
-                        if (isProt) {
-                            uwfBtn.className = 'py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow bg-amber-900 hover:bg-amber-800 text-amber-200 active:bg-amber-700';
-                            uwfBtn.innerHTML = '<i class="fa-solid fa-wrench"></i> 유지전환';
-                        } else {
-                            uwfBtn.className = 'py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow bg-emerald-900 hover:bg-emerald-800 text-emerald-200 active:bg-emerald-700';
-                            uwfBtn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 보호전환';
-                        }
                     }
                     if (card) {
                         card.className = `bg-slate-900 border ${isOnline ? 'border-slate-700 shadow-lg' : 'border-slate-800 opacity-90'} rounded-2xl p-4 shadow-md flex flex-col gap-3 transition`;
@@ -281,63 +244,14 @@
             }
         };
 
-        function toggleMobUwf(targetId) {
-            const pc = pcList.find(p => p.id === targetId);
-            const isProt = (pc && pc.uwf === 'PROTECTED');
-            if (isProt) {
-                if (confirm(`${(pc && pc.name) || targetId}를 '유지보수 모드'(보호 해제)로 전환하시겠습니까?\n(새 게임 설치/패치/작업이 가능해집니다)`)) {
-                    sendCommand(targetId, 'DISABLE_UWF');
-                }
-            } else {
-                if (confirm(`${(pc && pc.name) || targetId}의 현재 상태를 영구 저장하고 '보호 모드'로 전환하시겠습니까?\n(다음 부팅부터 현재 상태로 유지됩니다)`)) {
-                    sendCommand(targetId, 'ENABLE_UWF');
-                }
-            }
-        }
-
         async function sendCommand(target, cmd) {
             const pc = pcList.find(p => p.id === target);
             const label = (target === 'ALL') ? '전체 PC' : ((pc && pc.name) || target);
 
-            // 🛡️ 보호 모드 상태에서 업데이트 요청 시 안내 및 유지보수 모드 전환 지원
-            if (cmd === 'UPDATE_AGENT') {
-                if (target === 'ALL') {
-                    const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
-                    if (protectedList.length > 0) {
-                        const ok = confirm(
-                            `⚠️ [전체 PC 업데이트 안내]\n\n` +
-                            `현재 온라인 PC 중 ${protectedList.length}대가 순간복구 '보호 모드' 상태입니다.\n` +
-                            `보호 모드인 PC는 업데이트 파일을 받아도 다음 재부팅 시 이전 버전으로 되돌아갑니다.\n\n` +
-                            `👉 영구 적용을 위해 전체 PC를 먼저 [유지보수 모드]로 전환(재부팅)하시겠습니까?\n` +
-                            `• [확인] 누름: 전체 PC를 유지보수 모드로 전환 후 재부팅 (부팅 시 최신 버전 자동 설치)\n` +
-                            `• [취소] 누름: 업데이트 취소`
-                        );
-                        if (ok) {
-                            sendCommand('ALL', 'DISABLE_UWF');
-                        }
-                        return;
-                    }
-                } else if (pc && pc.uwf === 'PROTECTED') {
-                    const ok = confirm(
-                        `⚠️ [${pc.name}]은(는) 현재 순간복구 '보호 모드' 상태입니다!\n\n` +
-                        `보호 모드에서는 새 버전을 받아도 PC 재부팅 시 이전 버전으로 되돌아갑니다.\n\n` +
-                        `👉 업데이트를 영구 적용하기 위해 [유지보수 모드로 전환 후 재부팅]하시겠습니까?\n` +
-                        `(재부팅 후 유지보수 모드로 부팅되면 최신 버전이 디스크에 영구 설치됩니다.)\n\n` +
-                        `• [확인] 누름: 유지보수 모드로 전환 후 재부팅 (자동 설치)\n` +
-                        `• [취소] 누름: 업데이트 취소`
-                    );
-                    if (ok) {
-                        sendCommand(target, 'DISABLE_UWF');
-                    }
-                    return;
-                }
-            }
-
             let cmdName = cmd;
-            if (cmd === 'ENABLE_UWF') cmdName = '세팅 저장 및 보호 모드 전환';
-            else if (cmd === 'DISABLE_UWF') cmdName = '유지보수 모드 전환(보호 해제)';
-            else if (cmd === 'REBOOT_RECOVER') cmdName = '1초 재부팅 복구';
+            if (cmd === 'REBOOT' || cmd === 'REBOOT_RECOVER') cmdName = 'PC 재부팅';
             else if (cmd === 'UPDATE_AGENT') cmdName = '클라이언트 무인 업데이트';
+            else if (cmd === 'WOL') cmdName = '전원 켜기(WOL)';
 
             if (!confirm(`${label}에 '${cmdName}' 명령을 내리시겠습니까?`)) return;
             try {
@@ -389,7 +303,7 @@
                 document.getElementById('mcfg-server-ip').value = data.client_server_ip || '192.168.0.100';
                 document.getElementById('mcfg-server-port').value = data.server_port || 8000;
                 document.getElementById('mcfg-admin-pwd').value = data.admin_password || '1234';
-                document.getElementById('mcfg-version').innerText = data.client_version || '3.8.0';
+                document.getElementById('mcfg-version').innerText = data.client_version || '3.9.0';
                 document.getElementById('mcfg-tg-chatid').value = data.telegram_chat_id || '';
 
                 // Pica 설정 별도 로드
@@ -463,21 +377,6 @@
         }
 
         async function triggerMobOtaUpdate() {
-            const protectedList = pcList.filter(p => p.status === 'ONLINE' && p.uwf === 'PROTECTED');
-            if (protectedList.length > 0) {
-                const ok = confirm(
-                    `⚠️ [순간복구 보호 모드 감지]\n\n` +
-                    `현재 보호모드 클라이언트가 ${protectedList.length}대 있습니다.\n` +
-                    `보호모드에서는 업데이트가 되지 않습니다.\n\n` +
-                    `유지보수 모드로 변경할까요? (확인 시 재부팅 후 자동 업데이트)`
-                );
-                if (ok) {
-                    await fetch('/api/command_all/DISABLE_UWF', { method: 'POST' });
-                    alert(`✅ 전체 PC에 유지보수 모드 전환 및 재부팅 명령을 전송했습니다.\n재부팅 후 자동으로 최신 버전이 설치됩니다.`);
-                }
-                return;
-            }
-
             if (!confirm("전체 PC에 클라이언트 무인 업데이트 명령을 전송하시겠습니까?")) return;
             try {
                 const res = await fetch('/api/settings/update_client', {
@@ -635,7 +534,7 @@
                     <span class="font-bold text-slate-300 flex items-center gap-1.5">
                         <i class="fa-solid fa-cloud-arrow-down text-fuchsia-400"></i> 클라이언트 버전
                     </span>
-                    <span id="mcfg-version" class="font-mono text-fuchsia-300 font-bold">3.8.0</span>
+                    <span id="mcfg-version" class="font-mono text-fuchsia-300 font-bold">3.9.0</span>
                 </div>
                 <button onclick="triggerMobOtaUpdate()" class="w-full py-2 bg-gradient-to-r from-fuchsia-700 to-pink-600 rounded-xl text-xs font-bold active:from-fuchsia-600">
                     🚀 전체 PC 원격 무인 업데이트

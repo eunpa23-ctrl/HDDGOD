@@ -141,12 +141,9 @@ netsh advfirewall firewall add rule name="ZeusServer_8000" dir=in action=allow p
    * `deploy/ClientDeploy/1_설치하기.bat` (또는 `install.bat`) 파일을 **우클릭 ➡️ [관리자 권한으로 실행]** 합니다.
    * 스크립트가 `C:\ZeusAgent` 폴더를 생성하고, 보안 예외/방화벽/시작프로그램을 등록한 후 `ZeusAgent.exe`를 구동합니다.
 
-3. **순간복구(UWF) 테스트 참고사항**:
-   * **일반 PC (Windows 10/11 Home/Pro)**:
-     * UWF 드라이버가 없으므로 `UWFController`가 자동으로 **"가상 테스트 모드(Simulated Mode)"**로 동작합니다.
-     * 대시보드에서 [유지보수 모드], [세팅저장&보호]를 누르면 오류 없이 가상 상태가 전환되므로 안심하고 테스트할 수 있습니다.
-   * **실제 PC방 PC (Windows Enterprise/IoT)**:
-     * 실제 `uwfmgr.exe` 순간복구 엔진과 연동되어 3초 안전 유예 후 실제 재부팅 및 롤백 방지 기능이 가동됩니다.
+3. **순간복구 참고사항**:
+   * 기존 UWF(Unified Write Filter) 방식은 완전히 제거되었으며, 향후 **섀도우 디펜더(Shadow Defender)**로 대체 연동될 예정입니다.
+   * 복구 모드 전환 없이 안전하게 원격 제어 및 자동 업데이트가 동작합니다.
 
 ---
 

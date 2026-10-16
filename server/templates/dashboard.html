@@ -28,18 +28,29 @@
         <!-- 일괄 제어 및 모바일 원격 접속 버튼군 -->
         <div class="flex flex-wrap items-center gap-2">
             <!-- 서버 리소스 모니터 -->
-        <div class="flex items-center gap-4 text-xs font-semibold bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+        <div class="flex items-center gap-3 text-xs font-semibold bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700 shadow-sm">
             <div class="flex items-center gap-1.5">
-                <i class="fa-solid fa-microchip text-slate-400"></i> CPU <span id="sys-cpu" class="text-white w-8 text-right">0%</span>
+                <i class="fa-solid fa-microchip text-slate-400"></i> CPU <span id="sys-cpu" class="text-white font-mono w-8 text-right">0%</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <i class="fa-solid fa-memory text-slate-400"></i> RAM <span id="sys-ram" class="text-white w-8 text-right">0%</span>
-                <span id="server-ram" class="text-[10px] text-emerald-400/80 font-normal ml-1 w-[45px] text-left">(0MB)</span>
+                <i class="fa-solid fa-memory text-slate-400"></i> RAM <span id="sys-ram" class="text-white font-mono w-8 text-right">0%</span>
+                <span id="server-ram" class="text-[10px] text-emerald-400/90 font-mono font-normal ml-0.5">(0MB)</span>
             </div>
-            <button onclick="optimizeServerMemory()" class="ml-2 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-300 transition" title="수동 최적화"><i class="fa-solid fa-broom"></i> 수동</button>
-            <button onclick="toggleAutoOptimize()" class="ml-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-300 transition" title="1시간마다 자동 정리 토글">
-                <i class="fa-solid fa-clock"></i> 자동 <span id="auto-opt-status" class="text-rose-400 font-bold">OFF</span>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <!-- 즉시 정리 수동 버튼 -->
+            <button onclick="optimizeServerMemory()" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 rounded-md text-[11px] text-slate-200 transition flex items-center gap-1.5 font-bold shadow-sm" title="지금 즉시 서버 메모리 최적화 실행">
+                <i class="fa-solid fa-broom text-amber-400 text-xs"></i> 즉시 정리
             </button>
+            <!-- 옆으로 미는 슬라이더 토글 스위치 -->
+            <div onclick="toggleAutoOptimize()" class="flex items-center gap-2 cursor-pointer select-none bg-slate-900/90 hover:bg-slate-950 px-2.5 py-1 rounded-md border border-slate-700 hover:border-slate-600 transition" title="1시간 주기 자동 메모리 정리 (클릭하여 켜기/끄기)">
+                <span class="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                    <i class="fa-solid fa-clock text-sky-400 text-[10px]"></i> 자동정리
+                </span>
+                <div id="auto-opt-switch" class="w-10 h-5 bg-slate-700 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-inner">
+                    <div id="auto-opt-knob" class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-0"></div>
+                </div>
+                <span id="auto-opt-status" class="text-[11px] font-black text-rose-400 w-7 text-center">OFF</span>
+            </div>
         </div>
                         <button onclick="openMobileModal()" class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
                 <i class="fa-solid fa-mobile-screen-button"></i> 📱 스마트폰 원격 접속
@@ -507,24 +518,60 @@
         }
 
         
-                function toggleAutoOptimize() {
-            fetch('/api/toggle_auto_optimize', { method: 'POST' });
+                let currentAutoOptimize = false;
+
+        function updateAutoOptimizeUI(enabled) {
+            currentAutoOptimize = Boolean(enabled);
+            const switchEl = document.getElementById('auto-opt-switch');
+            const knobEl = document.getElementById('auto-opt-knob');
+            const statusEl = document.getElementById('auto-opt-status');
+
+            if (!switchEl || !knobEl || !statusEl) return;
+
+            if (currentAutoOptimize) {
+                switchEl.className = 'w-10 h-5 bg-emerald-500 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+                knobEl.className = 'w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-5';
+                statusEl.innerText = 'ON';
+                statusEl.className = 'text-[11px] font-black text-emerald-400 w-7 text-center';
+            } else {
+                switchEl.className = 'w-10 h-5 bg-slate-700 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-inner';
+                knobEl.className = 'w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-0';
+                statusEl.innerText = 'OFF';
+                statusEl.className = 'text-[11px] font-black text-rose-400 w-7 text-center';
+            }
+        }
+
+        function toggleAutoOptimize() {
+            // 즉각적인 시각 피드백 (0ms 반응속도)
+            const nextState = !currentAutoOptimize;
+            updateAutoOptimizeUI(nextState);
+            fetch('/api/toggle_auto_optimize', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.enabled !== undefined) {
+                        updateAutoOptimizeUI(data.enabled);
+                    }
+                })
+                .catch(err => {
+                    console.error("자동 정리 토글 실패:", err);
+                    updateAutoOptimizeUI(currentAutoOptimize);
+                });
         }
         
         function optimizeServerMemory() {
             const btn = document.querySelector('button[onclick="optimizeServerMemory()"]');
-            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 정리 중';
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> 정리 중';
             fetch('/api/optimize_memory', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (btn) {
                         btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> 완료';
-                        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-broom"></i> 최적화'; }, 2000);
+                        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-broom text-amber-400 text-xs"></i> 즉시 정리'; }, 2000);
                     }
                     alert(`⚡ [메모리 최적화 완료]\n• 정리된 프로세스: ${data.trimmed_count}개\n• 즉시 확보된 메모리: ${data.freed_mb} MB\n• 현재 전체 RAM 점유율: ${data.current_ram_percent}% (여유: ${data.available_gb} GB)`);
                 })
                 .catch(err => {
-                    if (btn) btn.innerHTML = '<i class="fa-solid fa-broom"></i> 최적화';
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-broom text-amber-400 text-xs"></i> 즉시 정리';
                     console.error("메모리 최적화 실패:", err);
                     alert("메모리 최적화 요청 중 오류가 발생했습니다.");
                 });
@@ -546,16 +593,7 @@
                     if (srvRamEl) srvRamEl.innerText = '(' + data.server_ram_mb + 'MB)';
                 }
                 if (data.auto_optimize !== undefined) {
-                    const autoEl = document.getElementById('auto-opt-status');
-                    if (autoEl) {
-                        if (data.auto_optimize) {
-                            autoEl.innerText = 'ON';
-                            autoEl.className = 'text-emerald-400 font-bold';
-                        } else {
-                            autoEl.innerText = 'OFF';
-                            autoEl.className = 'text-rose-400 font-bold';
-                        }
-                    }
+                    updateAutoOptimizeUI(data.auto_optimize);
                 }
 
                 

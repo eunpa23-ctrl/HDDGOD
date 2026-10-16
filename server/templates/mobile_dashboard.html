@@ -171,6 +171,7 @@
                 if(data.cpu !== undefined) document.getElementById('mob-cpu').innerText = data.cpu;
                 if(data.ram !== undefined) document.getElementById('mob-ram').innerText = data.ram;
                 if(data.server_ram_mb !== undefined) document.getElementById('mob-server-ram').innerText = data.server_ram_mb;
+                if(data.auto_optimize !== undefined) updateMobAutoOptimizeUI(data.auto_optimize);
 
                 const clientsData = data.clients || {};
 
@@ -291,6 +292,37 @@
                 if (btn) btn.innerHTML = '<i class="fa-solid fa-broom text-sm"></i>';
                 alert("메모리 최적화 실패: " + err);
             }
+        }
+
+        let currentMobAutoOptimize = false;
+
+        function updateMobAutoOptimizeUI(enabled) {
+            currentMobAutoOptimize = Boolean(enabled);
+            const switchEl = document.getElementById('mob-auto-opt-switch');
+            const knobEl = document.getElementById('mob-auto-opt-knob');
+            const statusEl = document.getElementById('mob-auto-opt-status');
+            if (!switchEl || !knobEl || !statusEl) return;
+
+            if (currentMobAutoOptimize) {
+                switchEl.className = 'w-10 h-5 bg-emerald-500 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+                knobEl.className = 'w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-5';
+                statusEl.innerText = 'ON';
+                statusEl.className = 'text-[10px] font-black text-emerald-400 w-6 text-center';
+            } else {
+                switchEl.className = 'w-10 h-5 bg-slate-700 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-inner';
+                knobEl.className = 'w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-0';
+                statusEl.innerText = 'OFF';
+                statusEl.className = 'text-[10px] font-black text-rose-400 w-6 text-center';
+            }
+        }
+
+        function toggleMobAutoOptimize() {
+            const next = !currentMobAutoOptimize;
+            updateMobAutoOptimizeUI(next);
+            fetch('/api/toggle_auto_optimize', { method: 'POST' })
+                .then(r => r.json())
+                .then(d => { if (d && d.enabled !== undefined) updateMobAutoOptimizeUI(d.enabled); })
+                .catch(() => updateMobAutoOptimizeUI(currentMobAutoOptimize));
         }
 
         // --- ⚙️ 모바일 환경설정 모달 스크립트 ---
@@ -531,6 +563,22 @@
                 <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
                     <span class="text-xs text-slate-400">종료 시 무한 재시작</span>
                     <span id="mob-sup-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">보호 중</span>
+                </div>
+            </div>
+
+            <!-- 메모리 1시간 자동 정리 슬라이더 스위치 -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock text-sky-400"></i> 1시간 주기 메모리 자동 정리
+                    </div>
+                    <span class="text-[10px] text-slate-500">주기적으로 서버 RAM 불필요 메모리 청소</span>
+                </div>
+                <div onclick="toggleMobAutoOptimize()" class="flex items-center gap-1.5 cursor-pointer select-none">
+                    <div id="mob-auto-opt-switch" class="w-10 h-5 bg-slate-700 rounded-full relative transition-colors duration-200 ease-in-out p-0.5 shadow-inner">
+                        <div id="mob-auto-opt-knob" class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out translate-x-0"></div>
+                    </div>
+                    <span id="mob-auto-opt-status" class="text-[10px] font-black text-rose-400 w-6 text-center">OFF</span>
                 </div>
             </div>
 

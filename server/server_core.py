@@ -211,6 +211,87 @@ mail_extractor = NateMailOTPExtractor()
 kakao_notifier = KakaoNotifier()
 remote_relay = RemoteRelay()
 
+def get_server_ip() -> str:
+    """서버 PC의 실제 네트워크 IP 주소 반환"""
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        pass
+    try:
+        from common.config import CLIENT_SERVER_IP
+        if CLIENT_SERVER_IP and CLIENT_SERVER_IP != '0.0.0.0':
+            return CLIENT_SERVER_IP
+    except Exception:
+        pass
+    return "127.0.0.1"
+
+class ServerScreenManager:
+    """서버 PC 자체의 실시간 화면 스트리밍 및 모바일 터치/마우스 원격 제어 매니저"""
+    def __init__(self):
+        self.streamer = None
+        self.viewers = set()
+        self.task = None
+        self.lock = asyncio.Lock()
+
+    def get_streamer(self):
+        if self.streamer is None:
+            from client.screen_streamer import ScreenStreamer
+            self.streamer = ScreenStreamer(target_width=1280, quality=55)
+        return self.streamer
+
+    async def add_viewer(self, websocket: WebSocket):
+        async with self.lock:
+            self.viewers.add(websocket)
+            if self.task is None or self.task.done():
+                self.task = asyncio.create_task(self._capture_loop())
+
+    async def remove_viewer(self, websocket: WebSocket):
+        async with self.lock:
+            self.viewers.discard(websocket)
+            if not self.viewers and self.task and not self.task.done():
+                self.task.cancel()
+                self.task = None
+
+    async def _capture_loop(self):
+        logger.info("⚡ [ServerScreenManager] 서버 화면 스트리밍 가동 (뷰어 접속)")
+        streamer = self.get_streamer()
+        try:
+            while self.viewers:
+                frame_b64 = await asyncio.to_thread(streamer.capture_frame_base64)
+                if frame_b64:
+                    payload = json.dumps({"frame": frame_b64, "dpr": 1.0})
+                    disconnected = []
+                    for ws in list(self.viewers):
+                        try:
+                            await ws.send_text(payload)
+                        except Exception:
+                            disconnected.append(ws)
+                    if disconnected:
+                        async with self.lock:
+                            for ws in disconnected:
+                                self.viewers.discard(ws)
+                await asyncio.sleep(0.1) # 약 10 FPS
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"[ServerScreenManager] 캡처 루프 예외: {e}")
+        finally:
+            logger.info("⚡ [ServerScreenManager] 서버 화면 스트리밍 절전 중지 (모든 뷰어 퇴장)")
+
+    async def handle_input(self, evt_type: str, data: dict):
+        try:
+            streamer = self.get_streamer()
+            await asyncio.to_thread(streamer.handle_remote_input, evt_type, data)
+        except Exception as e:
+            logger.error(f"[ServerScreenManager] 원격 입력 처리 예외: {e}")
+
+server_screen_mgr = ServerScreenManager()
+
 def load_pc_mapping():
     """저장된 PC 매핑 목록 불러오기 (없으면 기본 10대 생성 및 영구 보존)"""
     if os.path.exists(MAPPING_FILE):
@@ -356,6 +437,21 @@ async def get_mapping():
 @app.get("/remote/{client_id}", response_class=HTMLResponse)
 async def get_remote_view(request: Request, client_id: str):
     """모바일 및 PC 터치 원격 제어 화면"""
+    # ⚡ 서버 PC 자체 원격 제어 요청 처리
+    if client_id.upper() in ["SERVER", "HOST", "0", "LOCAL"]:
+        s_ip = get_server_ip()
+        return templates.TemplateResponse(
+            request=request,
+            name="remote_view.html",
+            context={
+                "client_id": "SERVER",
+                "actual_client_id": "SERVER",
+                "client_name": "⚡ 제우스 중앙 서버 (HOST)",
+                "client_ip": s_ip,
+                "is_online": True
+            }
+        )
+
     actual_cid = get_actual_client_id(client_id)
     ws = get_client_ws(client_id)
     is_online = (ws is not None)
@@ -394,6 +490,25 @@ async def get_remote_view(request: Request, client_id: str):
 async def get_rdp_file(client_id: str):
     """윈도우 기본 원격 데스크톱(mstsc) 연결용 .rdp 파일 생성 및 다운로드"""
     from fastapi.responses import Response
+
+    if client_id.upper() in ["SERVER", "HOST", "0", "LOCAL"]:
+        target_ip = get_server_ip()
+        rdp_content = f"""full address:s:{target_ip}
+prompt for credentials:i:1
+screen mode id:i:2
+use multimon:i:0
+session bpp:i:32
+compression:i:1
+keyboardhook:i:2
+audiomode:i:0
+redirectclipboard:i:1
+"""
+        return Response(
+            content=rdp_content.encode("utf-16le"),
+            media_type="application/x-rdp",
+            headers={"Content-Disposition": f'attachment; filename="Zeus_Server_{target_ip}.rdp"'}
+        )
+
     actual_cid = get_actual_client_id(client_id)
     c_info = watchdog.clients.get(actual_cid, {})
     target_ip = c_info.get("ip")
@@ -589,6 +704,22 @@ async def dashboard_websocket(websocket: WebSocket):
 async def remote_view_websocket(websocket: WebSocket, client_id: str):
     """원격 제어 뷰어 연결 (좌석 ID / 실제 ID 스마트 브리지)"""
     await websocket.accept()
+
+    # ⚡ 서버 PC 자체 원격 스트리밍 처리
+    if client_id.upper() in ["SERVER", "HOST", "0", "LOCAL"]:
+        await server_screen_mgr.add_viewer(websocket)
+        try:
+            while True:
+                raw = await websocket.receive_text()
+                evt_data = json.loads(raw)
+                evt_type = evt_data.get("event")
+                await server_screen_mgr.handle_input(evt_type, evt_data)
+        except WebSocketDisconnect:
+            pass
+        finally:
+            await server_screen_mgr.remove_viewer(websocket)
+        return
+
     actual_cid = get_actual_client_id(client_id)
     remote_relay.add_viewer(client_id, websocket)
     if actual_cid != client_id:

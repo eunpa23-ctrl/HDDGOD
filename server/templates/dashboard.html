@@ -55,6 +55,9 @@
                         <button onclick="openMobileModal()" class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
                 <i class="fa-solid fa-mobile-screen-button"></i> 📱 스마트폰 원격 접속
             </button>
+            <button onclick="window.open('/remote/SERVER', '_blank')" class="px-3 py-1.5 bg-gradient-to-r from-indigo-700 to-violet-700 hover:from-indigo-600 hover:to-violet-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-indigo-400/40" title="서버 자체 윈도우 화면 원격 접속">
+                <i class="fa-solid fa-server"></i> 🖥️ 서버 화면 원격
+            </button>
             <button onclick="sendCommandAll('UPDATE_AGENT')" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
                 <i class="fa-solid fa-download"></i> 전체 에이전트 업데이트
             </button>

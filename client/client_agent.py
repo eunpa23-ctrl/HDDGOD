@@ -121,6 +121,29 @@ class ZeusClientAgent:
 
         logger.info("=== 제우스 부팅 시퀀스 완료 ===")
 
+    def check_netflix_window_active(self) -> bool:
+        """Windows API를 통해 화면에 넷플릭스 창이 실제로 떠 있는지 초고속 검사 (0.001초)"""
+        try:
+            import ctypes
+            found = False
+            def enum_cb(hwnd, lparam):
+                nonlocal found
+                if ctypes.windll.user32.IsWindowVisible(hwnd):
+                    length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                    if length > 0:
+                        buf = ctypes.create_unicode_buffer(length + 1)
+                        ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+                        t = buf.value.lower()
+                        if "netflix" in t or "넷플릭스" in t:
+                            found = True
+                            return False
+                return True
+            CB = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            ctypes.windll.user32.EnumWindows(CB(enum_cb), 0)
+            return found
+        except Exception:
+            return False
+
     def start_netflix_routine(self) -> None:
         """손님이 넷플릭스를 실행했을 때만 감지하여 자동 로그인 연동 (강제 재실행 안 함)"""
         def routine():
@@ -132,12 +155,15 @@ class ZeusClientAgent:
 
             while True:
                 try:
-                    # 2. 크롬(넷플릭스)이 켜져 있는지 확인
-                    is_running = self.netflix_bot.is_cdp_available()
+                    # 1. CDP 포트(9222) 활성화 확인
+                    is_cdp = self.netflix_bot.is_cdp_available()
 
-                    if is_running:
+                    # 2. 윈도우 창 제목 중 Netflix 존재 여부 확인 (일반 브라우저/앱 실행 폴백)
+                    is_win_active = self.check_netflix_window_active()
+
+                    if is_cdp:
                         if not was_running:
-                            logger.info("🎬 [ZeusAgent] 손님이 넷플릭스를 실행함 -> 자동 로그인 검사 및 수행!")
+                            logger.info("🎬 [ZeusAgent] 손님이 넷플릭스를 실행함 (CDP) -> 자동 로그인 검사 및 수행!")
                             was_running = True
                             self.netflix_bot.connect_cdp()
 
@@ -148,7 +174,6 @@ class ZeusClientAgent:
                         elif st == NetflixStatus.LOGGED_IN:
                             self.otp_needed = False
                             self.cred_needed = False
-                            # 로그인 완료 및 시청 중일 때는 손님의 재생/화면 전환을 방해하지 않도록 대기 간격 확보
                             time.sleep(5)
                             continue
                         elif st == NetflixStatus.OTP_WAITING:
@@ -156,9 +181,18 @@ class ZeusClientAgent:
                                 logger.info("⚡ [ZeusAgent] 넷플릭스 4자리 OTP 대기 상태 감지! 서버 알림 준비...")
                                 self.otp_needed = True
 
+                    elif is_win_active:
+                        # CDP 포트가 안 열려 있더라도 창에 넷플릭스가 켜져 있으면 '시청중'으로 실시간 반영!
+                        if not was_running:
+                            logger.info("🎬 [ZeusAgent] 넷플릭스 창 활성화 감지 (일반 브라우저/창) -> 시청중 상태 전환")
+                            was_running = True
+                        self.netflix_bot.current_status = NetflixStatus.LOGGED_IN
+                        time.sleep(3)
+                        continue
+
                     else:
                         if was_running:
-                            logger.info("🛑 [ZeusAgent] 손님이 넷플릭스를 종료함 -> 대기 모드로 전환 (강제 재실행 안 함)")
+                            logger.info("🛑 [ZeusAgent] 손님이 넷플릭스를 종료함 -> 대기 모드로 전환")
                             was_running = False
                             self.netflix_bot.current_status = NetflixStatus.CLOSED
                             self.otp_needed = False

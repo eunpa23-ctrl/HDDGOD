@@ -448,7 +448,8 @@ async def get_remote_view(request: Request, client_id: str):
                 "actual_client_id": "SERVER",
                 "client_name": "⚡ 제우스 중앙 서버 (HOST)",
                 "client_ip": s_ip,
-                "is_online": True
+                "is_online": True,
+                "is_server": True
             }
         )
 
@@ -460,12 +461,17 @@ async def get_remote_view(request: Request, client_id: str):
     c_info = watchdog.clients.get(actual_cid, {})
     client_ip = c_info.get("ip", "")
     client_name = client_id
+    is_server = (client_id.upper() in ["PC-09", "SERVER_MAIN", "SERVER", "HOST"] or actual_cid in ["PC-09", "SERVER_MAIN"])
     for p in load_pc_mapping():
         if p.get("id") == client_id or str(p.get("seat")) == client_id:
             if not client_ip:
                 client_ip = p.get("ip", "")
             client_name = p.get("name", client_id)
+            if p.get("is_server") or p.get("seat") == 9:
+                is_server = True
             break
+    if client_ip in ["192.168.0.2", "192.168.0.100"]:
+        is_server = True
 
     if is_online:
         cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
@@ -482,7 +488,8 @@ async def get_remote_view(request: Request, client_id: str):
             "actual_client_id": actual_cid,
             "client_name": client_name,
             "client_ip": client_ip,
-            "is_online": is_online
+            "is_online": is_online,
+            "is_server": is_server
         }
     )
 

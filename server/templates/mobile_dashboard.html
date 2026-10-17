@@ -64,25 +64,47 @@
         </div>
     </div>
 
-    <!-- 🌟 서버 PC 전용 원격 제어 접속 바 -->
-    <div class="px-4 pt-3">
-        <button onclick="window.open('/remote/SERVER', '_blank')" class="w-full py-3 px-4 bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 border border-indigo-500/50 hover:border-indigo-400 active:border-indigo-300 rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(99,102,241,0.25)] active:scale-[0.98] transition group">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 group-hover:text-white transition shadow">
-                    <i class="fa-solid fa-server text-base"></i>
+    <!-- 🌟 전용 관리 서버 원격 제어 섹션 (서버 2대) -->
+    <div class="px-4 pt-3 space-y-2">
+        <!-- 1. 관리 서버 100 (HOST) -->
+        <button onclick="window.open('/remote/SERVER', '_blank')" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 border border-indigo-500/50 hover:border-indigo-400 active:border-indigo-300 rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(99,102,241,0.25)] active:scale-[0.98] transition group">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 group-hover:text-white transition shadow">
+                    <i class="fa-solid fa-server text-sm"></i>
                 </div>
                 <div class="flex flex-col text-left">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                        <span class="font-extrabold text-sm text-white">서버 PC 원격 접속 (HOST)</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                        <span class="font-extrabold text-xs text-white">관리 서버 100 (HOST)</span>
+                        <span class="text-[9px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-700/50 font-mono">192.168.0.100</span>
                     </div>
-                    <span class="text-[11px] text-indigo-200/70">터치로 서버 실시간 화면 제어 및 관리</span>
+                    <span class="text-[10px] text-indigo-200/70">중앙 관제 및 WebSocket 통합 서버</span>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-3 py-2 rounded-xl border border-indigo-400/40 shadow">
-                <i class="fa-solid fa-desktop"></i>
+            <div class="flex items-center gap-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-2.5 py-1.5 rounded-xl border border-indigo-400/40 shadow">
+                <i class="fa-solid fa-desktop text-[10px]"></i>
                 <span>원격 열기</span>
-                <i class="fa-solid fa-chevron-right text-[10px] ml-0.5 opacity-80"></i>
+            </div>
+        </button>
+
+        <!-- 2. 메인 서버 9번 (SERVER_MAIN) -->
+        <button onclick="window.open('/remote/PC-09', '_blank')" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-purple-950/90 via-slate-900 to-indigo-950/90 border border-purple-500/50 hover:border-purple-400 active:border-purple-300 rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(168,85,247,0.25)] active:scale-[0.98] transition group">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 group-hover:text-white transition shadow">
+                    <i class="fa-solid fa-server text-sm"></i>
+                </div>
+                <div class="flex flex-col text-left">
+                    <div class="flex items-center gap-1.5">
+                        <span id="mob-srv9-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                        <span class="font-extrabold text-xs text-white">메인 서버 9번 (SERVER_MAIN)</span>
+                        <span class="text-[9px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700/50 font-mono">192.168.0.2</span>
+                    </div>
+                    <span id="mob-srv9-subtext" class="text-[10px] text-purple-200/70">메인 데이터 서버 (피카 잠금해제 제외)</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-500 active:bg-purple-700 px-2.5 py-1.5 rounded-xl border border-purple-400/40 shadow">
+                <i class="fa-solid fa-desktop text-[10px]"></i>
+                <span>원격 열기</span>
             </div>
         </button>
     </div>
@@ -109,7 +131,8 @@
 
         function renderInitialCards() {
             container.innerHTML = '';
-            pcList.forEach(pc => {
+            const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
+            guestPcs.forEach(pc => {
                 const isOnline = (pc.status === 'ONLINE');
 
                 const html = `
@@ -273,6 +296,22 @@
                         card.className = `bg-slate-900 border ${isOnline ? 'border-slate-700 shadow-lg' : 'border-slate-800 opacity-90'} rounded-2xl p-4 shadow-md flex flex-col gap-3 transition`;
                     }
                 });
+
+                // 9번 메인 서버 전용 카드 실시간 UI 갱신
+                const srv9 = pcList.find(p => p.seat === 9 || p.id === 'PC-09' || p.is_server);
+                if (srv9) {
+                    const isSrvOnline = (srv9.status === 'ONLINE');
+                    const srvDot = document.getElementById('mob-srv9-dot');
+                    const srvSub = document.getElementById('mob-srv9-subtext');
+                    if (srvDot) {
+                        srvDot.className = `w-2 h-2 rounded-full ${isSrvOnline ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-slate-600'}`;
+                    }
+                    if (srvSub) {
+                        srvSub.innerText = isSrvOnline 
+                            ? `메인 데이터 서버 (온라인 v${srv9.version || '-'}, 잠금해제 제외)` 
+                            : '메인 데이터 서버 (오프라인, 잠금해제 제외)';
+                    }
+                }
             }
         };
 

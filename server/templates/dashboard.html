@@ -55,8 +55,11 @@
                         <button onclick="openMobileModal()" class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
                 <i class="fa-solid fa-mobile-screen-button"></i> 📱 스마트폰 원격 접속
             </button>
-            <button onclick="window.open('/remote/SERVER', '_blank')" class="px-3 py-1.5 bg-gradient-to-r from-indigo-700 to-violet-700 hover:from-indigo-600 hover:to-violet-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-indigo-400/40" title="서버 자체 윈도우 화면 원격 접속">
-                <i class="fa-solid fa-server"></i> 🖥️ 서버 화면 원격
+            <button onclick="window.open('/remote/SERVER', '_blank')" class="px-3 py-1.5 bg-gradient-to-r from-indigo-700 to-violet-700 hover:from-indigo-600 hover:to-violet-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-indigo-400/40" title="관리 서버 (100번 HOST) 화면 원격 접속">
+                <i class="fa-solid fa-server"></i> 🖥️ 관리서버100 원격
+            </button>
+            <button onclick="window.open('/remote/PC-09', '_blank')" class="px-3 py-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center gap-1.5 border border-purple-400/40" title="메인 서버 (9번 192.168.0.2) 화면 원격 접속">
+                <i class="fa-solid fa-server"></i> 🖥️ 메인서버9 원격
             </button>
             <button onclick="sendCommandAll('UPDATE_AGENT')" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
                 <i class="fa-solid fa-download"></i> 전체 에이전트 업데이트
@@ -118,19 +121,112 @@
             </div>
         </section>
 
-        <!-- 실시간 PC 카드 목록 -->
+        <!-- 🖥️ 전용 관리 서버 모니터링 섹션 (서버 2대: 100번 관리서버 + 9번 메인서버) -->
+        <section class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-900/40 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-400">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <span>관리 서버 시스템</span>
+                            <span class="text-[11px] font-semibold text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-800/60">손님용 제외 전용망</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">카운터 관리서버(100) 및 메인 데이터 서버(9) 상시 감시 및 원격 제어 (피카 잠금해제 제외)</p>
+                    </div>
+                </div>
+                <div class="text-xs text-indigo-300 flex items-center gap-1.5 font-bold">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> 서버 2대 전용 분리
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 1. 관리서버 100 (HOST) -->
+                <div class="bg-slate-900/90 border border-indigo-700/40 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <h3 class="font-extrabold text-sm text-white">관리 서버 100 (HOST)</h3>
+                            </div>
+                            <p class="text-[11px] text-indigo-300/80 mt-0.5 font-mono">IP: 192.168.0.100 (중앙 관제 서버)</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">HOST</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mb-3 space-y-1">
+                        <div class="flex justify-between">
+                            <span>역할:</span>
+                            <span class="text-slate-200 font-semibold">ZeusServer 통합 관제 / WebSocket 중계</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>피카 잠금:</span>
+                            <span class="text-slate-400 font-semibold">불필요 (관리자 본체)</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                        <button onclick="window.open('/remote/SERVER', '_blank')" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen"></i> 화면 원격 제어
+                        </button>
+                        <button onclick="optimizeServerMemory()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition" title="메모리 최적화">
+                            <i class="fa-solid fa-broom"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 메인 서버 9번 (SERVER_MAIN) -->
+                <div id="server-9-card" class="bg-slate-900/90 border border-indigo-700/40 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="srv9-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <h3 class="font-extrabold text-sm text-white">메인 서버 9번 (SERVER_MAIN)</h3>
+                            </div>
+                            <p class="text-[11px] text-indigo-300/80 mt-0.5 font-mono">IP: 192.168.0.2</p>
+                        </div>
+                        <span id="srv9-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">ONLINE</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mb-3 space-y-1">
+                        <div class="flex justify-between items-center">
+                            <span>에이전트 버전:</span>
+                            <span id="srv9-version" class="font-mono font-bold text-xs text-fuchsia-400 bg-fuchsia-950/40 px-1.5 py-0.5 rounded border border-fuchsia-800/40">v3.9.15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>피카 잠금:</span>
+                            <span class="text-slate-400 font-semibold">불필요 (서버용 PC)</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                        <button onclick="openRemoteView('PC-09', 'PC-09')" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen"></i> 화면 원격 제어
+                        </button>
+                        <a href="/api/rdp/PC-09" download class="px-3 py-1.5 bg-sky-800 hover:bg-sky-700 text-white font-bold rounded-lg transition flex items-center justify-center text-[10px]" title="윈도우 기본 mstsc 원격 데스크톱 연결">
+                            <i class="fa-solid fa-desktop"></i> MSTSC
+                        </a>
+                        <button onclick="sendPcCommand('PC-09', 'REBOOT')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition" title="서버 PC 재부팅">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                        <button onclick="sendPcCommand('PC-09', 'UPDATE_AGENT')" class="px-2.5 py-1.5 bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-700/40 text-fuchsia-300 font-bold rounded-lg transition" title="에이전트 최신 패치">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 실시간 손님 PC 모니터링 (1~8번) -->
         <section>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-slate-400"></i> 실시간 클라이언트 모니터링
+                    <i class="fa-solid fa-layer-group text-slate-400"></i> 실시간 손님 PC 모니터링 (1~8번)
                 </h2>
                 <div class="text-xs text-slate-400 flex items-center gap-2">
                     <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 3초 실시간 갱신 중
                 </div>
             </div>
 
-            <div id="pc-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                <!-- PC 카드가 자바스크립트로 동적 렌더링됩니다 -->
+            <div id="pc-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- 손님 PC 카드만 자바스크립트로 동적 렌더링됩니다 -->
             </div>
         </section>
 
@@ -516,8 +612,9 @@
         }
 
         function updateTotalStat() {
+            const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
             const el = document.getElementById('stat-total');
-            if (el) el.innerText = `${pcList.length} 대`;
+            if (el) el.innerText = `${guestPcs.length} 대`;
         }
 
         
@@ -660,18 +757,37 @@
                     if (live.ip) pc.ip = live.ip;
                     if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
 
-                    onlineCount++;
-                    if (pc.netflix === 'RUNNING' || pc.netflix === 'LOGGED_IN') netflixCount++;
+                    // 손님 PC(1~8번)만 통계 카운트에 포함
+                    if (!pc.is_server && pc.seat !== 9) {
+                        onlineCount++;
+                        if (pc.netflix === 'RUNNING' || pc.netflix === 'LOGGED_IN') netflixCount++;
+                    }
                 } else {
                     pc.status = 'OFFLINE';
                     pc.real_cid = null;
                 }
             });
 
+            // 2. 9번 메인 서버 전용 카드 실시간 UI 갱신
+            const srv9 = pcList.find(p => p.seat === 9 || p.id === 'PC-09' || p.is_server);
+            if (srv9) {
+                const isSrvOnline = srv9.status === 'ONLINE';
+                const srvDot = document.getElementById('srv9-status-dot');
+                const srvBadge = document.getElementById('srv9-status-badge');
+                const srvVer = document.getElementById('srv9-version');
+                if (srvDot) srvDot.className = `w-2.5 h-2.5 rounded-full ${isSrvOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`;
+                if (srvBadge) {
+                    srvBadge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${isSrvOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}`;
+                    srvBadge.innerText = isSrvOnline ? 'ONLINE' : 'OFFLINE';
+                }
+                if (srvVer) srvVer.innerText = `v${srv9.version || '-'}`;
+            }
+
+            const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
             updateTotalStat();
             document.getElementById('stat-online').innerText = `${onlineCount} 대`;
             const offEl = document.getElementById('stat-offline');
-            if (offEl) offEl.innerText = `${pcList.length - onlineCount} 대`;
+            if (offEl) offEl.innerText = `${guestPcs.length - onlineCount} 대`;
             document.getElementById('stat-netflix').innerText = `${netflixCount} 대`;
 
             renderGrid();
@@ -682,7 +798,10 @@
             if (!grid) return;
             grid.innerHTML = '';
 
-            pcList.forEach(pc => {
+            // 9번 서버 PC는 손님 PC 그리드에서 분리 제외
+            const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
+
+            guestPcs.forEach(pc => {
                 const isOnline = pc.status === 'ONLINE';
                 const isNetflixOk = (pc.netflix === 'LOGGED_IN' || pc.netflix === 'RUNNING');
                 let netflixBadge = '종료';

@@ -82,6 +82,7 @@
                 <i class="fa-solid fa-paper-plane"></i>
             </button>
 
+            {% if not is_server %}
             <!-- 피카 잠금 해제 매크로 -->
             <button onclick="sendPicaUnlock()" class="px-2 sm:px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm" title="피카 관리자 로그인 잠금 해제">
                 <i class="fa-solid fa-unlock-keyhole"></i> <span class="hidden sm:inline">피카해제</span>
@@ -91,6 +92,12 @@
             <button onclick="sendPicaLock()" class="px-2 sm:px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm border border-slate-600/40" title="피카 관리자 로그아웃 -> 화면보호기 잠금 복구">
                 <i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">피카잠금</span>
             </button>
+            {% else %}
+            <!-- 서버 PC 전용 뱃지 -->
+            <span class="px-2 py-1 bg-indigo-950 text-indigo-300 border border-indigo-700/50 rounded text-[11px] font-bold flex items-center gap-1" title="관리 서버 (잠금해제 불필요)">
+                <i class="fa-solid fa-server"></i> 서버
+            </span>
+            {% endif %}
 
             <!-- 닫기 -->
             <button onclick="window.close()" class="px-2 sm:px-3 py-1.5 bg-rose-800 hover:bg-rose-700 rounded font-semibold transition">

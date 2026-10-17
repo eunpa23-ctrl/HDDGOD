@@ -160,19 +160,43 @@ class ScreenStreamer:
             real_x = int(x_ratio * self.screen_w)
             real_y = int(y_ratio * self.screen_h)
 
-            if event_type == "CLICK":
+            if event_type == "MOUSE_DOWN":
                 btn = data.get("button", "left")
                 ctypes.windll.user32.SetCursorPos(real_x, real_y)
                 if btn == "right":
                     ctypes.windll.user32.mouse_event(8, 0, 0, 0, 0) # Right Down
+                else:
+                    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0) # Left Down
+
+            elif event_type == "MOUSE_UP":
+                btn = data.get("button", "left")
+                ctypes.windll.user32.SetCursorPos(real_x, real_y)
+                if btn == "right":
+                    ctypes.windll.user32.mouse_event(16, 0, 0, 0, 0) # Right Up
+                else:
+                    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0) # Left Up
+
+            elif event_type == "CLICK":
+                btn = data.get("button", "left")
+                ctypes.windll.user32.SetCursorPos(real_x, real_y)
+                import time
+                if btn == "right":
+                    time.sleep(0.015)
+                    ctypes.windll.user32.mouse_event(8, 0, 0, 0, 0) # Right Down
+                    time.sleep(0.015)
                     ctypes.windll.user32.mouse_event(16, 0, 0, 0, 0) # Right Up
                 elif btn == "double":
                     ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
+                    time.sleep(0.01)
                     ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
+                    time.sleep(0.01)
                     ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
+                    time.sleep(0.01)
                     ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
                 else:
+                    time.sleep(0.005)
                     ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0) # Left Down
+                    time.sleep(0.005)
                     ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0) # Left Up
 
             elif event_type == "MOVE":

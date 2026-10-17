@@ -243,9 +243,11 @@
         let movedSignificantly = false;
         let lastTouchEndTime = 0;
 
-        // 🌟 롱 프레스(0.5초 꾹 누르기) 마우스 우클릭 제스처 관리
+        // 🌟 롱프레스 우클릭 & 길게 눌러 드래그 상태 관리
         let longPressTimer = null;
-        let isLongPressed = false;
+        let isLongPressActive = false; // 0.5초 꾹 눌러서 활성화되었는가?
+        let hasDragged = false; // 롱프레스 활성화 후 드래그 이동을 했는가?
+        let lastActionEndTime = 0; // 후속 가상 클릭 방어 쿨다운
 
         function cancelLongPress() {
             if (longPressTimer) {
@@ -257,7 +259,13 @@
         container.addEventListener('touchstart', (e) => {
             if (e.touches.length >= 2) {
                 cancelLongPress();
-                isLongPressed = false;
+                if (isLongPressActive && hasDragged) {
+                    // 드래그 도중 두 번째 손가락이 닿으면 안전하게 마우스 업
+                    const pos = screenToImageRatio(startX, startY);
+                    if (pos.valid) sendEvent('MOUSE_UP', pos.x, pos.y, { button: 'left' });
+                }
+                isLongPressActive = false;
+                hasDragged = false;
 
                 // ✌ 두 손가락 이상 터치 감지 즉시 단일 터치/클릭 상태 완벽 무효화
                 isTouching = false;
@@ -271,14 +279,12 @@
                     e.touches[0].clientY - e.touches[1].clientY
                 );
 
-                // 두 손가락의 중심점(Focal Point)을 뷰포트 기준 상대 좌표로 계산
                 const cRect = container.getBoundingClientRect();
                 const midClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 const relX = midClientX - cRect.left;
                 const relY = midClientY - cRect.top;
 
-                // 줌이 커지더라도 이 이미지 픽셀 위치가 두 손가락 중심에 고정되도록 기준점 저장
                 pinchCenterImgX = (relX - panX) / scale;
                 pinchCenterImgY = (relY - panY) / scale;
 
@@ -288,10 +294,11 @@
 
             if (e.touches.length === 1) {
                 cancelLongPress();
-                isLongPressed = false;
+                isLongPressActive = false;
+                hasDragged = false;
 
-                // 핀치 줌 직후 쿨다운(400ms)이거나 핀치 제스처 잔류 세션이면 탭 클릭 방어
-                if (Date.now() - lastPinchEndTime < 400 || hasPinched) {
+                // 핀치 줌 또는 최근 액션 직후 쿨다운(400ms)이면 방어
+                if (Date.now() - lastPinchEndTime < 400 || Date.now() - lastActionEndTime < 500 || hasPinched) {
                     isTouching = false;
                     return;
                 }
@@ -304,21 +311,21 @@
                 startPanX = panX;
                 startPanY = panY;
 
-                // 🌟 롱 프레스 우클릭 타이머 시작 (0.5초 가만히 꾹 누르면 우클릭 발동)
+                // 🌟 0.5초 가만히 꾹 누르고 있으면 롱프레스 모드 활성화 (진동 + 대기)
                 const targetClientX = startX;
                 const targetClientY = startY;
                 longPressTimer = setTimeout(() => {
                     if (isTouching && !movedSignificantly && !hasPinched && !isPinching) {
+                        isLongPressActive = true;
+                        hasDragged = false;
+
+                        // 스마트폰 햅틱 진동 피드백 (징-)
+                        if (navigator.vibrate) {
+                            try { navigator.vibrate(60); } catch(err) {}
+                        }
                         const pos = screenToImageRatio(targetClientX, targetClientY);
                         if (pos.valid) {
-                            isLongPressed = true;
-                            // 스마트폰 햅틱 진동 피드백
-                            if (navigator.vibrate) {
-                                try { navigator.vibrate(50); } catch(err) {}
-                            }
-                            showHitMarker(pos.imgX, pos.imgY, true); // 황금주황색 우클릭 마커
-                            lastTouchEndTime = Date.now();
-                            sendEvent('CLICK', pos.x, pos.y, { button: 'right' });
+                            showHitMarker(pos.imgX, pos.imgY, true); // 황금주황색 마커
                         }
                     }
                 }, 500);
@@ -341,23 +348,20 @@
                 );
                 if (initialPinchDist > 0) {
                     const factor = dist / initialPinchDist;
-                    initialPinchDist = dist; // 연속적인 줌 비율 계산
+                    initialPinchDist = dist;
 
                     const newScale = Math.min(Math.max(baseScale * 0.8, scale * factor), baseScale * 6.0);
 
-                    // 두 손가락의 실시간 중심점
                     const cRect = container.getBoundingClientRect();
                     const midClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     const midClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                     const relX = midClientX - cRect.left;
                     const relY = midClientY - cRect.top;
 
-                    // 🌟 핵심: 두 손가락 중심점이 확대된 후에도 손가락 사이에 그대로 머물도록 panX, panY 동시 보정
                     panX = relX - pinchCenterImgX * newScale;
                     panY = relY - pinchCenterImgY * newScale;
                     scale = newScale;
 
-                    // 다음 프레임을 위한 기준점 갱신
                     pinchCenterImgX = (relX - panX) / scale;
                     pinchCenterImgY = (relY - panY) / scale;
 
@@ -366,11 +370,34 @@
             } else if (e.touches.length === 1 && isTouching && !hasPinched && !isPinching) {
                 if (Date.now() - lastPinchEndTime < 400) return;
 
-                const dx = e.touches[0].clientX - startX;
-                const dy = e.touches[0].clientY - startY;
+                const curClientX = e.touches[0].clientX;
+                const curClientY = e.touches[0].clientY;
+                const dx = curClientX - startX;
+                const dy = curClientY - startY;
+
+                // 🌟 [핵심] 롱프레스가 활성화된 상태에서 움직이면 -> 마우스 좌클릭 드래그 실행!
+                if (isLongPressActive) {
+                    e.preventDefault();
+                    if (!hasDragged) {
+                        // 드래그 시작: 시작 위치로 MOUSE_DOWN 전송
+                        hasDragged = true;
+                        const startPos = screenToImageRatio(startX, startY);
+                        if (startPos.valid) {
+                            sendEvent('MOUSE_DOWN', startPos.x, startPos.y, { button: 'left' });
+                        }
+                    }
+                    // 현재 위치로 MOUSE MOVE 전송 (창 끌기 / 파일 드래그)
+                    const curPos = screenToImageRatio(curClientX, curClientY);
+                    if (curPos.valid) {
+                        sendEvent('MOVE', curPos.x, curPos.y);
+                    }
+                    return;
+                }
+
+                // 롱프레스 이전 10px 이상 이동 시 롱프레스 취소 (일반 화면 팬/커서 이동)
                 if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                     movedSignificantly = true;
-                    cancelLongPress(); // 10px 이상 이동 시 롱 프레스 우클릭 취소
+                    cancelLongPress();
                 }
 
                 if (scale > baseScale * 1.05 && movedSignificantly) {
@@ -379,7 +406,7 @@
                     panY = startPanY + dy;
                     updateTransform();
                 } else if (!movedSignificantly) {
-                    const pos = screenToImageRatio(e.touches[0].clientX, e.touches[0].clientY);
+                    const pos = screenToImageRatio(curClientX, curClientY);
                     if (pos.valid) {
                         sendEvent('MOVE', pos.x, pos.y);
                     }
@@ -402,24 +429,42 @@
                 e.preventDefault();
             }
 
-            // 모든 손가락이 화면에서 떨어졌을 때만 탭 판별
+            // 모든 손가락이 화면에서 떨어졌을 때
             if (e.touches.length === 0) {
                 const touchDuration = Date.now() - touchStartTime;
                 const pinchCooldown = Date.now() - lastPinchEndTime;
 
-                // 🌟 이미 롱 프레스로 우클릭이 실행되었으면 손가락 뗄 때 좌클릭 중복 전송 방어
-                if (isLongPressed) {
-                    isLongPressed = false;
+                // 🌟 1) 롱프레스 후 손가락을 뗐을 때 처리
+                if (isLongPressActive) {
+                    lastActionEndTime = Date.now();
+                    const lastTouch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+                    const finalX = lastTouch ? lastTouch.clientX : startX;
+                    const finalY = lastTouch ? lastTouch.clientY : startY;
+                    const pos = screenToImageRatio(finalX, finalY);
+
+                    if (hasDragged) {
+                        // 🖱️ Case A: 드래그를 하다가 손가락을 뗌 -> 드래그 완료 (MOUSE_UP)
+                        if (pos.valid) {
+                            sendEvent('MOUSE_UP', pos.x, pos.y, { button: 'left' });
+                        }
+                    } else {
+                        // 🖱️ Case B: 0.5초 꾹 누르고 있다가 그 자리에서 손가락을 뗌 -> 우클릭 (RIGHT CLICK)!
+                        const origPos = screenToImageRatio(startX, startY);
+                        if (origPos.valid) {
+                            showHitMarker(origPos.imgX, origPos.imgY, true); // 황금주황색 마커
+                            sendEvent('CLICK', origPos.x, origPos.y, { button: 'right' });
+                        }
+                    }
+
+                    isLongPressActive = false;
+                    hasDragged = false;
                     isTouching = false;
+                    movedSignificantly = false;
                     e.preventDefault();
                     return;
                 }
 
-                // 🌟 순수 단일 탭 좌클릭 조건:
-                // 1) 핀치 줌을 하지 않았음 (!hasPinched, !isPinching, pinchCooldown >= 400)
-                // 2) 유의미한 드래그가 없었음 (!movedSignificantly)
-                // 3) 단일 터치 세션이었음 (isTouching === true, changedTouches.length === 1)
-                // 4) 터치 시간이 500ms 미만 (500ms 이상은 롱 프레스)
+                // 🌟 2) 순수 단일 탭 좌클릭 (0.5초 미만 짧은 탭)
                 if (isTouching && !hasPinched && !isPinching && !movedSignificantly &&
                     pinchCooldown >= 400 && touchDuration < 500 && e.changedTouches.length === 1) {
                     
@@ -439,26 +484,37 @@
                 isPinching = false;
                 hasPinched = false;
                 movedSignificantly = false;
-                isLongPressed = false;
+                isLongPressActive = false;
+                hasDragged = false;
             }
         });
 
         container.addEventListener('touchcancel', () => {
             cancelLongPress();
+            if (isLongPressActive && hasDragged) {
+                const pos = screenToImageRatio(startX, startY);
+                if (pos.valid) sendEvent('MOUSE_UP', pos.x, pos.y, { button: 'left' });
+            }
             isTouching = false;
             isPinching = false;
             hasPinched = false;
             movedSignificantly = false;
-            isLongPressed = false;
+            isLongPressActive = false;
+            hasDragged = false;
             lastPinchEndTime = Date.now();
             lastTouchEndTime = Date.now();
+            lastActionEndTime = Date.now();
         });
 
         // 데스크톱 마우스 우클릭 (브라우저 메뉴 대신 원격 PC 우클릭 전달)
         container.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            if (e.pointerType === 'touch' || Date.now() - lastActionEndTime < 800) {
+                return;
+            }
             const pos = screenToImageRatio(e.clientX, e.clientY);
             if (pos.valid) {
+                lastActionEndTime = Date.now();
                 showHitMarker(pos.imgX, pos.imgY, true);
                 sendEvent('CLICK', pos.x, pos.y, { button: 'right' });
             }
@@ -468,7 +524,9 @@
         container.addEventListener('click', (e) => {
             if (e.ctrlKey) return;
             if (e.pointerType === 'touch') return;
-            if (Date.now() - lastTouchEndTime < 600 || Date.now() - lastPinchEndTime < 600) return;
+            if (Date.now() - lastTouchEndTime < 800 || Date.now() - lastPinchEndTime < 800 || Date.now() - lastActionEndTime < 800) {
+                return;
+            }
 
             const pos = screenToImageRatio(e.clientX, e.clientY);
             if (pos.valid) {

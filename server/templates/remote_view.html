@@ -224,6 +224,9 @@
 
         // --- 터치 및 마우스 조작 인터랙션 ---
         let isTouching = false;
+        let isPinching = false;
+        let hasPinched = false;
+        let lastPinchEndTime = 0;
         let startX = 0, startY = 0;
         let startPanX = 0, startPanY = 0;
         let initialPinchDist = 0;
@@ -234,16 +237,14 @@
         let lastTouchEndTime = 0;
 
         container.addEventListener('touchstart', (e) => {
-            touchStartTime = Date.now();
-            if (e.touches.length === 1) {
-                isTouching = true;
-                movedSignificantly = false;
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                startPanX = panX;
-                startPanY = panY;
-            } else if (e.touches.length === 2) {
+            if (e.touches.length >= 2) {
+                // ✌ 두 손가락 이상 터치 감지 즉시 단일 터치/클릭 상태 완벽 무효화
                 isTouching = false;
+                isPinching = true;
+                hasPinched = true;
+                movedSignificantly = true;
+                lastPinchEndTime = Date.now();
+
                 initialPinchDist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -259,30 +260,37 @@
                 // 줌이 커지더라도 이 이미지 픽셀 위치가 두 손가락 중심에 고정되도록 기준점 저장
                 pinchCenterImgX = (relX - panX) / scale;
                 pinchCenterImgY = (relY - panY) / scale;
+
+                e.preventDefault();
+                return;
+            }
+
+            if (e.touches.length === 1) {
+                // 핀치 줌 직후 쿨다운(400ms)이거나 핀치 제스처 잔류 세션이면 탭 클릭 방어
+                if (Date.now() - lastPinchEndTime < 400 || hasPinched) {
+                    isTouching = false;
+                    return;
+                }
+
+                isTouching = true;
+                movedSignificantly = false;
+                touchStartTime = Date.now();
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                startPanX = panX;
+                startPanY = panY;
             }
         }, { passive: false });
 
         container.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1 && isTouching) {
-                const dx = e.touches[0].clientX - startX;
-                const dy = e.touches[0].clientY - startY;
-                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                    movedSignificantly = true;
-                }
-
-                if (scale > baseScale * 1.05 && movedSignificantly) {
-                    e.preventDefault();
-                    panX = startPanX + dx;
-                    panY = startPanY + dy;
-                    updateTransform();
-                } else if (!movedSignificantly) {
-                    const pos = screenToImageRatio(e.touches[0].clientX, e.touches[0].clientY);
-                    if (pos.valid) {
-                        sendEvent('MOVE', pos.x, pos.y);
-                    }
-                }
-            } else if (e.touches.length === 2) {
+            if (e.touches.length >= 2) {
                 e.preventDefault();
+                isPinching = true;
+                hasPinched = true;
+                isTouching = false;
+                movedSignificantly = true;
+                lastPinchEndTime = Date.now();
+
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -311,29 +319,89 @@
 
                     updateTransform();
                 }
+            } else if (e.touches.length === 1 && isTouching && !hasPinched && !isPinching) {
+                if (Date.now() - lastPinchEndTime < 400) return;
+
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                    movedSignificantly = true;
+                }
+
+                if (scale > baseScale * 1.05 && movedSignificantly) {
+                    e.preventDefault();
+                    panX = startPanX + dx;
+                    panY = startPanY + dy;
+                    updateTransform();
+                } else if (!movedSignificantly) {
+                    const pos = screenToImageRatio(e.touches[0].clientX, e.touches[0].clientY);
+                    if (pos.valid) {
+                        sendEvent('MOVE', pos.x, pos.y);
+                    }
+                }
             }
         }, { passive: false });
 
         container.addEventListener('touchend', (e) => {
-            const touchDuration = Date.now() - touchStartTime;
-            if (!movedSignificantly && e.changedTouches.length === 1 && touchDuration < 600) {
-                const clientX = e.changedTouches[0].clientX;
-                const clientY = e.changedTouches[0].clientY;
-                const pos = screenToImageRatio(clientX, clientY);
+            lastTouchEndTime = Date.now();
 
-                if (pos.valid) {
-                    showHitMarker(pos.imgX, pos.imgY);
-                    lastTouchEndTime = Date.now();
-                    sendEvent('CLICK', pos.x, pos.y, { button: 'left' });
+            // 핀치 줌 제스처 도중 손가락이 하나 먼저 떨어진 경우 처리
+            if (isPinching || e.touches.length > 0) {
+                if (e.touches.length < 2) {
+                    isPinching = false;
+                    lastPinchEndTime = Date.now();
                 }
+                isTouching = false;
+                movedSignificantly = true;
+                e.preventDefault();
             }
-            isTouching = false;
+
+            // 모든 손가락이 화면에서 떨어졌을 때만 순수 1손가락 탭 여부 판단
+            if (e.touches.length === 0) {
+                const touchDuration = Date.now() - touchStartTime;
+                const pinchCooldown = Date.now() - lastPinchEndTime;
+
+                // 🌟 순수 단일 탭 클릭 조건:
+                // 1) 핀치 줌을 하지 않았음 (!hasPinched, !isPinching, pinchCooldown >= 400)
+                // 2) 유의미한 드래그가 없었음 (!movedSignificantly)
+                // 3) 단일 터치 세션이었음 (isTouching === true, changedTouches.length === 1)
+                // 4) 터치 시간이 500ms 미만
+                if (isTouching && !hasPinched && !isPinching && !movedSignificantly &&
+                    pinchCooldown >= 400 && touchDuration < 500 && e.changedTouches.length === 1) {
+                    
+                    const clientX = e.changedTouches[0].clientX;
+                    const clientY = e.changedTouches[0].clientY;
+                    const pos = screenToImageRatio(clientX, clientY);
+
+                    if (pos.valid) {
+                        showHitMarker(pos.imgX, pos.imgY);
+                        sendEvent('CLICK', pos.x, pos.y, { button: 'left' });
+                    }
+                    e.preventDefault();
+                }
+
+                // 전체 터치 세션 종료 시 플래그 리셋
+                isTouching = false;
+                isPinching = false;
+                hasPinched = false;
+                movedSignificantly = false;
+            }
         });
 
-        // 데스크톱 마우스 클릭 지원 (터치 후 가상 클릭 중복 방지)
+        container.addEventListener('touchcancel', () => {
+            isTouching = false;
+            isPinching = false;
+            hasPinched = false;
+            movedSignificantly = false;
+            lastPinchEndTime = Date.now();
+            lastTouchEndTime = Date.now();
+        });
+
+        // 데스크톱 마우스 클릭 지원 (터치 후 가상 마우스 클릭 및 핀치 후 합성 클릭 완벽 차단)
         container.addEventListener('click', (e) => {
             if (e.ctrlKey) return;
-            if (Date.now() - lastTouchEndTime < 400) return;
+            if (e.pointerType === 'touch') return;
+            if (Date.now() - lastTouchEndTime < 600 || Date.now() - lastPinchEndTime < 600) return;
 
             const pos = screenToImageRatio(e.clientX, e.clientY);
             if (pos.valid) {

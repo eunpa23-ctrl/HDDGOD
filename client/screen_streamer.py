@@ -216,6 +216,11 @@ class ScreenStreamer:
                 if HAS_PYAUTOGUI and key:
                     pyautogui.press(key)
 
+            elif event_type == "HOTKEY":
+                keys = data.get("keys", [])
+                if HAS_PYAUTOGUI and keys:
+                    pyautogui.hotkey(*keys)
+
         except Exception as e:
             logger.error(f"원격 입력 처리 오류: {e}")
 

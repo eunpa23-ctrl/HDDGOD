@@ -49,11 +49,12 @@ class WebSocketLogHandler(logging.Handler):
                     pkt = make_packet(PacketType.LOG_STREAM, payload)
                     # 비동기 send를 스레드 안전하게 호출
                     import asyncio
-                    loop = None
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        pass
+                    loop = getattr(self.agent, "loop", None)
+                    if not loop:
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            pass
 
                     if loop and loop.is_running():
                         # 이미 asyncio 루프 안이면 create_task로 큐잉

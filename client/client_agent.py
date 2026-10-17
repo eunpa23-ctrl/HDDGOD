@@ -286,9 +286,22 @@ class ZeusClientAgent:
                 elif action == CommandType.START_SCREEN_STREAM:
                     logger.info("📡 [원격 제어] 화면 스트리밍 가동 명령 수신 -> 캡처 시작!")
                     self.is_streaming_screen = True
+                    # 점주가 원격 접속 시 피카가 잠겨 있으면 자동으로 관리자 로그인 실행!
+                    try:
+                        if self.is_pica_locked():
+                            logger.info("🔓 [원격 접속 감지] 피카 화면 잠금 감지됨 -> 관리자 자동 로그인 시작!")
+                            asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
+                    except Exception as e:
+                        logger.warning(f"피카 잠금 상태 자동 감지 예외: {e}")
                 elif action == CommandType.STOP_SCREEN_STREAM:
                     logger.info("💤 [원격 제어] 화면 스트리밍 절전 중지 명령 수신!")
                     self.is_streaming_screen = False
+                elif action == CommandType.UNLOCK_PICA:
+                    logger.info("🔓 [원격 명령] 피카 관리프로그램 잠금 해제 매크로 실행!")
+                    asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
+                elif action == CommandType.LOCK_PICA:
+                    logger.info("🔒 [원격 명령] 피카 관리프로그램 화면보호기 잠금 복구 실행!")
+                    asyncio.create_task(asyncio.to_thread(self.lock_pica_screen))
 
             elif p_type == PacketType.OTP_SUBMIT:
                 # 네이버 메일에서 자동 추출되었거나 점주가 입력한 4자리 코드
@@ -369,6 +382,7 @@ class ZeusClientAgent:
 
     async def connect_and_serve(self):
         """관리 PC 서버 WebSocket 연결 유지 및 자동 재접속"""
+        self.loop = asyncio.get_running_loop()
         while True:
             target_ip = self.get_best_server_ip()
             uri = f"ws://{target_ip}:{self.server_port}/ws/client/{self.client_id}"
@@ -618,13 +632,13 @@ exit /b 0
                         clean_env.pop(k, None)
 
                     # [Windows 완벽 독립 백그라운드 구동] 
-                    # DETACHED_PROCESS (0x00000008) | CREATE_NEW_PROCESS_GROUP (0x00000200) 플래그로 
+                    # CREATE_NO_WINDOW (0x08000000) | CREATE_NEW_PROCESS_GROUP (0x00000200) 플래그로 
                     # 부모 프로세스(ZeusAgent.exe)가 즉시 종료되어도 update.bat가 백그라운드에서 끝까지 완벽 실행됨
                     try:
-                        DETACHED_FLAGS = 0x00000008 | 0x00000200
+                        SPAWN_FLAGS = 0x08000000 | 0x00000200
                         subprocess.Popen(
                             ["cmd.exe", "/c", bat_path],
-                            creationflags=DETACHED_FLAGS,
+                            creationflags=SPAWN_FLAGS,
                             close_fds=True,
                             cwd=app_dir,
                             env=clean_env
@@ -720,6 +734,285 @@ exit /b 0
             os._exit(0)
         except Exception as e:
             logger.error(f"원격 언인스톨 실행 실패: {e}")
+
+    def is_pica_locked(self) -> bool:
+        """피카가 실행 중이고 관리자 모드로 열려있지 않으면 잠금 상태로 판별"""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            import psutil
+            user32 = ctypes.windll.user32
+
+            # 1. 피카 프로세스 실행 여부 확인
+            pica_pids = []
+            for p in psutil.process_iter(['pid', 'name']):
+                try:
+                    if p.info['name'].lower() in ['pmclient.exe', 'pmlc.exe']:
+                        pica_pids.append(p.info['pid'])
+                except Exception:
+                    pass
+
+            if not pica_pids:
+                return False
+
+            # 2. 피카 윈도우 중 '관리자 로그아웃' 버튼이 실제로 떠 있는지 확인
+            pica_hwnds = []
+            WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+            def enum_proc(h, lp):
+                pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+                if pid.value in pica_pids:
+                    pica_hwnds.append(h)
+                return True
+            user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
+
+            has_lock_screen = False
+            def child_proc(ch, lp):
+                nonlocal has_lock_screen
+                if user32.IsWindowVisible(ch):
+                    c_txt = ctypes.create_unicode_buffer(256)
+                    user32.GetWindowTextW(ch, c_txt, 256)
+                    t = c_txt.value.strip()
+                    if t in ['사용 시작', '사용시작', '회원가입', 'PC 종료', 'PC종료']:
+                        has_lock_screen = True
+                return True
+
+            for h in pica_hwnds:
+                if user32.IsWindowVisible(h):
+                    user32.EnumChildWindows(h, WNDENUMPROC(child_proc), 0)
+
+            logger.info(f"🔎 [피카 상태 검사] 대기잠금화면(has_lock_screen): {has_lock_screen}")
+            return has_lock_screen
+        except Exception as e:
+            logger.error(f"피카 잠금 판별 오류: {e}")
+            return False
+
+    def unlock_pica_screen(self):
+        """PC 관리 에이전트(피카/PICA) 화면 잠금 해제 -> 관리자 로그인 자동 수행"""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            import time
+            import psutil
+            from client.screen_streamer import ensure_default_desktop
+
+            ensure_default_desktop()
+            user32 = ctypes.windll.user32
+            BM_CLICK = 0x00F5
+            VK_RETURN = 0x0D
+
+            WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+            def get_all_pica_controls():
+                controls = []
+                top_hwnds = []
+                def enum_top_proc(h, lp):
+                    pid = wintypes.DWORD()
+                    user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+                    try:
+                        p = psutil.Process(pid.value)
+                        if p.name().lower() in ['pmclient.exe', 'pmlc.exe']:
+                            top_hwnds.append(h)
+                    except Exception:
+                        pass
+                    return True
+                user32.EnumWindows(WNDENUMPROC(enum_top_proc), 0)
+
+                for th in top_hwnds:
+                    def enum_child_proc(ch, lp):
+                        c_cls = ctypes.create_unicode_buffer(256)
+                        user32.GetClassNameW(ch, c_cls, 256)
+                        c_txt = ctypes.create_unicode_buffer(256)
+                        user32.GetWindowTextW(ch, c_txt, 256)
+                        cr = wintypes.RECT()
+                        user32.GetWindowRect(ch, ctypes.byref(cr))
+                        controls.append((ch, c_cls.value, c_txt.value, th, (cr.left, cr.top, cr.right, cr.bottom)))
+                        return True
+                    user32.EnumChildWindows(th, WNDENUMPROC(enum_child_proc), 0)
+                return controls
+
+            def click_control(hwnd, rect=None):
+                try:
+                    user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
+                    user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
+                except Exception:
+                    pass
+                if rect:
+                    l, t, r, b = rect
+                    if r > l and b > t and l >= 0 and t >= 0:
+                        cx = (l + r) // 2
+                        cy = (t + b) // 2
+                        user32.SetCursorPos(cx, cy)
+                        time.sleep(0.04)
+                        user32.mouse_event(2, 0, 0, 0, 0)
+                        time.sleep(0.04)
+                        user32.mouse_event(4, 0, 0, 0, 0)
+
+            logger.info("🔓 [피카 해제] 1단계: '관리자 로그인' 버튼 또는 단축키 전송...")
+            ctrls = get_all_pica_controls()
+            admin_btn = None
+            for ch, c_cls, c_txt, parent, rect in ctrls:
+                t = c_txt.strip()
+                if t in ['관리자 로그인', '관리자로그인']:
+                    admin_btn = (ch, rect)
+                    logger.info(f"🎯 '관리자 로그인' 버튼(HWND: {ch}) 포착!")
+                    break
+
+            if admin_btn:
+                click_control(admin_btn[0], admin_btn[1])
+            else:
+                logger.info("ℹ️ 단축키(Ctrl+Alt+Shift+X) 전송...")
+                user32.keybd_event(0x11, 0x1D, 0, 0)
+                user32.keybd_event(0x10, 0x2A, 0, 0)
+                user32.keybd_event(0x12, 0x38, 0, 0)
+                user32.keybd_event(0x58, 0x2D, 0, 0)
+                time.sleep(0.2)
+                user32.keybd_event(0x58, 0x2D, 2, 0)
+                user32.keybd_event(0x12, 0x38, 2, 0)
+                user32.keybd_event(0x10, 0x2A, 2, 0)
+                user32.keybd_event(0x11, 0x1D, 2, 0)
+
+            time.sleep(1.0)
+
+            # 2단계: 비밀번호 1234 입력 및 Enter
+            logger.info("🔓 [피카 해제] 2단계: 비밀번호 1234 + Enter 전송...")
+            ctrls2 = get_all_pica_controls()
+            for ch, c_cls, c_txt, parent, rect in ctrls2:
+                if 'edit' in c_cls.lower():
+                    logger.info(f"🎯 비밀번호 Edit 박스(HWND: {ch}) 포커스 설정")
+                    user32.SetForegroundWindow(parent)
+                    user32.SetFocus(ch)
+                    time.sleep(0.05)
+                    break
+
+            for ch_digit in "1234":
+                vk = ord(ch_digit)
+                sc = user32.MapVirtualKeyW(vk, 0)
+                user32.keybd_event(vk, sc, 0, 0)
+                time.sleep(0.06)
+                user32.keybd_event(vk, sc, 2, 0)
+                time.sleep(0.06)
+
+            time.sleep(0.2)
+            user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+            time.sleep(0.08)
+            user32.keybd_event(VK_RETURN, 0x1C, 2, 0)
+
+            time.sleep(1.2)
+            logger.info("🎉 [피카 해제 완료] 관리자 로그인 성공 -> 바탕화면 사용 가능!")
+        except Exception as e:
+            logger.error(f"피카 해제 매크로 실행 오류: {e}")
+
+    def lock_pica_screen(self):
+        """PC 관리 에이전트(피카/PICA) 관리자 로그아웃 -> 화면보호기 잠금 복구"""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            import time
+            import psutil
+            from client.screen_streamer import ensure_default_desktop
+
+            ensure_default_desktop()
+            user32 = ctypes.windll.user32
+            BM_CLICK = 0x00F5
+            VK_RETURN = 0x0D
+
+            WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+            def get_all_pica_controls():
+                controls = []
+                top_hwnds = []
+                def enum_top_proc(h, lp):
+                    pid = wintypes.DWORD()
+                    user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+                    try:
+                        p = psutil.Process(pid.value)
+                        if p.name().lower() in ['pmclient.exe', 'pmlc.exe']:
+                            top_hwnds.append(h)
+                    except Exception:
+                        pass
+                    return True
+                user32.EnumWindows(WNDENUMPROC(enum_top_proc), 0)
+
+                for th in top_hwnds:
+                    def enum_child_proc(ch, lp):
+                        c_cls = ctypes.create_unicode_buffer(256)
+                        user32.GetClassNameW(ch, c_cls, 256)
+                        c_txt = ctypes.create_unicode_buffer(256)
+                        user32.GetWindowTextW(ch, c_txt, 256)
+                        cr = wintypes.RECT()
+                        user32.GetWindowRect(ch, ctypes.byref(cr))
+                        controls.append((ch, c_cls.value, c_txt.value, th, (cr.left, cr.top, cr.right, cr.bottom)))
+                        return True
+                    user32.EnumChildWindows(th, WNDENUMPROC(enum_child_proc), 0)
+                return controls
+
+            def click_control(hwnd, rect=None):
+                try:
+                    user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
+                    user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
+                except Exception:
+                    pass
+                if rect:
+                    l, t, r, b = rect
+                    if r > l and b > t and l >= 0 and t >= 0:
+                        cx = (l + r) // 2
+                        cy = (t + b) // 2
+                        user32.SetCursorPos(cx, cy)
+                        time.sleep(0.04)
+                        user32.mouse_event(2, 0, 0, 0, 0)
+                        time.sleep(0.04)
+                        user32.mouse_event(4, 0, 0, 0, 0)
+
+            logger.info("🔒 [피카 잠금] '관리자 로그아웃' 버튼 탐색 및 클릭 시도...")
+            ctrls = get_all_pica_controls()
+            logout_btn = None
+            # 1순위: 관리자 로그아웃
+            for ch, c_cls, c_txt, parent, rect in ctrls:
+                t = c_txt.strip()
+                if t in ['관리자 로그아웃', '관리자로그아웃']:
+                    logout_btn = (ch, rect, t, parent)
+                    logger.info(f"🎯 1순위 '{t}' 버튼(HWND: {ch}, Rect: {rect}) 포착!")
+                    break
+
+            # 2순위: 기타 로그아웃
+            if not logout_btn:
+                for ch, c_cls, c_txt, parent, rect in ctrls:
+                    t = c_txt.strip()
+                    if t in ['후불로그아웃', '로그아웃']:
+                        logout_btn = (ch, rect, t, parent)
+                        logger.info(f"🎯 2순위 '{t}' 버튼(HWND: {ch}, Rect: {rect}) 포착!")
+                        break
+
+            if logout_btn:
+                btn_hwnd, btn_rect, btn_title, btn_parent = logout_btn
+                if btn_parent:
+                    user32.SetForegroundWindow(btn_parent)
+                    time.sleep(0.05)
+                click_control(btn_hwnd, btn_rect)
+                logger.info(f"✅ '{btn_title}' 버튼 클릭 전송 완료!")
+                time.sleep(0.8)
+
+                # 혹시 확인 다이얼로그("로그아웃 하시겠습니까?")가 뜨면 확인 클릭
+                ctrls2 = get_all_pica_controls()
+                for ch, c_cls, c_txt, parent, rect in ctrls2:
+                    t = c_txt.strip()
+                    if t in ['확인', '예', 'OK']:
+                        logger.info(f"🎯 로그아웃 확인 다이얼로그 버튼('{t}', HWND: {ch}) 클릭!")
+                        click_control(ch, rect)
+                        break
+
+                # Enter 키도 1회 보조 전송
+                user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+                time.sleep(0.05)
+                user32.keybd_event(VK_RETURN, 0x1C, 2, 0)
+
+                time.sleep(1.0)
+                logger.info("🎉 [피카 잠금 완료] 피카가 화면보호기 잠금(대기) 상태로 정상 복귀되었습니다!")
+            else:
+                logger.warning("⚠️ '관리자 로그아웃' 버튼을 찾지 못했습니다. 피카가 이미 잠금 상태이거나 실행 중이 아닙니다.")
+        except Exception as e:
+            logger.error(f"피카 잠금 매크로 실행 오류: {e}")
 
     def show_update_complete_window(self):
         try:

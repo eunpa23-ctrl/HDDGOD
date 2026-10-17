@@ -82,6 +82,16 @@
                 <i class="fa-solid fa-paper-plane"></i>
             </button>
 
+            <!-- 피카 잠금 해제 매크로 -->
+            <button onclick="sendPicaUnlock()" class="px-2 sm:px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm" title="피카 관리자 로그인 잠금 해제">
+                <i class="fa-solid fa-unlock-keyhole"></i> <span class="hidden sm:inline">피카해제</span>
+            </button>
+
+            <!-- 피카 화면보호기 잠금 복구 -->
+            <button onclick="sendPicaLock()" class="px-2 sm:px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm border border-slate-600/40" title="피카 관리자 로그아웃 -> 화면보호기 잠금 복구">
+                <i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">피카잠금</span>
+            </button>
+
             <!-- 닫기 -->
             <button onclick="window.close()" class="px-2 sm:px-3 py-1.5 bg-rose-800 hover:bg-rose-700 rounded font-semibold transition">
                 닫기
@@ -571,6 +581,36 @@
         document.getElementById('key-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendKeyText();
         });
+
+        // 피카 관리프로그램 잠금 해제 매크로 전송
+        window.sendPicaUnlock = function() {
+            if (confirm("피카 관리자 로그인을 실행하여 화면 잠금을 해제하시겠습니까?")) {
+                fetch(`/api/command/${targetId}/UNLOCK_PICA`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("UNLOCK_PICA 응답:", data);
+                    })
+                    .catch(err => {
+                        console.error("UNLOCK_PICA 오류:", err);
+                        alert("명령 전송 실패: " + err);
+                    });
+            }
+        };
+
+        // 피카 관리자 로그아웃 -> 화면보호기 잠금 복구 전송
+        window.sendPicaLock = function() {
+            if (confirm("피카 관리자 로그아웃을 실행하여 화면보호기 잠금 상태로 복구하시겠습니까?")) {
+                fetch(`/api/command/${targetId}/LOCK_PICA`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("LOCK_PICA 응답:", data);
+                    })
+                    .catch(err => {
+                        console.error("LOCK_PICA 오류:", err);
+                        alert("명령 전송 실패: " + err);
+                    });
+            }
+        };
 
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(fitToContainer, 50);

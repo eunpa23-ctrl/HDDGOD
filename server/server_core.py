@@ -886,6 +886,15 @@ async def send_command_mobile(request: Request):
     body = await request.json()
     target_id = body.get("target_id", "")
     action = body.get("command", "")
+    return await execute_command_internal(target_id, action)
+
+@app.post("/api/command/{target_id}/{action}")
+async def send_command_path(target_id: str, action: str):
+    """경로 기반 명령 API (/api/command/{target_id}/{action})"""
+    return await execute_command_internal(target_id, action)
+
+async def execute_command_internal(target_id: str, action: str):
+    """단일 또는 전체 클라이언트에 명령 전송 공통 로직"""
     if target_id == "ALL":
         for cid, ws in active_clients.items():
             cmd = make_packet(PacketType.COMMAND, {"action": action})

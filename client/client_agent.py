@@ -148,6 +148,9 @@ class ZeusClientAgent:
                         elif st == NetflixStatus.LOGGED_IN:
                             self.otp_needed = False
                             self.cred_needed = False
+                            # 로그인 완료 및 시청 중일 때는 손님의 재생/화면 전환을 방해하지 않도록 대기 간격 확보
+                            time.sleep(5)
+                            continue
                         elif st == NetflixStatus.OTP_WAITING:
                             if not self.otp_needed:
                                 logger.info("⚡ [ZeusAgent] 넷플릭스 4자리 OTP 대기 상태 감지! 서버 알림 준비...")

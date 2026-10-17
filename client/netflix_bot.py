@@ -297,8 +297,15 @@ class NetflixBot:
         (function() {
             var url = window.location.href;
             
-            // 1. 이미 로그인된 상태 (/browse 또는 프로필 선택 화면)
-            if (url.indexOf('/browse') !== -1 || document.querySelector('.profile-icon, .avatar-wrapper, [data-uia="profile-link"], [data-uia="header-profile-menu"]')) {
+            // 1. 이미 로그인된 상태 (/browse, /watch, /title 또는 프로필/플레이어 화면)
+            if (url.indexOf('/browse') !== -1 || 
+                url.indexOf('/watch') !== -1 || 
+                url.indexOf('/title') !== -1 || 
+                url.indexOf('/latest') !== -1 ||
+                url.indexOf('/search') !== -1 ||
+                document.querySelector('video') ||
+                document.querySelector('.watch-video, [data-uia="watch-video"], [data-uia="player"]') ||
+                document.querySelector('.profile-icon, .avatar-wrapper, [data-uia="profile-link"], [data-uia="header-profile-menu"]')) {
                 return { status: 'LOGGED_IN', url: url };
             }
 
@@ -323,19 +330,23 @@ class NetflixBot:
             }
 
             // 4. 메인 랜딩 페이지에 머물러 있는 경우 -> /login으로 이동 유도
-            var loginLink = document.querySelector('a[href*="/login"], [data-uia="header-login-button"]');
-            if (loginLink) {
-                loginLink.click();
-                return { status: 'NAVIGATING_TO_LOGIN', url: url };
-            } else if (url.indexOf('netflix.com') !== -1) {
-                window.location.href = 'https://www.netflix.com/login';
-                return { status: 'NAVIGATING_TO_LOGIN', url: url };
-            } else if (url === 'about:blank' || url.indexOf('netflix.com') === -1) {
-                window.location.href = 'https://www.netflix.com/browse';
-                return { status: 'NAVIGATING_TO_LOGIN', url: url };
+            // 주의: /watch, /title, /browse 등 이미 로그인/재생 관련 URL일 때는 절대로 /login으로 강제 이동하지 않음!
+            var isWatchOrBrowse = (url.indexOf('/watch') !== -1 || url.indexOf('/browse') !== -1 || url.indexOf('/title') !== -1);
+            if (!isWatchOrBrowse) {
+                var loginLink = document.querySelector('a[href*="/login"], [data-uia="header-login-button"]');
+                if (loginLink) {
+                    loginLink.click();
+                    return { status: 'NAVIGATING_TO_LOGIN', url: url };
+                } else if (url.indexOf('netflix.com') !== -1 && (location.pathname === '/' || location.pathname.indexOf('/kr') === 0)) {
+                    window.location.href = 'https://www.netflix.com/login';
+                    return { status: 'NAVIGATING_TO_LOGIN', url: url };
+                } else if (url === 'about:blank') {
+                    window.location.href = 'https://www.netflix.com/browse';
+                    return { status: 'NAVIGATING_TO_LOGIN', url: url };
+                }
             }
 
-            return { status: 'UNKNOWN', url: url };
+            return { status: (isWatchOrBrowse ? 'LOGGED_IN' : 'UNKNOWN'), url: url };
         })()
         """
         result = self.eval_js(check_script)

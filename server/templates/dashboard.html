@@ -390,7 +390,7 @@
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="text-slate-400">현재 배포 버전:</span>
-                                <input id="cfg-client-version" type="text" class="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-center font-bold" value="3.9.0">
+                                <input id="cfg-client-version" type="text" class="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-center font-bold" value="3.9.1">
                                 <span class="text-slate-500">|</span>
                                 <span class="text-slate-400">실행 파일 크기:</span>
                                 <span id="cfg-agent-size" class="text-slate-200 font-mono font-bold">23.8 MB</span>
@@ -978,7 +978,7 @@
                 document.getElementById('cfg-server-port').value = data.server_port || 8000;
                 document.getElementById('cfg-client-server-ip').value = data.client_server_ip || '192.168.0.100';
                 document.getElementById('cfg-admin-password').value = data.admin_password || '1234';
-                document.getElementById('cfg-client-version').value = data.client_version || '3.9.0';
+                document.getElementById('cfg-client-version').value = data.client_version || '3.9.1';
                 document.getElementById('cfg-agent-size').innerText = data.agent_file_size || '0 MB';
                 document.getElementById('cfg-tg-token').value = data.telegram_bot_token || '';
                 document.getElementById('cfg-tg-chatid').value = data.telegram_chat_id || '';

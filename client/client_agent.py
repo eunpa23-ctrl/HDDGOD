@@ -180,6 +180,10 @@ class ZeusClientAgent:
                             if not self.otp_needed:
                                 logger.info("⚡ [ZeusAgent] 넷플릭스 4자리 OTP 대기 상태 감지! 서버 알림 준비...")
                                 self.otp_needed = True
+                        elif st == NetflixStatus.CLOSED:
+                            was_running = False
+                            self.otp_needed = False
+                            self.cred_needed = False
 
                     elif is_win_active:
                         # CDP 포트가 안 열려 있더라도 창에 넷플릭스가 켜져 있으면 '시청중'으로 실시간 반영!
@@ -194,9 +198,9 @@ class ZeusClientAgent:
                         if was_running:
                             logger.info("🛑 [ZeusAgent] 손님이 넷플릭스를 종료함 -> 대기 모드로 전환")
                             was_running = False
-                            self.netflix_bot.current_status = NetflixStatus.CLOSED
                             self.otp_needed = False
                             self.otp_sent = False
+                        self.netflix_bot.current_status = NetflixStatus.CLOSED
 
                 except Exception as e:
                     logger.warning(f"넷플릭스 감시 중 오류: {e}")

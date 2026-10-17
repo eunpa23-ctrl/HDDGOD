@@ -204,37 +204,39 @@ class NetflixBot:
             return False
 
     def is_cdp_available(self) -> bool:
-        """CDP HTTP 엔드포인트 활성화 여부 확인"""
+        """CDP HTTP 엔드포인트 활성화 및 실제 넷플릭스 탭 존재 여부 확인"""
         try:
             resp = requests.get(f"http://127.0.0.1:{self.cdp_port}/json", timeout=1)
-            return resp.status_code == 200
+            if resp.status_code == 200:
+                targets = resp.json()
+                if isinstance(targets, list):
+                    for target in targets:
+                        t_url = target.get("url", "").lower()
+                        if target.get("type") == "page" and "netflix.com" in t_url:
+                            return True
+            return False
         except Exception:
             return False
 
-    def connect_cdp(self, retries=5) -> bool:
+    def connect_cdp(self, retries=2) -> bool:
         """CDP HTTP 엔드포인트에서 활성 넷플릭스 탭의 WebSocket URL 검색 (항상 최신 탭 조회)"""
         self.ws_url = None
         url = f"http://127.0.0.1:{self.cdp_port}/json"
         for _ in range(retries):
             try:
-                resp = requests.get(url, timeout=2)
+                resp = requests.get(url, timeout=1.5)
                 if resp.status_code == 200:
                     targets = resp.json()
-                    # 1순위: 넷플릭스 탭
-                    for target in targets:
-                        t_url = target.get("url", "")
-                        if target.get("type") == "page" and ("netflix.com" in t_url or "about:blank" in t_url):
-                            self.ws_url = target.get("webSocketDebuggerUrl")
-                            logger.info(f"CDP WebSocket 연결 대상 확보: {self.ws_url}")
-                            return True
-                    # 2순위: 기타 활성 탭
-                    for target in targets:
-                        if target.get("type") == "page" and target.get("webSocketDebuggerUrl"):
-                            self.ws_url = target.get("webSocketDebuggerUrl")
-                            return True
+                    if isinstance(targets, list):
+                        for target in targets:
+                            t_url = target.get("url", "").lower()
+                            if target.get("type") == "page" and "netflix.com" in t_url:
+                                self.ws_url = target.get("webSocketDebuggerUrl")
+                                logger.info(f"CDP WebSocket 연결 대상 확보: {self.ws_url}")
+                                return True
             except Exception:
-                time.sleep(1)
-        logger.warning("CDP 엔드포인트 연결 대기 중...")
+                pass
+            time.sleep(0.5)
         return False
 
     def eval_js(self, expression: str) -> dict:
@@ -351,7 +353,7 @@ class NetflixBot:
         """
         result = self.eval_js(check_script)
         if not isinstance(result, dict) or not result:
-            self.current_status = NetflixStatus.RUNNING
+            self.current_status = NetflixStatus.CLOSED
             return self.current_status
 
         status = result.get("status", "UNKNOWN")

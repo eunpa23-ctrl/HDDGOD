@@ -27,7 +27,7 @@ logger = logging.getLogger("ScreenStreamer")
 class ScreenStreamer:
     """초고속 화면 캡처 및 모바일 터치/마우스 원격 제어 처리기"""
 
-    def __init__(self, target_width: int = 1920, quality: int = 75):
+    def __init__(self, target_width: int = 1280, quality: int = 55):
         self.target_width = target_width
         self.quality = quality
         

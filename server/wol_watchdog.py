@@ -20,7 +20,7 @@ logger = logging.getLogger("WOLWatchdog")
 class WOLWatchdog:
     """3초 하트비트 생존 신호 감시 및 10초 비정상 꺼짐 시 자동 WOL 전원 켜기 관리자"""
 
-    def __init__(self, timeout_sec: int = 10):
+    def __init__(self, timeout_sec: int = 18):
         self.timeout_sec = timeout_sec
         # client_id -> { "ip": ..., "mac": ..., "last_seen": ..., "is_normal_shutdown": False }
         self.clients = {}

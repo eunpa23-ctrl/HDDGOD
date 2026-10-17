@@ -278,7 +278,7 @@ class ZeusClientAgent:
                 self.streamer.handle_remote_input(evt, data)
 
     async def run_screen_stream_loop(self, websocket):
-        """화면 스트리밍 활성화 시 논블로킹 스레드 캡처로 12 FPS 스트리밍"""
+        """화면 스트리밍 활성화 시 8 FPS 경량 스트리밍 (하트비트 대역폭 보호)"""
         while True:
             if self.is_streaming_screen:
                 try:
@@ -290,9 +290,9 @@ class ZeusClientAgent:
                         })
                         await websocket.send(pkt)
                 except Exception as e:
-                    logger.error(f"화면 프레임 전송 실패: {e}")
-                    break
-                await asyncio.sleep(0.08)
+                    logger.warning(f"화면 프레임 전송 일시 지연: {e}")
+                    await asyncio.sleep(0.5)
+                await asyncio.sleep(0.12)
             else:
                 await asyncio.sleep(0.2)
 
@@ -340,7 +340,13 @@ class ZeusClientAgent:
             uri = f"ws://{target_ip}:{self.server_port}/ws/client/{self.client_id}"
             try:
                 logger.info(f"관리 서버 연결 시도: {uri}")
-                async with websockets.connect(uri, open_timeout=3) as ws:
+                async with websockets.connect(
+                    uri,
+                    open_timeout=5,
+                    ping_interval=20,
+                    ping_timeout=20,
+                    max_size=10 * 1024 * 1024
+                ) as ws:
                     logger.info(f"관리 서버({target_ip}) 연결 성공!")
                     self.ws_conn = ws
 

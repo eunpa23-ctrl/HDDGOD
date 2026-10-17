@@ -28,6 +28,9 @@ class RemoteRelay:
             if not self.viewers[client_id]:
                 del self.viewers[client_id]
 
+    def get_viewer_count(self, client_id: str) -> int:
+        return len(self.viewers.get(client_id, set()))
+
     async def broadcast_frame(self, client_id: str, frame_base64: str):
         """클라이언트 PC에서 전송된 화면 프레임을 모든 뷰어에게 중계"""
         if client_id not in self.viewers:

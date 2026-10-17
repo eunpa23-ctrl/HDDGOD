@@ -729,16 +729,18 @@ async def remote_view_websocket(websocket: WebSocket, client_id: str):
         return
 
     actual_cid = get_actual_client_id(client_id)
+    prev_viewers = remote_relay.get_viewer_count(client_id) + (remote_relay.get_viewer_count(actual_cid) if actual_cid != client_id else 0)
     remote_relay.add_viewer(client_id, websocket)
     if actual_cid != client_id:
         remote_relay.add_viewer(actual_cid, websocket)
 
-    # 뷰어 접속 즉시 클라이언트에 화면 스트리밍 시작 명령 발송
-    ws = get_client_ws(client_id)
-    if ws:
-        cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
-        await ws.send_text(cmd)
-        logger.info(f"[{actual_cid}] 뷰어 접속 확인 -> 화면 스트리밍 즉각 시작 명령 전송!")
+    # 뷰어가 최초로 접속할 때만 화면 스트리밍 시작 명령 발송 (중복 발송 방지)
+    if prev_viewers == 0:
+        ws = get_client_ws(client_id)
+        if ws:
+            cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
+            await ws.send_text(cmd)
+            logger.info(f"[{actual_cid}] 최초 뷰어 접속 확인 -> 화면 스트리밍 즉각 시작 명령 전송!")
 
     try:
         while True:

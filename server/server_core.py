@@ -582,6 +582,7 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                 uwf_st = data.get("uwf_status", "")
                 netflix_st = data.get("netflix_status", "")
                 ver_st = data.get("version", "")
+                pica_st = data.get("pica_status", "UNKNOWN")
 
                 # 좌석 ID 재검증 (MAC 또는 reported_ip로 매핑된 경우)
                 if not seat_id:
@@ -590,9 +591,9 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                         active_clients[seat_id] = websocket
 
                 target_watchdog_id = seat_id if seat_id else session_key
-                watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id)
+                watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st)
                 if session_key != target_watchdog_id:
-                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id)
+                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st)
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!

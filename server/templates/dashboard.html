@@ -754,6 +754,7 @@
                     pc.real_cid = live.client_id;
                     pc.version = live.version || '알 수 없음';
                     pc.netflix = live.netflix_status || 'CLOSED';
+                    pc.pica = live.pica_status || 'UNKNOWN';
                     if (live.ip) pc.ip = live.ip;
                     if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
 
@@ -817,12 +818,28 @@
                     netflixColor = 'text-yellow-400 font-bold';
                 }
 
+                // 피카 화면 잠금 상태 배지 및 행
+                let picaBadgeHtml = '';
+                let picaRowHtml = '';
+                if (isOnline) {
+                    if (pc.pica === 'LOCKED') {
+                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1 shadow-sm" title="피카 화면보호기 잠김 (대기/빈자리)"><i class="fa-solid fa-lock text-[9px]"></i> 잠김</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>화면 잠금:</span><span class="text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 🔒 잠김 (대기)</span></div>`;
+                    } else if (pc.pica === 'UNLOCKED') {
+                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 flex items-center gap-1 shadow-sm" title="피카 잠금 해제 (손님 사용 중)"><i class="fa-solid fa-lock-open text-[9px]"></i> 사용중</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>화면 잠금:</span><span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock-open text-[10px]"></i> 🔓 사용중 (해제)</span></div>`;
+                    }
+                }
+
                 const card = document.createElement('div');
                 card.className = `p-4 rounded-xl border transition ${isOnline ? 'bg-slate-900 border-slate-700' : 'bg-slate-950/60 border-slate-800 opacity-75'}`;
 
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-2">
-                        <span class="font-extrabold text-sm text-white">${pc.name}</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-extrabold text-sm text-white">${pc.name}</span>
+                            ${picaBadgeHtml}
+                        </div>
                         <div class="flex items-center gap-1.5">
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
                                 ${pc.status}
@@ -839,6 +856,7 @@
                             <span>에이전트 버전:</span>
                             <span class="font-mono font-bold text-xs ${isOnline ? 'text-fuchsia-400 bg-fuchsia-950/40 px-1.5 py-0.5 rounded border border-fuchsia-800/40' : 'text-slate-500'}">v${pc.version || '-'}</span>
                         </div>
+                        ${picaRowHtml}
                         <div class="flex justify-between items-center">
                             <span>넷플릭스:</span>
                             <span class="${netflixColor}">

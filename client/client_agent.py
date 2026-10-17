@@ -224,12 +224,21 @@ class ZeusClientAgent:
         """3초 주기 하트비트 생존 신호 전송 및 OTP 상태 연동"""
         while True:
             try:
+                # 피카 잠금 상태 감지 (서버 PC는 항상 NONE)
+                pica_st = "NONE"
+                if not self.is_server_node():
+                    try:
+                        pica_st = "LOCKED" if self.is_pica_locked() else "UNLOCKED"
+                    except Exception:
+                        pica_st = "UNKNOWN"
+
                 payload = {
                     "client_id": self.client_id,
                     "ip": self.local_ip,
                     "mac": self.mac_addr,
                     "uwf_status": "DISABLED",
                     "netflix_status": self.netflix_bot.current_status,
+                    "pica_status": pica_st,
                     "is_streaming": self.is_streaming_screen,
                     "version": self.get_local_version()
                 }
@@ -295,12 +304,20 @@ class ZeusClientAgent:
                         try:
                             if self.is_pica_locked():
                                 logger.info("🔓 [원격 접속 감지] 피카 화면 잠금 감지됨 -> 관리자 자동 로그인 시작!")
+                                self.was_pica_locked_on_stream_start = True
                                 asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
+                            else:
+                                self.was_pica_locked_on_stream_start = False
                         except Exception as e:
                             logger.warning(f"피카 잠금 상태 자동 감지 예외: {e}")
                 elif action == CommandType.STOP_SCREEN_STREAM:
                     logger.info("💤 [원격 제어] 화면 스트리밍 절전 중지 명령 수신!")
                     self.is_streaming_screen = False
+                    # 원격 접속 시작 시 잠겨 있던 PC라면, 나갈 때 자동으로 화면보호기 잠금 복구!
+                    if getattr(self, "was_pica_locked_on_stream_start", False) and not self.is_server_node():
+                        logger.info("🔒 [원격 퇴장] 입장 시 잠겨 있던 PC이므로 화면보호기 잠금으로 자동 복구합니다.")
+                        self.was_pica_locked_on_stream_start = False
+                        asyncio.create_task(asyncio.to_thread(self.lock_pica_screen))
                 elif action == CommandType.UNLOCK_PICA:
                     if self.is_server_node():
                         logger.info("ℹ️ [원격 명령] 서버 PC이므로 피카 잠금 해제 명령을 건너뜁니다.")

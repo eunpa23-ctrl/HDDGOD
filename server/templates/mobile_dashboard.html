@@ -129,6 +129,26 @@
             }
         }
 
+        function getPicaBadgeHtml(pica, isOnline) {
+            if (!isOnline) return '';
+            if (pica === 'LOCKED') {
+                return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1"><i class="fa-solid fa-lock text-[9px]"></i> 잠김</span>';
+            } else if (pica === 'UNLOCKED') {
+                return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 flex items-center gap-1"><i class="fa-solid fa-lock-open text-[9px]"></i> 사용중</span>';
+            }
+            return '';
+        }
+
+        function getPicaTextHtml(pica, isOnline) {
+            if (!isOnline) return '<span class="text-slate-500">오프라인</span>';
+            if (pica === 'LOCKED') {
+                return '<span class="text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 잠김 (대기)</span>';
+            } else if (pica === 'UNLOCKED') {
+                return '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock-open text-[10px]"></i> 사용중 (해제)</span>';
+            }
+            return '<span class="text-slate-400">-</span>';
+        }
+
         function renderInitialCards() {
             container.innerHTML = '';
             const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
@@ -137,11 +157,14 @@
 
                 const html = `
                 <div id="card-${pc.id}" class="bg-slate-900 border ${isOnline ? 'border-slate-700 shadow-lg' : 'border-slate-800 opacity-90'} rounded-2xl p-4 shadow-md flex flex-col gap-3 transition">
-                    <!-- 상단 헤더: PC 이름 + IP 주소 + 온라인 상태 배지 -->
+                    <!-- 상단 헤더: PC 이름 + IP 주소 + 온라인 상태 배지 + 피카 잠금 배지 -->
                     <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
                             <span id="dot-${pc.id}" class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-600'}"></span>
                             <span class="font-extrabold text-base text-white">${pc.name}</span>
+                            <span id="pica-badge-${pc.id}">
+                                ${getPicaBadgeHtml(pc.pica, isOnline)}
+                            </span>
                             <span id="ip-${pc.id}" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700/80 font-bold">${pc.ip}</span>
                             <span id="ver-${pc.id}" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950/60 text-fuchsia-300 border border-fuchsia-800/40 font-bold">v${pc.version || '-'}</span>
                         </div>
@@ -155,17 +178,19 @@
                         </div>
                     </div>
 
-                    <!-- 상세 정보 바: 넷플릭스 상태 -->
+                    <!-- 상세 정보 바: 피카 잠금 상태 + 넷플릭스 상태 -->
                     <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-slate-400">화면잠금:</span>
+                            <span id="pica-text-${pc.id}">
+                                ${getPicaTextHtml(pc.pica, isOnline)}
+                            </span>
+                        </div>
                         <div class="flex items-center gap-1.5">
                             <span class="text-slate-400">넷플릭스:</span>
                             <span id="netflix-${pc.id}">
                                 ${getNetflixBadgeHtml(pc.netflix)}
                             </span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-slate-400">통신:</span>
-                            <span class="${isOnline ? 'text-emerald-400 font-bold' : 'text-slate-500'}">${isOnline ? '온라인' : '오프라인'}</span>
                         </div>
                     </div>
 
@@ -262,6 +287,7 @@
                     if (isOnline) {
                         pc.version = live.version || '알 수 없음';
                         pc.netflix = live.netflix_status || 'CLOSED';
+                        pc.pica = live.pica_status || 'UNKNOWN';
                         if (live.ip) pc.ip = live.ip;
                         if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
                     }
@@ -269,6 +295,8 @@
                     // DOM 업데이트
                     const dot = document.getElementById(`dot-${pc.id}`);
                     const badge = document.getElementById(`badge-${pc.id}`);
+                    const picaBadgeEl = document.getElementById(`pica-badge-${pc.id}`);
+                    const picaTextEl = document.getElementById(`pica-text-${pc.id}`);
                     const ipEl = document.getElementById(`ip-${pc.id}`);
                     const netflixEl = document.getElementById(`netflix-${pc.id}`);
                     const card = document.getElementById(`card-${pc.id}`);
@@ -283,6 +311,12 @@
                             ? 'text-[10px] px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/50 text-emerald-400 font-bold' 
                             : 'text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-medium';
                         badge.innerText = isOnline ? '온라인' : '오프라인';
+                    }
+                    if (picaBadgeEl) {
+                        picaBadgeEl.innerHTML = getPicaBadgeHtml(pc.pica, isOnline);
+                    }
+                    if (picaTextEl) {
+                        picaTextEl.innerHTML = getPicaTextHtml(pc.pica, isOnline);
                     }
                     if (ipEl && pc.ip) {
                         const verEl = document.getElementById(`ver-${pc.id}`);

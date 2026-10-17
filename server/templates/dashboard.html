@@ -82,42 +82,61 @@
 
     <!-- 메인 대시보드 컨테이너 -->
     <main class="max-w-7xl mx-auto p-6 space-y-8">
-        <!-- 상단 요약 카드 -->
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- 상단 요약 카드 (손님 사용중 및 빈자리 실시간 집계 포함 5분할) -->
+        <section class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+            <!-- 1. 총 관제 PC -->
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                 <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <p class="text-xs text-slate-400 font-semibold">총 관제 PC</p>
-                        <div class="flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                            <button onclick="changePcCount(-1)" class="w-4 h-4 flex items-center justify-center text-rose-400 hover:text-white hover:bg-rose-600 rounded font-black text-xs transition" title="PC 1대 줄이기">-</button>
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <p class="text-xs text-slate-400 font-semibold">총 손님 PC</p>
+                        <div class="flex items-center gap-1 bg-slate-950 px-1 py-0.5 rounded border border-slate-800">
+                            <button onclick="changePcCount(-1)" class="w-3.5 h-3.5 flex items-center justify-center text-rose-400 hover:text-white hover:bg-rose-600 rounded font-black text-xs transition" title="PC 1대 줄이기">-</button>
                             <span class="text-slate-600 text-[10px]">|</span>
-                            <button onclick="changePcCount(1)" class="w-4 h-4 flex items-center justify-center text-emerald-400 hover:text-white hover:bg-emerald-600 rounded font-black text-xs transition" title="PC 1대 늘리기">+</button>
+                            <button onclick="changePcCount(1)" class="w-3.5 h-3.5 flex items-center justify-center text-emerald-400 hover:text-white hover:bg-emerald-600 rounded font-black text-xs transition" title="PC 1대 늘리기">+</button>
                         </div>
                     </div>
                     <p id="stat-total" class="text-2xl font-black text-white">-- 대</p>
                 </div>
                 <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400"><i class="fa-solid fa-desktop"></i></div>
             </div>
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+
+            <!-- 2. 손님 사용 중 (가장 중요) -->
+            <div class="bg-gradient-to-br from-emerald-950/80 via-slate-900 to-emerald-950/40 border border-emerald-500/50 p-4 rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                 <div>
-                    <p class="text-xs text-slate-400 font-semibold">현재 켜짐 (Online)</p>
-                    <p id="stat-online" class="text-2xl font-black text-emerald-400">0 대</p>
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <p class="text-xs text-emerald-300 font-extrabold">손님 사용 중</p>
+                    </div>
+                    <p id="stat-guest-active" class="text-2xl font-black text-emerald-300">0 대</p>
                 </div>
-                <div class="w-10 h-10 bg-emerald-950/60 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-signal"></i></div>
+                <div class="w-10 h-10 bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 rounded-lg flex items-center justify-center text-lg"><i class="fa-solid fa-user-check"></i></div>
             </div>
+
+            <!-- 3. 빈자리 (화면보호기 대기) -->
+            <div class="bg-slate-900 border border-amber-600/40 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-amber-400 font-semibold mb-1">빈자리 (대기/잠김)</p>
+                    <p id="stat-guest-idle" class="text-2xl font-black text-amber-400">0 대</p>
+                </div>
+                <div class="w-10 h-10 bg-amber-950/60 text-amber-400 border border-amber-700/40 rounded-lg flex items-center justify-center"><i class="fa-solid fa-lock"></i></div>
+            </div>
+
+            <!-- 4. 넷플릭스 시청 중 -->
+            <div class="bg-slate-900 border border-red-800/40 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">넷플릭스 시청 중</p>
+                    <p id="stat-netflix" class="text-2xl font-black text-red-500">0 대</p>
+                </div>
+                <div class="w-10 h-10 bg-red-950/60 text-red-500 border border-red-700/40 rounded-lg flex items-center justify-center"><i class="fa-solid fa-play"></i></div>
+            </div>
+
+            <!-- 5. PC 전원 꺼짐 -->
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400 font-semibold">현재 꺼짐 (Offline)</p>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">전원 꺼짐 (Offline)</p>
                     <p id="stat-offline" class="text-2xl font-black text-slate-500">0 대</p>
                 </div>
                 <div class="w-10 h-10 bg-slate-800 text-slate-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-power-off"></i></div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-slate-400 font-semibold">넷플릭스 정상 작동</p>
-                    <p id="stat-netflix" class="text-2xl font-black text-red-500">0 대</p>
-                </div>
-                <div class="w-10 h-10 bg-red-950/60 text-red-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-play"></i></div>
             </div>
         </section>
 
@@ -716,6 +735,8 @@
             let onlineCount = 0;
             let protectedCount = 0;
             let netflixCount = 0;
+            let guestActiveCount = 0;
+            let guestIdleCount = 0;
 
             pcList.forEach(pc => {
                 // 1순위: PC ID 일치
@@ -762,6 +783,8 @@
                     if (!pc.is_server && pc.seat !== 9) {
                         onlineCount++;
                         if (pc.netflix === 'RUNNING' || pc.netflix === 'LOGGED_IN') netflixCount++;
+                        if (pc.pica === 'UNLOCKED') guestActiveCount++;
+                        else if (pc.pica === 'LOCKED') guestIdleCount++;
                     }
                 } else {
                     pc.status = 'OFFLINE';
@@ -786,10 +809,14 @@
 
             const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
             updateTotalStat();
-            document.getElementById('stat-online').innerText = `${onlineCount} 대`;
-            const offEl = document.getElementById('stat-offline');
-            if (offEl) offEl.innerText = `${guestPcs.length - onlineCount} 대`;
-            document.getElementById('stat-netflix').innerText = `${netflixCount} 대`;
+            const elActive = document.getElementById('stat-guest-active');
+            if (elActive) elActive.innerText = `${guestActiveCount} 대`;
+            const elIdle = document.getElementById('stat-guest-idle');
+            if (elIdle) elIdle.innerText = `${guestIdleCount} 대`;
+            const elOff = document.getElementById('stat-offline');
+            if (elOff) elOff.innerText = `${guestPcs.length - onlineCount} 대`;
+            const elNf = document.getElementById('stat-netflix');
+            if (elNf) elNf.innerText = `${netflixCount} 대`;
 
             renderGrid();
         }
@@ -818,17 +845,21 @@
                     netflixColor = 'text-yellow-400 font-bold';
                 }
 
-                // 피카 화면 잠금 상태 배지 및 행
+                // 피카 화면 잠금 상태 배지 및 행 (손님 사용중 vs 빈자리)
                 let picaBadgeHtml = '';
                 let picaRowHtml = '';
                 if (isOnline) {
-                    if (pc.pica === 'LOCKED') {
-                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1 shadow-sm" title="피카 화면보호기 잠김 (대기/빈자리)"><i class="fa-solid fa-lock text-[9px]"></i> 잠김</span>`;
-                        picaRowHtml = `<div class="flex justify-between items-center"><span>화면 잠금:</span><span class="text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 🔒 잠김 (대기)</span></div>`;
-                    } else if (pc.pica === 'UNLOCKED') {
-                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 flex items-center gap-1 shadow-sm" title="피카 잠금 해제 (손님 사용 중)"><i class="fa-solid fa-lock-open text-[9px]"></i> 사용중</span>`;
-                        picaRowHtml = `<div class="flex justify-between items-center"><span>화면 잠금:</span><span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock-open text-[10px]"></i> 🔓 사용중 (해제)</span></div>`;
+                    if (pc.pica === 'UNLOCKED') {
+                        picaBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 flex items-center gap-1 shadow-[0_0_8px_rgba(52,211,153,0.3)] animate-pulse" title="손님이 로그인하여 이용 중"><i class="fa-solid fa-user-check text-[10px]"></i> 손님 사용중</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-emerald-300 font-extrabold flex items-center gap-1"><i class="fa-solid fa-user text-[11px]"></i> 👤 손님 사용중</span></div>`;
+                    } else if (pc.pica === 'LOCKED') {
+                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1 shadow-sm" title="피카 화면보호기 잠김 (빈자리/대기)"><i class="fa-solid fa-lock text-[9px]"></i> 빈자리</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-amber-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 🔒 빈자리 (대기)</span></div>`;
+                    } else {
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-slate-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> 온라인 대기</span></div>`;
                     }
+                } else {
+                    picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-slate-500 font-semibold flex items-center gap-1"><i class="fa-solid fa-power-off text-[10px]"></i> PC 꺼짐</span></div>`;
                 }
 
                 const card = document.createElement('div');

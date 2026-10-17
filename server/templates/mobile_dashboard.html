@@ -64,6 +64,24 @@
         </div>
     </div>
 
+    <!-- 손님 PC 이용 현황 요약 칩 (모바일) -->
+    <div class="px-4 pt-3">
+        <div class="grid grid-cols-3 gap-2">
+            <div class="bg-gradient-to-br from-emerald-950/80 to-slate-900 border border-emerald-500/50 rounded-xl p-2.5 flex flex-col items-center shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span class="text-[10px] text-emerald-300 font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>손님 사용중</span>
+                <span id="mob-stat-guest-active" class="text-base font-black text-emerald-300">0 대</span>
+            </div>
+            <div class="bg-slate-900 border border-amber-600/40 rounded-xl p-2.5 flex flex-col items-center">
+                <span class="text-[10px] text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-[9px]"></i>빈자리 (대기)</span>
+                <span id="mob-stat-guest-idle" class="text-base font-black text-amber-400">0 대</span>
+            </div>
+            <div class="bg-slate-900 border border-red-800/40 rounded-xl p-2.5 flex flex-col items-center">
+                <span class="text-[10px] text-red-400 font-bold flex items-center gap-1"><i class="fa-solid fa-play text-[9px]"></i>넷플릭스</span>
+                <span id="mob-stat-netflix" class="text-base font-black text-red-400">0 대</span>
+            </div>
+        </div>
+    </div>
+
     <!-- 🌟 전용 관리 서버 원격 제어 섹션 (서버 2대) -->
     <div class="px-4 pt-3 space-y-2">
         <!-- 1. 관리 서버 100 (HOST) -->
@@ -330,6 +348,31 @@
                         card.className = `bg-slate-900 border ${isOnline ? 'border-slate-700 shadow-lg' : 'border-slate-800 opacity-90'} rounded-2xl p-4 shadow-md flex flex-col gap-3 transition`;
                     }
                 });
+
+                // 손님 PC 요약 카운트 집계
+                let guestActiveCount = 0;
+                let guestIdleCount = 0;
+                let netflixActiveCount = 0;
+                pcList.forEach(pc => {
+                    if (pc.seat === 9 || pc.id === 'PC-09' || pc.is_server) return;
+                    if (pc.status === 'ONLINE') {
+                        if (pc.pica === 'UNLOCKED') {
+                            guestActiveCount++;
+                        } else {
+                            guestIdleCount++;
+                        }
+                        const nf = (pc.netflix || '').toUpperCase();
+                        if (nf === 'RUNNING' || nf === 'LOGGED_IN') {
+                            netflixActiveCount++;
+                        }
+                    }
+                });
+                const mobActiveEl = document.getElementById('mob-stat-guest-active');
+                const mobIdleEl = document.getElementById('mob-stat-guest-idle');
+                const mobNfEl = document.getElementById('mob-stat-netflix');
+                if (mobActiveEl) mobActiveEl.innerText = `${guestActiveCount} 대`;
+                if (mobIdleEl) mobIdleEl.innerText = `${guestIdleCount} 대`;
+                if (mobNfEl) mobNfEl.innerText = `${netflixActiveCount} 대`;
 
                 // 9번 메인 서버 전용 카드 실시간 UI 갱신
                 const srv9 = pcList.find(p => p.seat === 9 || p.id === 'PC-09' || p.is_server);

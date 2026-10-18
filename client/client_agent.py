@@ -1032,35 +1032,61 @@ exit /b 0
                 min_h = int(15 * dpi_scale)
                 max_h = int(110 * dpi_scale) # 100%->110px, 125%->137px, 150%->165px까지 수용
 
+                # 1순위: 피카 전용 '관리자 모드 변경' 버튼
                 for c in ctrls:
                     ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
                     t = txt.replace(' ', '')
-                    if t in ['확인', 'OK', '로그인'] and not is_top:
+                    if ('관리자' in t and ('변경' in t or '모드' in t or '로그인' in t)) and t not in ['취소', '닫기'] and not is_top:
                         w = rect[2] - rect[0]
                         h = rect[3] - rect[1]
                         if min_w <= w <= max_w and min_h <= h <= max_h:
                             ok_candidate = (ch, parent, rect, txt)
                             break
 
+                # 2순위: 범용 '확인', 'OK', '로그인' 버튼
+                if not ok_candidate:
+                    for c in ctrls:
+                        ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
+                        t = txt.replace(' ', '')
+                        if t in ['확인', 'OK', '로그인'] and not is_top:
+                            w = rect[2] - rect[0]
+                            h = rect[3] - rect[1]
+                            if min_w <= w <= max_w and min_h <= h <= max_h:
+                                ok_candidate = (ch, parent, rect, txt)
+                                break
+
+                # '취소' 버튼도 함께 탐색 (실패 시 닫기용)
+                for c in ctrls:
+                    ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
+                    t = txt.replace(' ', '')
+                    if t in ['취소', '닫기', 'Cancel'] and not is_top:
+                        cancel_candidate = (ch, parent, rect, txt)
+                        break
+
                 if ok_candidate:
                     dlg_hwnd = ok_candidate[1]
                     for c in ctrls:
                         ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
                         if parent == dlg_hwnd and 'edit' in cls_nm.lower():
-                            return (ch, parent, rect), ok_candidate
+                            return (ch, parent, rect), ok_candidate, cancel_candidate
 
-                return None, None
+                return None, None, cancel_candidate
 
             # [1단계: 이미 열려 있는 관리자 로그인 창 탐색]
             ctrls, tops = dump_all_pica()
-            admin_edit, admin_ok = find_admin_dialog_pair(ctrls)
+            admin_edit, admin_ok, cancel_btn = find_admin_dialog_pair(ctrls)
 
             if not admin_edit:
                 logger.info("🔓 [피카 해제] 1단계: '관리자 로그인' 창 미발견 -> 단축키 Ctrl+Alt+Shift+X 전송...")
                 for th, _ in tops:
-                    user32.SetForegroundWindow(th)
-                    time.sleep(0.05)
-                    break
+                    cr = wintypes.RECT()
+                    user32.GetWindowRect(th, ctypes.byref(cr))
+                    # 화면상에 실제로 보이는(양수 좌표) 창에만 포그라운드 설정
+                    if cr.right > 0 and cr.bottom > 0 and (cr.right - cr.left) > 100:
+                        user32.SetForegroundWindow(th)
+                        user32.BringWindowToTop(th)
+                        time.sleep(0.05)
+                        break
 
                 user32.keybd_event(0x11, 0x1D, 0, 0)
                 user32.keybd_event(0x10, 0x2A, 0, 0)
@@ -1075,7 +1101,7 @@ exit /b 0
                 for _ in range(25):
                     time.sleep(0.1)
                     ctrls, tops = dump_all_pica()
-                    admin_edit, admin_ok = find_admin_dialog_pair(ctrls)
+                    admin_edit, admin_ok, cancel_btn = find_admin_dialog_pair(ctrls)
                     if admin_edit:
                         break
 
@@ -1083,7 +1109,7 @@ exit /b 0
             if admin_edit and admin_ok:
                 e_hwnd, e_parent, e_rect = admin_edit
                 ok_hwnd, ok_parent, ok_rect, ok_txt = admin_ok
-                logger.info(f"🎯 관리자 로그인 다이얼로그 포착 완료! (Dialog HWND: {e_parent}, Edit HWND: {e_hwnd}, OK HWND: {ok_hwnd})")
+                logger.info(f"🎯 관리자 로그인 다이얼로그 포착 완료! (Dialog HWND: {e_parent}, Edit HWND: {e_hwnd}, OK HWND: {ok_hwnd}, Button: '{ok_txt}')")
 
                 # 대화상자 포그라운드 활성화
                 user32.SetForegroundWindow(e_parent)
@@ -1119,25 +1145,30 @@ exit /b 0
                 user32.SendMessageW(e_hwnd, WM_CLEAR, 0, 0)
                 time.sleep(0.06)
 
-                # 🚀 1순위: WM_SETTEXT (0x000C) 직접 주입 - DPI 오차나 마우스 좌표와 무관하게 100% 버퍼에 직접 기록!
+                # 🚀 1순위: WM_SETTEXT (0x000C) 직접 주입
                 WM_SETTEXT = 0x000C
+                WM_GETTEXTLENGTH = 0x000E
                 BM_CLICK = 0x00F5
                 user32.SendMessageW(e_hwnd, WM_SETTEXT, 0, target_pw)
                 time.sleep(0.06)
+                cur_len = user32.SendMessageW(e_hwnd, WM_GETTEXTLENGTH, 0, 0)
 
-                # 🚀 2순위: 키보드 타이핑 보조 (피카의 키 입력 이벤트 체크 대응)
-                logger.info(f"⌨️ 비밀번호 '{target_pw}' 주입 및 키보드 보조 타이핑 중...")
-                for ch_digit in target_pw:
-                    vk = ord(ch_digit)
-                    sc = user32.MapVirtualKeyW(vk, 0)
-                    user32.keybd_event(vk, sc, 0, 0)
-                    time.sleep(0.04)
-                    user32.keybd_event(vk, sc, 2, 0)
-                    time.sleep(0.04)
+                # 🚀 2순위: WM_SETTEXT 미반영 시 키보드 타이핑 주입
+                if cur_len != len(target_pw):
+                    logger.info(f"⌨️ WM_SETTEXT 미적용(길이 {cur_len}) -> 키보드 타이핑으로 비밀번호 '{target_pw}' 주입 중...")
+                    for ch_digit in target_pw:
+                        vk = ord(ch_digit)
+                        sc = user32.MapVirtualKeyW(vk, 0)
+                        user32.keybd_event(vk, sc, 0, 0)
+                        time.sleep(0.04)
+                        user32.keybd_event(vk, sc, 2, 0)
+                        time.sleep(0.04)
+                else:
+                    logger.info(f"✅ WM_SETTEXT로 비밀번호 '{target_pw}' 직접 주입 완료!")
 
                 time.sleep(0.12)
 
-                # 🚀 확인 버튼 클릭: BM_CLICK 메시지 전송 (마우스 헛클릭 원천 방지) + 물리 마우스 클릭 2중 실행!
+                # 🚀 확인/변경 버튼 클릭: BM_CLICK 메시지 전송 + 물리 마우스 클릭 2중 실행!
                 logger.info(f"🎯 로그인 확인 버튼('{ok_txt}', HWND: {ok_hwnd}) BM_CLICK 전송 및 클릭")
                 user32.SendMessageW(ok_hwnd, BM_CLICK, 0, 0)
                 time.sleep(0.05)
@@ -1151,11 +1182,35 @@ exit /b 0
             else:
                 logger.warning("⚠️ '관리자 로그인' 창 쌍(Edit+OK)을 특정하지 못함!")
 
-            # 최종 상태 확인
-            if not self.is_pica_locked():
+            # 최종 상태 확인 (최대 5초간 피카 관리자 로그인 전환 대기)
+            unlocked = False
+            for _ in range(10):
+                if not self.is_pica_locked():
+                    unlocked = True
+                    break
+                time.sleep(0.5)
+
+            if unlocked:
                 logger.info("🎉 [피카 해제 완료] 피카 관리자 로그인 100% 성공! (카운터 관리프로그램에 '관리자' 정상 표기)")
             else:
-                logger.warning(f"⚠️ [피카 해제] 관리자 로그인 상태 확인 필요 (잠금 상태: {self.is_pica_locked()})")
+                logger.warning(f"⚠️ [피카 해제] 관리자 로그인 미전환 감지 (잠금 상태: {self.is_pica_locked()})")
+                # 🛑 잠금해제 실패 시 '관리자 페이지' 다이얼로그가 화면에 남아있지 않도록 취소 버튼 클릭 및 ESC로 원상 복구!
+                try:
+                    cleanup_ctrls, _ = dump_all_pica()
+                    for c in cleanup_ctrls:
+                        ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
+                        t = txt.replace(' ', '')
+                        if t in ['취소', '닫기', 'Cancel'] and not is_top:
+                            logger.info(f"🧹 [피카 복구] 잔여 '취소' 버튼(HWND:{ch}) 감지 -> 클릭하여 관리자 창 닫기")
+                            click_control(ch, parent, rect)
+                            time.sleep(0.3)
+                            break
+                    # ESC 키 보조 전송
+                    user32.keybd_event(0x1B, 0x01, 0, 0)
+                    time.sleep(0.05)
+                    user32.keybd_event(0x1B, 0x01, 2, 0)
+                except Exception as e:
+                    logger.warning(f"취소 복구 예외: {e}")
         except Exception as e:
             logger.error(f"피카 해제 매크로 실행 오류: {e}")
         finally:
@@ -1235,6 +1290,25 @@ exit /b 0
 
             logger.info("🔒 [피카 잠금] '관리자 로그아웃' 버튼 탐색 및 복구 시도...")
             ctrls = get_all_pica_controls()
+
+            # 만약 화면에 '관리자 페이지' 다이얼로그(취소 버튼)가 아직 떠 있다면 먼저 닫기
+            has_admin_dlg = any(('관리자' in c[2].replace(' ', '') and ('변경' in c[2].replace(' ', '') or '모드' in c[2].replace(' ', ''))) for c in ctrls)
+            has_cancel = False
+            for ch, c_cls, c_txt, parent, cid, rect in ctrls:
+                t = c_txt.replace(' ', '')
+                if t in ['취소', '닫기', 'Cancel']:
+                    has_cancel = True
+                    logger.info(f"🧹 [피카 잠금] 열려있는 관리자 다이얼로그 취소 버튼(HWND:{ch}, '{c_txt}') 감지 -> 닫기 실행")
+                    click_control(ch, parent, rect)
+                    time.sleep(0.2)
+                    break
+            if has_admin_dlg or has_cancel:
+                user32.keybd_event(0x1B, 0x01, 0, 0)
+                time.sleep(0.05)
+                user32.keybd_event(0x1B, 0x01, 2, 0)
+                time.sleep(0.3)
+                ctrls = get_all_pica_controls()
+
             logout_btn = None
             for ch, c_cls, c_txt, parent, cid, rect in ctrls:
                 t = c_txt.replace(' ', '')

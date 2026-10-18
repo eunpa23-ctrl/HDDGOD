@@ -766,26 +766,7 @@ async def remote_view_websocket(websocket: WebSocket, client_id: str):
 
 @app.post("/api/command/{client_id}/{action}")
 async def send_command(client_id: str, action: str):
-    ws = get_client_ws(client_id)
-    actual_cid = get_actual_client_id(client_id)
-    if ws:
-        cmd = make_packet(PacketType.COMMAND, {"action": action})
-        await ws.send_text(cmd)
-        if action == CommandType.SHUTDOWN:
-            watchdog.set_normal_shutdown(actual_cid)
-        return {"status": "ok", "sent_to": actual_cid, "action": action}
-    elif action == "WOL":
-        mac = None
-        for p in load_pc_mapping():
-            if p.get("id") == client_id or str(p.get("seat")) == client_id:
-                mac = p.get("mac")
-                break
-        if not mac:
-            mac = watchdog.clients.get(actual_cid, {}).get("mac")
-        if mac:
-            watchdog.send_wol_packet(mac)
-            return {"status": "ok", "wol_sent_mac": mac}
-    return {"status": "error", "message": "클라이언트가 오프라인입니다."}
+    return await execute_command_internal(client_id, action)
 
 @app.post("/api/command_all/{action}")
 async def send_command_all(action: str):
@@ -898,13 +879,66 @@ async def send_command_mobile(request: Request):
     action = body.get("command", "")
     return await execute_command_internal(target_id, action)
 
-@app.post("/api/command/{target_id}/{action}")
-async def send_command_path(target_id: str, action: str):
-    """경로 기반 명령 API (/api/command/{target_id}/{action})"""
-    return await execute_command_internal(target_id, action)
+def get_seat_number_from_target(target_id: str) -> Optional[int]:
+    """target_id(예: 'PC-04', '4', 'DESKTOP-xxx')로부터 피카 좌석 번호(1~8) 도출"""
+    if not target_id:
+        return None
+    s_clean = str(target_id).strip()
+    if s_clean.isdigit():
+        return int(s_clean)
+    if s_clean.upper().startswith("PC-") or s_clean.upper().startswith("PC"):
+        digits = "".join(filter(str.isdigit, s_clean))
+        if digits:
+            return int(digits)
+    actual_cid = get_actual_client_id(s_clean)
+    if actual_cid and (actual_cid.upper().startswith("PC-") or actual_cid.upper().startswith("PC")):
+        digits = "".join(filter(str.isdigit, actual_cid))
+        if digits:
+            return int(digits)
+    for p in load_pc_mapping():
+        if (p.get("id") == s_clean or p.get("real_cid") == s_clean or 
+            str(p.get("seat")) == s_clean or p.get("name") == s_clean or 
+            p.get("id") == actual_cid or p.get("real_cid") == actual_cid):
+            if "seat" in p:
+                return int(p["seat"])
+    return None
 
 async def execute_command_internal(target_id: str, action: str):
     """단일 또는 전체 클라이언트에 명령 전송 공통 로직"""
+    # 1. 피카 관리자 로그인(해제) / 잠금 복구 -> 카운터 PicaLive 관리화면 직접 제어
+    if action in [CommandType.UNLOCK_PICA, CommandType.LOCK_PICA, "UNLOCK_PICA", "LOCK_PICA"]:
+        enable = (action in [CommandType.UNLOCK_PICA, "UNLOCK_PICA"])
+        from server.pica_counter_controller import set_pica_admin_mode
+        if target_id == "ALL":
+            results = []
+            for seat in range(1, 9):
+                res = await asyncio.to_thread(set_pica_admin_mode, seat, enable)
+                results.append(res)
+            return {"status": "ok", "action": action, "results": results}
+        else:
+            seat_num = get_seat_number_from_target(target_id)
+            if seat_num:
+                res = await asyncio.to_thread(set_pica_admin_mode, seat_num, enable)
+                return res
+            else:
+                return {"status": "error", "message": f"피카 좌석 번호를 식별할 수 없습니다: {target_id}"}
+
+    # 2. WOL 켜기 명령 처리
+    if action == "WOL":
+        actual_cid = get_actual_client_id(target_id)
+        mac = None
+        for p in load_pc_mapping():
+            if p.get("id") == target_id or str(p.get("seat")) == target_id or p.get("real_cid") == target_id:
+                mac = p.get("mac")
+                break
+        if not mac:
+            mac = watchdog.clients.get(actual_cid, {}).get("mac")
+        if mac:
+            watchdog.send_wol_packet(mac)
+            return {"status": "ok", "wol_sent_mac": mac, "target": target_id}
+        return {"status": "error", "message": "MAC 주소를 찾을 수 없습니다."}
+
+    # 3. 전체 PC WebSocket 명령 브로드캐스트
     if target_id == "ALL":
         for cid, ws in active_clients.items():
             cmd = make_packet(PacketType.COMMAND, {"action": action})
@@ -912,6 +946,8 @@ async def execute_command_internal(target_id: str, action: str):
             if action == CommandType.SHUTDOWN:
                 watchdog.set_normal_shutdown(cid)
         return {"status": "ok", "action": action, "count": len(active_clients)}
+
+    # 4. 개별 PC WebSocket 명령 전송
     ws = get_client_ws(target_id)
     actual_cid = get_actual_client_id(target_id)
     if ws:

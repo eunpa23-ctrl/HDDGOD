@@ -802,13 +802,19 @@ exit /b 0
         return False
 
     def is_pica_locked(self) -> bool:
-        """피카가 실행 중이고 관리자/손님 로그인 상태가 아니면 잠금(대기) 상태로 정확히 판별"""
+        """피카 관리프로그램 화면 잠금 상태 판별
+        - 손님 PC는 관리자 또는 손님이 명확히 로그인하지 않은 모든 상태가 '잠김(대기)'
+        """
+        self._pica_debug_count = getattr(self, "_pica_debug_count", 0) + 1
+        do_log = (self._pica_debug_count % 5 == 1)
+
         if self.is_server_node():
+            if do_log:
+                logger.warning(f"🚨 [피카감지디버그] is_server_node=True! ip={self.local_ip}, cid={self.client_id}")
             return False
         try:
             import ctypes
             from ctypes import wintypes
-            import psutil
             user32 = ctypes.windll.user32
 
             # WinSta0\Default 대화형 데스크톱 핸들 접근 보장
@@ -819,70 +825,72 @@ exit /b 0
             except Exception:
                 pass
 
-            # 1. 피카 프로세스(pmclient, pmlc, pica 등) 실행 여부 확인
-            pica_pids = []
-            for p in psutil.process_iter(['pid', 'name', 'exe']):
-                try:
-                    pname = (p.info.get('name') or '').lower()
-                    if any(k in pname for k in ['pmclient', 'pmlc', 'pica']):
-                        pica_pids.append(p.info['pid'])
-                        if p.info.get('exe') and not getattr(self, 'pica_exe_path', None):
-                            self.pica_exe_path = p.info['exe']
-                except Exception:
-                    pass
+            is_in_use = False
 
-            # 피카 클라이언트가 전혀 켜져 있지 않으면 피카 잠금 없음
-            if not pica_pids:
-                return False
-
-            # 2. 피카 윈도우 및 컨트롤 전수 조사
-            pica_hwnds = []
             WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-            def enum_proc(h, lp):
-                pid = wintypes.DWORD()
-                user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                if pid.value in pica_pids:
-                    pica_hwnds.append(h)
+
+            sw = user32.GetSystemMetrics(0)
+            sh = user32.GetSystemMetrics(1)
+            if sw <= 0 or sh <= 0:
+                sw, sh = 1920, 1080
+
+            def is_rect_visible_on_screen(cr):
+                # 너비/높이가 0 이하이거나, 화면 좌표계 밖(음수 등)에 숨겨진 오프스크린 컨트롤 제외
+                w = cr.right - cr.left
+                h = cr.bottom - cr.top
+                if w <= 0 or h <= 0:
+                    return False
+                if cr.right <= 0 or cr.bottom <= 0:
+                    return False
+                if cr.left >= sw or cr.top >= sh:
+                    return False
                 return True
+
+            def check_text(hwnd, txt: str):
+                nonlocal is_in_use
+                t = txt.strip().replace(' ', '')
+                if not t:
+                    return
+                for k in ['관리자로그아웃', '관리자로그아웃버튼', '후불로그아웃']:
+                    if k in t:
+                        cr = wintypes.RECT()
+                        user32.GetWindowRect(hwnd, ctypes.byref(cr))
+                        if is_rect_visible_on_screen(cr):
+                            logger.info(f"🔓 [피카 관리자 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
+                            is_in_use = True
+                for k in ['남은시간:', '잔여시간:', '사용시간:']:
+                    if k in t:
+                        cr = wintypes.RECT()
+                        user32.GetWindowRect(hwnd, ctypes.byref(cr))
+                        if is_rect_visible_on_screen(cr):
+                            logger.info(f"🔓 [피카 손님 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
+                            is_in_use = True
+
+            def enum_proc(h, lp):
+                if user32.IsWindowVisible(h):
+                    c_txt = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(h, c_txt, 512)
+                    check_text(h, c_txt.value)
+
+                    def child_proc(ch, lp2):
+                        if user32.IsWindowVisible(ch):
+                            c_txt2 = ctypes.create_unicode_buffer(512)
+                            user32.GetWindowTextW(ch, c_txt2, 512)
+                            check_text(ch, c_txt2.value)
+                        return True
+                    user32.EnumChildWindows(h, WNDENUMPROC(child_proc), 0)
+                return True
+
             user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
 
-            has_admin_logout = False
-            has_login_screen = False  # 대기 로그인 화면 (사용시작, 회원, 비회원, 로그인정보를입력 등)
-            has_guest_session = False # 손님 이용 중 미니바 (남은시간, 사용시간)
+            if do_log:
+                logger.warning(f"🔍 [피카감지상태] is_in_use={is_in_use} -> {'UNLOCKED' if is_in_use else 'LOCKED'}")
 
-            def child_proc(ch, lp):
-                nonlocal has_admin_logout, has_login_screen, has_guest_session
-                if user32.IsWindowVisible(ch):
-                    c_txt = ctypes.create_unicode_buffer(256)
-                    user32.GetWindowTextW(ch, c_txt, 256)
-                    t = c_txt.value.strip().replace(' ', '')
-                    if t in ['관리자로그아웃', '관리자로그아웃버튼', '후불로그아웃']:
-                        has_admin_logout = True
-                    # 대기 잠금화면 특유의 버튼 및 안내문
-                    if t in ['사용시작', '회원가입', '비회원', 'PC종료'] or '로그인정보를입력' in t:
-                        has_login_screen = True
-                    # 손님 로그인 후 전용 미니바 표시 키워드 (대기 화면과 엄격히 구분)
-                    if any(k in t for k in ['남은시간:', '사용시간:', '잔여시간:']) or t == '먹거리주문':
-                        has_guest_session = True
-                return True
-
-            for h in pica_hwnds:
-                if user32.IsWindowVisible(h) and not user32.IsIconic(h):
-                    user32.EnumChildWindows(h, WNDENUMPROC(child_proc), 0)
-
-            # 1순위: 관리자 로그인 상태 ('관리자 로그아웃' 버튼 존재) -> 잠금해제(사용중)
-            if has_admin_logout:
+            # 관리자 또는 손님이 실제 이용 중이면 -> UNLOCKED (False)
+            if is_in_use:
                 return False
 
-            # 2순위: 대기 로그인 화면 ('사용시작', '비회원', '회원가입' 등 대기창 표식 존재) -> 무조건 잠금(대기)
-            if has_login_screen:
-                return True
-
-            # 3순위: 대기 화면이 없고 손님 미니바(사용시간/남은시간)가 존재 -> 손님 사용중(잠금해제)
-            if has_guest_session:
-                return False
-
-            # 4순위: 피카 프로세스가 가동 중인데 관리자 로그아웃도 손님 세션도 없으면 -> 기본 대기잠금
+            # 그 외 모든 손님 PC는 기본적으로 '잠김(대기)' 상태 -> LOCKED (True)
             return True
         except Exception as e:
             logger.error(f"피카 잠금 판별 오류: {e}")

@@ -802,7 +802,7 @@ exit /b 0
         return False
 
     def is_pica_locked(self) -> bool:
-        """피카가 실행 중이고 관리자 모드로 열려있지 않으면 잠금 상태로 판별"""
+        """피카가 실행 중이고 관리자/손님 로그인 상태가 아니면 잠금(대기) 상태로 정확히 판별"""
         if self.is_server_node():
             return False
         try:
@@ -811,27 +811,31 @@ exit /b 0
             import psutil
             user32 = ctypes.windll.user32
 
-            # 1. 피카 프로세스 실행 여부 확인
+            # WinSta0\Default 대화형 데스크톱 핸들 접근 보장
+            try:
+                hdesk = user32.OpenDesktopW("Default", 0, False, 0x01FF)
+                if hdesk:
+                    user32.SetThreadDesktop(hdesk)
+            except Exception:
+                pass
+
+            # 1. 피카 프로세스(pmclient, pmlc, pica 등) 실행 여부 확인
             pica_pids = []
             for p in psutil.process_iter(['pid', 'name', 'exe']):
                 try:
-                    if p.info['name'].lower() in ['pmclient.exe', 'pmlc.exe']:
+                    pname = (p.info.get('name') or '').lower()
+                    if any(k in pname for k in ['pmclient', 'pmlc', 'pica']):
                         pica_pids.append(p.info['pid'])
-                        if p.info.get('exe'):
+                        if p.info.get('exe') and not getattr(self, 'pica_exe_path', None):
                             self.pica_exe_path = p.info['exe']
-                            try:
-                                pfile = os.path.join(self.get_app_dir(), "pica_path.txt")
-                                with open(pfile, "w", encoding="utf-8") as pf:
-                                    pf.write(self.pica_exe_path)
-                            except Exception:
-                                pass
                 except Exception:
                     pass
 
+            # 피카 클라이언트가 전혀 켜져 있지 않으면 피카 잠금 없음
             if not pica_pids:
                 return False
 
-            # 2. 피카 윈도우 중 '관리자 로그아웃' 버튼이 실제로 떠 있는지 확인
+            # 2. 피카 윈도우 및 컨트롤 전수 조사
             pica_hwnds = []
             WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
             def enum_proc(h, lp):
@@ -843,31 +847,46 @@ exit /b 0
             user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
 
             has_admin_logout = False
-            has_lock_screen = False
+            has_login_screen = False  # 대기 로그인 화면 (사용시작, 회원, 비회원, 로그인정보를입력 등)
+            has_guest_session = False # 손님 이용 중 미니바 (남은시간, 사용시간)
 
             def child_proc(ch, lp):
-                nonlocal has_admin_logout, has_lock_screen
+                nonlocal has_admin_logout, has_login_screen, has_guest_session
                 if user32.IsWindowVisible(ch):
                     c_txt = ctypes.create_unicode_buffer(256)
                     user32.GetWindowTextW(ch, c_txt, 256)
                     t = c_txt.value.strip().replace(' ', '')
-                    if t in ['관리자로그아웃', '관리자로그아웃버튼']:
+                    if t in ['관리자로그아웃', '관리자로그아웃버튼', '후불로그아웃']:
                         has_admin_logout = True
-                    if t in ['사용시작', '회원가입', 'PC종료']:
-                        has_lock_screen = True
+                    # 대기 잠금화면 특유의 버튼 및 안내문
+                    if t in ['사용시작', '회원가입', '비회원', 'PC종료'] or '로그인정보를입력' in t:
+                        has_login_screen = True
+                    # 손님 로그인 후 전용 미니바 표시 키워드 (대기 화면과 엄격히 구분)
+                    if any(k in t for k in ['남은시간:', '사용시간:', '잔여시간:']) or t == '먹거리주문':
+                        has_guest_session = True
                 return True
 
             for h in pica_hwnds:
                 if user32.IsWindowVisible(h) and not user32.IsIconic(h):
                     user32.EnumChildWindows(h, WNDENUMPROC(child_proc), 0)
 
+            # 1순위: 관리자 로그인 상태 ('관리자 로그아웃' 버튼 존재) -> 잠금해제(사용중)
             if has_admin_logout:
                 return False
 
-            return has_lock_screen
+            # 2순위: 대기 로그인 화면 ('사용시작', '비회원', '회원가입' 등 대기창 표식 존재) -> 무조건 잠금(대기)
+            if has_login_screen:
+                return True
+
+            # 3순위: 대기 화면이 없고 손님 미니바(사용시간/남은시간)가 존재 -> 손님 사용중(잠금해제)
+            if has_guest_session:
+                return False
+
+            # 4순위: 피카 프로세스가 가동 중인데 관리자 로그아웃도 손님 세션도 없으면 -> 기본 대기잠금
+            return True
         except Exception as e:
             logger.error(f"피카 잠금 판별 오류: {e}")
-            return False
+            return True
 
     def unlock_pica_screen(self):
         """PC 관리 에이전트(피카/PICA) 화면 잠금 해제 -> 관리자 로그인 수행 (피카 유지 및 카운터 관리자 표기)"""
@@ -976,16 +995,42 @@ exit /b 0
                     user32.EnumChildWindows(th, WNDENUMPROC(enum_ch), 0)
                 return all_ctrls, top_hwnds
 
+            def get_system_dpi_scale():
+                """각 PC의 디스플레이 배율(100%, 125%, 150% 등)을 Windows API로 실시간 자동 감지"""
+                try:
+                    ctypes.windll.user32.SetProcessDpiAwarenessContext(-4)
+                except Exception:
+                    try:
+                        ctypes.windll.user32.SetProcessDPIAware()
+                    except Exception:
+                        pass
+                try:
+                    if hasattr(user32, 'GetDpiForSystem'):
+                        dpi = user32.GetDpiForSystem()
+                        if dpi > 0:
+                            return max(1.0, dpi / 96.0)
+                except Exception:
+                    pass
+                return 1.0
+
+            dpi_scale = get_system_dpi_scale()
+            logger.info(f"🖥️ [DPI 배율 감지] 시스템 디스플레이 배율: {dpi_scale:.2f}x ({int(dpi_scale * 100)}%)")
+
             def find_admin_dialog_pair(ctrls):
                 ok_candidate = None
+                # 배율(100%, 125%, 150%)에 맞춘 동적 버튼 크기 판별
+                min_w = int(20 * dpi_scale)
+                max_w = int(260 * dpi_scale) # 100%->260px, 125%->325px, 150%->390px까지 수용
+                min_h = int(15 * dpi_scale)
+                max_h = int(110 * dpi_scale) # 100%->110px, 125%->137px, 150%->165px까지 수용
+
                 for c in ctrls:
                     ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
                     t = txt.replace(' ', '')
-                    if t in ['확인', 'OK'] and not is_top:
+                    if t in ['확인', 'OK', '로그인'] and not is_top:
                         w = rect[2] - rect[0]
                         h = rect[3] - rect[1]
-                        # 다이얼로그 확인 버튼 크기 (너비 30~130, 높이 15~55)
-                        if 30 <= w <= 130 and 15 <= h <= 55:
+                        if min_w <= w <= max_w and min_h <= h <= max_h:
                             ok_candidate = (ch, parent, rect, txt)
                             break
 
@@ -1026,7 +1071,7 @@ exit /b 0
                     if admin_edit:
                         break
 
-            # [2단계: 비밀번호 1234 단독 입력 및 확인 클릭]
+            # [2단계: 비밀번호 1234 직접 주입 및 확인 클릭 (DPI 무관 100% 성공)]
             if admin_edit and admin_ok:
                 e_hwnd, e_parent, e_rect = admin_edit
                 ok_hwnd, ok_parent, ok_rect, ok_txt = admin_ok
@@ -1048,7 +1093,7 @@ exit /b 0
                 user32.mouse_event(4, 0, 0, 0, 0)
                 time.sleep(0.06)
 
-                # 기존 텍스트 완전 삭제 (Ctrl+A -> Backspace)
+                # 기존 텍스트 완전 삭제 (Ctrl+A -> Backspace 및 EM_SETSEL)
                 user32.keybd_event(VK_CONTROL, 0x1D, 0, 0)
                 user32.keybd_event(VK_A, 0x1E, 0, 0)
                 time.sleep(0.04)
@@ -1066,20 +1111,28 @@ exit /b 0
                 user32.SendMessageW(e_hwnd, WM_CLEAR, 0, 0)
                 time.sleep(0.06)
 
-                # 순수 키보드 타이핑으로 비밀번호 4자리만 1회 주입
-                logger.info(f"⌨️ 키보드 직접 타이핑으로 비밀번호 '{target_pw}' 주입 중...")
+                # 🚀 1순위: WM_SETTEXT (0x000C) 직접 주입 - DPI 오차나 마우스 좌표와 무관하게 100% 버퍼에 직접 기록!
+                WM_SETTEXT = 0x000C
+                BM_CLICK = 0x00F5
+                user32.SendMessageW(e_hwnd, WM_SETTEXT, 0, target_pw)
+                time.sleep(0.06)
+
+                # 🚀 2순위: 키보드 타이핑 보조 (피카의 키 입력 이벤트 체크 대응)
+                logger.info(f"⌨️ 비밀번호 '{target_pw}' 주입 및 키보드 보조 타이핑 중...")
                 for ch_digit in target_pw:
                     vk = ord(ch_digit)
                     sc = user32.MapVirtualKeyW(vk, 0)
                     user32.keybd_event(vk, sc, 0, 0)
-                    time.sleep(0.05)
+                    time.sleep(0.04)
                     user32.keybd_event(vk, sc, 2, 0)
-                    time.sleep(0.05)
+                    time.sleep(0.04)
 
-                time.sleep(0.15)
+                time.sleep(0.12)
 
-                # 확인 버튼 클릭 (절대 종료 버튼 클릭 금지!)
-                logger.info(f"🎯 로그인 확인 버튼('{ok_txt}', HWND: {ok_hwnd}) 클릭")
+                # 🚀 확인 버튼 클릭: BM_CLICK 메시지 전송 (마우스 헛클릭 원천 방지) + 물리 마우스 클릭 2중 실행!
+                logger.info(f"🎯 로그인 확인 버튼('{ok_txt}', HWND: {ok_hwnd}) BM_CLICK 전송 및 클릭")
+                user32.SendMessageW(ok_hwnd, BM_CLICK, 0, 0)
+                time.sleep(0.05)
                 click_control(ok_hwnd, ok_parent, ok_rect)
 
                 # Enter 키 보조 전송

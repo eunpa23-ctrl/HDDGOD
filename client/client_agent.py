@@ -63,28 +63,19 @@ class ZeusClientAgent:
         self.last_pica_unlock_time = 0.0
         self.pica_unlock_lock = threading.Lock()
         self.was_pica_locked_on_stream_start = False
-
-    def get_pica_admin_password(self) -> str:
-        """피카 관리자 비밀번호 조회 (기본값: 1234)"""
+        self.pica_exe_path = r"C:\Program Files (x86)\PicaClient\pmclient.exe"
         try:
-            config_paths = [
-                r"C:\ZeusAgent\config.ini",
-                os.path.join(self.get_app_dir(), "config.ini")
-            ]
-            for cp in config_paths:
-                if os.path.exists(cp):
-                    import configparser
-                    cfg = configparser.ConfigParser()
-                    cfg.read(cp, encoding="utf-8")
-                    for sec in ["CLIENT", "PICA"]:
-                        if cfg.has_section(sec):
-                            for opt in ["admin_password", "password"]:
-                                if cfg.has_option(sec, opt):
-                                    val = cfg.get(sec, opt).strip()
-                                    if val and val != "********":
-                                        return val
+            pfile = os.path.join(self.get_app_dir(), "pica_path.txt")
+            if os.path.exists(pfile):
+                with open(pfile, "r", encoding="utf-8") as pf:
+                    saved = pf.read().strip()
+                    if saved:
+                        self.pica_exe_path = saved
         except Exception:
             pass
+
+    def get_pica_admin_password(self) -> str:
+        """손님 PC 피카 관리자 잠금해제 비밀번호 (점주 지정: 1234)"""
         return "1234"
 
     def get_client_identity(self) -> str:
@@ -336,7 +327,7 @@ class ZeusClientAgent:
                             if not already_streaming:
                                 if self.is_pica_locked():
                                     logger.info("🔓 [원격 접속 감지] 피카 화면 잠금 감지됨 -> 관리자 자동 로그인 시작!")
-                                    self.was_pica_locked_on_stream_start = True
+                                    self.was_pica_locked_on_stream_start = False
                                     asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
                                 else:
                                     self.was_pica_locked_on_stream_start = False
@@ -822,10 +813,18 @@ exit /b 0
 
             # 1. 피카 프로세스 실행 여부 확인
             pica_pids = []
-            for p in psutil.process_iter(['pid', 'name']):
+            for p in psutil.process_iter(['pid', 'name', 'exe']):
                 try:
                     if p.info['name'].lower() in ['pmclient.exe', 'pmlc.exe']:
                         pica_pids.append(p.info['pid'])
+                        if p.info.get('exe'):
+                            self.pica_exe_path = p.info['exe']
+                            try:
+                                pfile = os.path.join(self.get_app_dir(), "pica_path.txt")
+                                with open(pfile, "w", encoding="utf-8") as pf:
+                                    pf.write(self.pica_exe_path)
+                            except Exception:
+                                pass
                 except Exception:
                     pass
 
@@ -843,29 +842,35 @@ exit /b 0
                 return True
             user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
 
+            has_admin_logout = False
             has_lock_screen = False
+
             def child_proc(ch, lp):
-                nonlocal has_lock_screen
+                nonlocal has_admin_logout, has_lock_screen
                 if user32.IsWindowVisible(ch):
                     c_txt = ctypes.create_unicode_buffer(256)
                     user32.GetWindowTextW(ch, c_txt, 256)
-                    t = c_txt.value.strip()
-                    if t in ['사용 시작', '사용시작', '회원가입', 'PC 종료', 'PC종료']:
+                    t = c_txt.value.strip().replace(' ', '')
+                    if t in ['관리자로그아웃', '관리자로그아웃버튼']:
+                        has_admin_logout = True
+                    if t in ['사용시작', '회원가입', 'PC종료']:
                         has_lock_screen = True
                 return True
 
             for h in pica_hwnds:
-                if user32.IsWindowVisible(h):
+                if user32.IsWindowVisible(h) and not user32.IsIconic(h):
                     user32.EnumChildWindows(h, WNDENUMPROC(child_proc), 0)
 
-            logger.info(f"🔎 [피카 상태 검사] 대기잠금화면(has_lock_screen): {has_lock_screen}")
+            if has_admin_logout:
+                return False
+
             return has_lock_screen
         except Exception as e:
             logger.error(f"피카 잠금 판별 오류: {e}")
             return False
 
     def unlock_pica_screen(self):
-        """PC 관리 에이전트(피카/PICA) 화면 잠금 해제 -> 관리자 로그인 자동 수행 (중복 및 텍스트 누적 완벽 방지)"""
+        """PC 관리 에이전트(피카/PICA) 화면 잠금 해제 -> 관리자 로그인 수행 (피카 유지 및 카운터 관리자 표기)"""
         with self.pica_unlock_lock:
             now = time.time()
             if self.is_pica_unlocking or (now - self.last_pica_unlock_time < 3.0):
@@ -877,14 +882,28 @@ exit /b 0
         try:
             import ctypes
             from ctypes import wintypes
-            import time
             import psutil
             from client.screen_streamer import ensure_default_desktop
 
             ensure_default_desktop()
             user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
+            # Per-Monitor DPI Awareness V2 활성화
+            try:
+                user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+            except Exception:
+                try:
+                    ctypes.windll.shcore.SetProcessDpiAwareness(2)
+                except Exception:
+                    try:
+                        user32.SetProcessDPIAware()
+                    except Exception:
+                        pass
+
             BM_CLICK = 0x00F5
-            WM_SETTEXT = 0x000C
+            BN_CLICKED = 0
+            WM_COMMAND = 0x0111
             EM_SETSEL = 0x00B1
             WM_CLEAR = 0x0303
             VK_RETURN = 0x0D
@@ -894,228 +913,209 @@ exit /b 0
 
             WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
-            def get_all_pica_controls():
-                controls = []
+            def click_control(hwnd, parent, rect=None):
+                user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
+                user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
+                if parent:
+                    cid = user32.GetDlgCtrlID(hwnd)
+                    wparam = ((BN_CLICKED & 0xFFFF) << 16) | (cid & 0xFFFF)
+                    user32.PostMessageW(parent, WM_COMMAND, wparam, hwnd)
+                if rect:
+                    cx = (rect[0] + rect[2]) // 2
+                    cy = (rect[1] + rect[3]) // 2
+                    if cx > 0 and cy > 0:
+                        user32.SetCursorPos(cx, cy)
+                        time.sleep(0.04)
+                        user32.mouse_event(2, 0, 0, 0, 0)
+                        time.sleep(0.04)
+                        user32.mouse_event(4, 0, 0, 0, 0)
+
+            target_pw = self.get_pica_admin_password()
+            logger.info(f"🔑 [피카 관리자 로그인] 비밀번호: '{target_pw}' (카운터 '관리자' 동기화)")
+
+            pica_pids = set()
+            for p in psutil.process_iter(['pid', 'name']):
+                try:
+                    if any(k in p.info['name'].lower() for k in ['pmclient', 'pmlc', 'pica']):
+                        pica_pids.add(p.info['pid'])
+                except Exception:
+                    pass
+
+            def dump_all_pica():
                 top_hwnds = []
-                def enum_top_proc(h, lp):
+                def enum_top(h, lp):
                     pid = wintypes.DWORD()
                     user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                    try:
-                        p = psutil.Process(pid.value)
-                        if p.name().lower() in ['pmclient.exe', 'pmlc.exe']:
-                            top_hwnds.append(h)
-                    except Exception:
-                        pass
+                    if pid.value in pica_pids and user32.IsWindowVisible(h) and not user32.IsIconic(h):
+                        top_hwnds.append((h, pid.value))
                     return True
-                user32.EnumWindows(WNDENUMPROC(enum_top_proc), 0)
+                user32.EnumWindows(WNDENUMPROC(enum_top), 0)
 
-                for th in top_hwnds:
-                    def enum_child_proc(ch, lp):
+                all_ctrls = []
+                for th, pid_val in top_hwnds:
+                    t_top = ctypes.create_unicode_buffer(256)
+                    user32.GetWindowTextW(th, t_top, 256)
+                    c_top = ctypes.create_unicode_buffer(256)
+                    user32.GetClassNameW(th, c_top, 256)
+                    r_top = wintypes.RECT()
+                    user32.GetWindowRect(th, ctypes.byref(r_top))
+                    all_ctrls.append((th, c_top.value, t_top.value.strip(), 0, 0, (r_top.left, r_top.top, r_top.right, r_top.bottom), True, True))
+
+                    def enum_ch(ch, lp):
+                        if not user32.IsWindowVisible(ch):
+                            return True
                         c_cls = ctypes.create_unicode_buffer(256)
                         user32.GetClassNameW(ch, c_cls, 256)
                         c_txt = ctypes.create_unicode_buffer(256)
                         user32.GetWindowTextW(ch, c_txt, 256)
+                        cid = user32.GetDlgCtrlID(ch)
                         cr = wintypes.RECT()
                         user32.GetWindowRect(ch, ctypes.byref(cr))
-                        controls.append((ch, c_cls.value, c_txt.value, th, (cr.left, cr.top, cr.right, cr.bottom)))
+                        all_ctrls.append((ch, c_cls.value, c_txt.value.strip(), th, cid, (cr.left, cr.top, cr.right, cr.bottom), True, False))
                         return True
-                    user32.EnumChildWindows(th, WNDENUMPROC(enum_child_proc), 0)
-                return controls
+                    user32.EnumChildWindows(th, WNDENUMPROC(enum_ch), 0)
+                return all_ctrls, top_hwnds
 
-            def click_control(hwnd, rect=None):
-                try:
-                    user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
-                    user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
-                except Exception:
-                    pass
-                if rect:
-                    l, t, r, b = rect
-                    if r > l and b > t and l >= 0 and t >= 0:
-                        cx = (l + r) // 2
-                        cy = (t + b) // 2
-                        user32.SetCursorPos(cx, cy)
-                        time.sleep(0.03)
-                        user32.mouse_event(2, 0, 0, 0, 0)
-                        time.sleep(0.03)
-                        user32.mouse_event(4, 0, 0, 0, 0)
+            def find_admin_dialog_pair(ctrls):
+                ok_candidate = None
+                for c in ctrls:
+                    ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
+                    t = txt.replace(' ', '')
+                    if t in ['확인', 'OK'] and not is_top:
+                        w = rect[2] - rect[0]
+                        h = rect[3] - rect[1]
+                        # 다이얼로그 확인 버튼 크기 (너비 30~130, 높이 15~55)
+                        if 30 <= w <= 130 and 15 <= h <= 55:
+                            ok_candidate = (ch, parent, rect, txt)
+                            break
 
-            target_pw = self.get_pica_admin_password()
-            logger.info(f"🔑 [피카 해제] 대상 관리자 비밀번호: '{target_pw}' (길이: {len(target_pw)})")
+                if ok_candidate:
+                    dlg_hwnd = ok_candidate[1]
+                    for c in ctrls:
+                        ch, cls_nm, txt, parent, cid, rect, is_vis, is_top = c
+                        if parent == dlg_hwnd and 'edit' in cls_nm.lower():
+                            return (ch, parent, rect), ok_candidate
 
-            # [0단계: 혹시 기존 오류 팝업창(예: '비밀번호가 올바르지 않습니다')이 떠 있다면 닫기]
-            ctrls0 = get_all_pica_controls()
-            for ch, c_cls, c_txt, parent, rect in ctrls0:
-                t = c_txt.strip()
-                if t in ['확인', 'OK', '닫기']:
-                    l, t_pos, r, b = rect
-                    w = r - l
-                    h = b - t_pos
-                    if 20 < w < 220 and 15 < h < 100:
-                        logger.info(f"🧹 이전 오류 알림 팝업 확인/닫기 버튼('{t}', HWND: {ch}) 정리 클릭")
-                        click_control(ch, rect)
-                        time.sleep(0.3)
-                        break
+                return None, None
 
-            # [1단계: 관리자 로그인 창 열기]
-            # 이미 비밀번호 Edit 박스가 떠 있는지 확인
-            ctrls = get_all_pica_controls()
-            edit_box = None
-            for ch, c_cls, c_txt, parent, rect in ctrls:
-                if 'edit' in c_cls.lower():
-                    edit_box = (ch, parent, rect)
-                    logger.info(f"🎯 이미 열려 있는 비밀번호 Edit 박스(HWND: {ch}) 발견!")
+            # [1단계: 이미 열려 있는 관리자 로그인 창 탐색]
+            ctrls, tops = dump_all_pica()
+            admin_edit, admin_ok = find_admin_dialog_pair(ctrls)
+
+            if not admin_edit:
+                logger.info("🔓 [피카 해제] 1단계: '관리자 로그인' 창 미발견 -> 단축키 Ctrl+Alt+Shift+X 전송...")
+                for th, _ in tops:
+                    user32.SetForegroundWindow(th)
+                    time.sleep(0.05)
                     break
 
-            if not edit_box:
-                logger.info("🔓 [피카 해제] 1단계: '관리자 로그인' 버튼 또는 단축키 전송...")
-                admin_btn = None
-                for ch, c_cls, c_txt, parent, rect in ctrls:
-                    t = c_txt.strip()
-                    if t in ['관리자 로그인', '관리자로그인']:
-                        admin_btn = (ch, rect)
-                        logger.info(f"🎯 '관리자 로그인' 버튼(HWND: {ch}) 포착!")
-                        break
+                user32.keybd_event(0x11, 0x1D, 0, 0)
+                user32.keybd_event(0x10, 0x2A, 0, 0)
+                user32.keybd_event(0x12, 0x38, 0, 0)
+                user32.keybd_event(0x58, 0x2D, 0, 0)
+                time.sleep(0.15)
+                user32.keybd_event(0x58, 0x2D, 2, 0)
+                user32.keybd_event(0x12, 0x38, 2, 0)
+                user32.keybd_event(0x10, 0x2A, 2, 0)
+                user32.keybd_event(0x11, 0x1D, 2, 0)
 
-                if admin_btn:
-                    click_control(admin_btn[0], admin_btn[1])
-                else:
-                    logger.info("ℹ️ 단축키(Ctrl+Alt+Shift+X) 전송...")
-                    user32.keybd_event(0x11, 0x1D, 0, 0)  # Ctrl Down
-                    user32.keybd_event(0x10, 0x2A, 0, 0)  # Shift Down
-                    user32.keybd_event(0x12, 0x38, 0, 0)  # Alt Down
-                    user32.keybd_event(0x58, 0x2D, 0, 0)  # X Down
-                    time.sleep(0.15)
-                    user32.keybd_event(0x58, 0x2D, 2, 0)  # X Up
-                    user32.keybd_event(0x12, 0x38, 2, 0)  # Alt Up
-                    user32.keybd_event(0x10, 0x2A, 2, 0)  # Shift Up
-                    user32.keybd_event(0x11, 0x1D, 2, 0)  # Ctrl Up
-
-                # Edit 박스가 뜰 때까지 최대 1.5초 대기
-                for _ in range(15):
+                for _ in range(25):
                     time.sleep(0.1)
-                    ctrls = get_all_pica_controls()
-                    for ch, c_cls, c_txt, parent, rect in ctrls:
-                        if 'edit' in c_cls.lower():
-                            edit_box = (ch, parent, rect)
-                            break
-                    if edit_box:
+                    ctrls, tops = dump_all_pica()
+                    admin_edit, admin_ok = find_admin_dialog_pair(ctrls)
+                    if admin_edit:
                         break
 
-            # [2단계: 비밀번호 단독 입력 (기존 내용 완전 삭제 보장)]
-            logger.info(f"🔓 [피카 해제] 2단계: 기존 내용 완전 삭제 후 비밀번호 '{target_pw}' 전송...")
-            if edit_box:
-                e_hwnd, e_parent, e_rect = edit_box
-                logger.info(f"🎯 비밀번호 Edit 박스(HWND: {e_hwnd}) 포커스 설정")
+            # [2단계: 비밀번호 1234 단독 입력 및 확인 클릭]
+            if admin_edit and admin_ok:
+                e_hwnd, e_parent, e_rect = admin_edit
+                ok_hwnd, ok_parent, ok_rect, ok_txt = admin_ok
+                logger.info(f"🎯 관리자 로그인 다이얼로그 포착 완료! (Dialog HWND: {e_parent}, Edit HWND: {e_hwnd}, OK HWND: {ok_hwnd})")
+
+                # 대화상자 포그라운드 활성화
                 user32.SetForegroundWindow(e_parent)
                 time.sleep(0.06)
                 user32.SetFocus(e_hwnd)
                 time.sleep(0.06)
-                if e_rect:
-                    click_control(e_hwnd, e_rect)
-                    time.sleep(0.06)
 
-                # 1) Win32 API로 기존 내용 선택 및 삭제 시도
-                try:
-                    user32.SendMessageW(e_hwnd, EM_SETSEL, 0, -1)
-                    user32.SendMessageW(e_hwnd, WM_CLEAR, 0, 0)
-                    time.sleep(0.04)
-                    # 2) WM_SETTEXT로 깔끔하게 덮어쓰기
-                    user32.SendMessageW(e_hwnd, WM_SETTEXT, 0, ctypes.c_wchar_p(target_pw))
-                    time.sleep(0.05)
-                except Exception as ex_set:
-                    logger.warning(f"WM_SETTEXT 예외: {ex_set}")
+                # Edit 박스 내부 마우스 클릭으로 확실한 포커스 위치
+                cx = (e_rect[0] + e_rect[2]) // 2
+                cy = (e_rect[1] + e_rect[3]) // 2
+                user32.SetCursorPos(cx, cy)
+                time.sleep(0.04)
+                user32.mouse_event(2, 0, 0, 0, 0)
+                time.sleep(0.04)
+                user32.mouse_event(4, 0, 0, 0, 0)
+                time.sleep(0.06)
 
-                # 3) 현재 입력된 글자 수 검증
-                cur_len = user32.GetWindowTextLengthW(e_hwnd)
-                logger.info(f"📏 비밀번호 필드 글자 수 검증: 현재 {cur_len}자 (목표: {len(target_pw)}자)")
-                
-                # 만약 WM_SETTEXT가 먹히지 않아 글자 수가 맞지 않다면 키보드로 직접 교체
-                if cur_len != len(target_pw):
-                    logger.info("⚠️ 글자 수 불일치 -> 키보드 전체삭제(Ctrl+A -> Backspace) 후 직접 재입력")
-                    # Ctrl+A
-                    user32.keybd_event(VK_CONTROL, 0x1D, 0, 0)
-                    user32.keybd_event(VK_A, 0x1E, 0, 0)
-                    time.sleep(0.05)
-                    user32.keybd_event(VK_A, 0x1E, 2, 0)
-                    user32.keybd_event(VK_CONTROL, 0x1D, 2, 0)
-                    time.sleep(0.05)
-                    # Backspace 2회
-                    for _ in range(2):
-                        user32.keybd_event(VK_BACK, 0x0E, 0, 0)
-                        time.sleep(0.03)
-                        user32.keybd_event(VK_BACK, 0x0E, 2, 0)
-                        time.sleep(0.03)
-
-                    # 깨끗해진 필드에 target_pw만 1회 타이핑
-                    for ch_digit in target_pw:
-                        vk = ord(ch_digit)
-                        sc = user32.MapVirtualKeyW(vk, 0)
-                        user32.keybd_event(vk, sc, 0, 0)
-                        time.sleep(0.06)
-                        user32.keybd_event(vk, sc, 2, 0)
-                        time.sleep(0.06)
-            else:
-                logger.warning("⚠️ Edit 박스 HWND를 명시적으로 찾지 못함 -> 현재 포커스에 전체삭제 후 비밀번호 타이핑")
+                # 기존 텍스트 완전 삭제 (Ctrl+A -> Backspace)
                 user32.keybd_event(VK_CONTROL, 0x1D, 0, 0)
                 user32.keybd_event(VK_A, 0x1E, 0, 0)
-                time.sleep(0.05)
+                time.sleep(0.04)
                 user32.keybd_event(VK_A, 0x1E, 2, 0)
                 user32.keybd_event(VK_CONTROL, 0x1D, 2, 0)
-                time.sleep(0.05)
-                user32.keybd_event(VK_BACK, 0x0E, 0, 0)
-                time.sleep(0.03)
-                user32.keybd_event(VK_BACK, 0x0E, 2, 0)
-                time.sleep(0.05)
+                time.sleep(0.04)
+
+                for _ in range(12):
+                    user32.keybd_event(VK_BACK, 0x0E, 0, 0)
+                    time.sleep(0.02)
+                    user32.keybd_event(VK_BACK, 0x0E, 2, 0)
+                    time.sleep(0.02)
+
+                user32.SendMessageW(e_hwnd, EM_SETSEL, 0, -1)
+                user32.SendMessageW(e_hwnd, WM_CLEAR, 0, 0)
+                time.sleep(0.06)
+
+                # 순수 키보드 타이핑으로 비밀번호 4자리만 1회 주입
+                logger.info(f"⌨️ 키보드 직접 타이핑으로 비밀번호 '{target_pw}' 주입 중...")
                 for ch_digit in target_pw:
                     vk = ord(ch_digit)
                     sc = user32.MapVirtualKeyW(vk, 0)
                     user32.keybd_event(vk, sc, 0, 0)
-                    time.sleep(0.06)
+                    time.sleep(0.05)
                     user32.keybd_event(vk, sc, 2, 0)
-                    time.sleep(0.06)
+                    time.sleep(0.05)
 
-            # [3단계: Enter 또는 로그인 버튼 클릭]
-            time.sleep(0.15)
-            ctrls3 = get_all_pica_controls()
-            ok_btn = None
-            for ch, c_cls, c_txt, parent, rect in ctrls3:
-                t = c_txt.strip()
-                if t in ['확인', '로그인', 'OK']:
-                    l, t_pos, r, b = rect
-                    w = r - l
-                    h = b - t_pos
-                    if 20 < w < 200 and 15 < h < 100:
-                        ok_btn = (ch, rect)
-                        break
+                time.sleep(0.15)
 
-            if ok_btn:
-                logger.info(f"🎯 로그인 버튼(HWND: {ok_btn[0]}) 클릭")
-                click_control(ok_btn[0], ok_btn[1])
-            else:
-                logger.info("ℹ️ Enter 키 전송")
+                # 확인 버튼 클릭 (절대 종료 버튼 클릭 금지!)
+                logger.info(f"🎯 로그인 확인 버튼('{ok_txt}', HWND: {ok_hwnd}) 클릭")
+                click_control(ok_hwnd, ok_parent, ok_rect)
+
+                # Enter 키 보조 전송
                 user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
                 time.sleep(0.08)
                 user32.keybd_event(VK_RETURN, 0x1C, 2, 0)
+                time.sleep(1.5)
+            else:
+                logger.warning("⚠️ '관리자 로그인' 창 쌍(Edit+OK)을 특정하지 못함!")
 
-            time.sleep(1.0)
-            logger.info("🎉 [피카 해제 완료] 관리자 로그인 명령 전송 완료!")
+            # 최종 상태 확인
+            if not self.is_pica_locked():
+                logger.info("🎉 [피카 해제 완료] 피카 관리자 로그인 100% 성공! (카운터 관리프로그램에 '관리자' 정상 표기)")
+            else:
+                logger.warning(f"⚠️ [피카 해제] 관리자 로그인 상태 확인 필요 (잠금 상태: {self.is_pica_locked()})")
         except Exception as e:
             logger.error(f"피카 해제 매크로 실행 오류: {e}")
         finally:
             self.is_pica_unlocking = False
 
     def lock_pica_screen(self):
-        """PC 관리 에이전트(피카/PICA) 관리자 로그아웃 -> 화면보호기 잠금 복구"""
+        """PC 관리 에이전트(피카/PICA) 관리자 로그아웃 -> 화면보호기 잠금 복구 (카운터 정상 대기 복귀)"""
         try:
             import ctypes
             from ctypes import wintypes
-            import time
             import psutil
+            import subprocess
             from client.screen_streamer import ensure_default_desktop
 
             ensure_default_desktop()
             user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
             BM_CLICK = 0x00F5
+            BN_CLICKED = 0
+            WM_COMMAND = 0x0111
             VK_RETURN = 0x0D
 
             WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -1123,95 +1123,96 @@ exit /b 0
             def get_all_pica_controls():
                 controls = []
                 top_hwnds = []
+                pica_pids = set()
+                for p in psutil.process_iter(['pid', 'name']):
+                    try:
+                        if any(k in p.info['name'].lower() for k in ['pmclient', 'pmlc', 'pica']):
+                            pica_pids.add(p.info['pid'])
+                    except Exception:
+                        pass
+
                 def enum_top_proc(h, lp):
                     pid = wintypes.DWORD()
                     user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                    try:
-                        p = psutil.Process(pid.value)
-                        if p.name().lower() in ['pmclient.exe', 'pmlc.exe']:
-                            top_hwnds.append(h)
-                    except Exception:
-                        pass
+                    if pid.value in pica_pids and user32.IsWindowVisible(h) and not user32.IsIconic(h):
+                        top_hwnds.append(h)
                     return True
                 user32.EnumWindows(WNDENUMPROC(enum_top_proc), 0)
 
                 for th in top_hwnds:
                     def enum_child_proc(ch, lp):
+                        if not user32.IsWindowVisible(ch):
+                            return True
                         c_cls = ctypes.create_unicode_buffer(256)
                         user32.GetClassNameW(ch, c_cls, 256)
                         c_txt = ctypes.create_unicode_buffer(256)
                         user32.GetWindowTextW(ch, c_txt, 256)
+                        cid = user32.GetDlgCtrlID(ch)
                         cr = wintypes.RECT()
                         user32.GetWindowRect(ch, ctypes.byref(cr))
-                        controls.append((ch, c_cls.value, c_txt.value, th, (cr.left, cr.top, cr.right, cr.bottom)))
+                        controls.append((ch, c_cls.value, c_txt.value.strip(), th, cid, (cr.left, cr.top, cr.right, cr.bottom)))
                         return True
                     user32.EnumChildWindows(th, WNDENUMPROC(enum_child_proc), 0)
                 return controls
 
-            def click_control(hwnd, rect=None):
-                try:
-                    user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
-                    user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
-                except Exception:
-                    pass
+            def click_control(hwnd, parent, rect=None):
+                user32.SendMessageW(hwnd, BM_CLICK, 0, 0)
+                user32.PostMessageW(hwnd, BM_CLICK, 0, 0)
+                if parent:
+                    cid = user32.GetDlgCtrlID(hwnd)
+                    wparam = ((BN_CLICKED & 0xFFFF) << 16) | (cid & 0xFFFF)
+                    user32.PostMessageW(parent, WM_COMMAND, wparam, hwnd)
                 if rect:
-                    l, t, r, b = rect
-                    if r > l and b > t and l >= 0 and t >= 0:
-                        cx = (l + r) // 2
-                        cy = (t + b) // 2
+                    cx = (rect[0] + rect[2]) // 2
+                    cy = (rect[1] + rect[3]) // 2
+                    if cx > 0 and cy > 0:
                         user32.SetCursorPos(cx, cy)
                         time.sleep(0.04)
                         user32.mouse_event(2, 0, 0, 0, 0)
                         time.sleep(0.04)
                         user32.mouse_event(4, 0, 0, 0, 0)
 
-            logger.info("🔒 [피카 잠금] '관리자 로그아웃' 버튼 탐색 및 클릭 시도...")
+            logger.info("🔒 [피카 잠금] '관리자 로그아웃' 버튼 탐색 및 복구 시도...")
             ctrls = get_all_pica_controls()
             logout_btn = None
-            # 1순위: 관리자 로그아웃
-            for ch, c_cls, c_txt, parent, rect in ctrls:
-                t = c_txt.strip()
-                if t in ['관리자 로그아웃', '관리자로그아웃']:
-                    logout_btn = (ch, rect, t, parent)
-                    logger.info(f"🎯 1순위 '{t}' 버튼(HWND: {ch}, Rect: {rect}) 포착!")
+            for ch, c_cls, c_txt, parent, cid, rect in ctrls:
+                t = c_txt.replace(' ', '')
+                if t in ['관리자로그아웃', '관리자로그아웃버튼']:
+                    logout_btn = (ch, parent, rect, c_txt)
+                    logger.info(f"🎯 1순위 '{c_txt}' 버튼(HWND:{ch}) 포착!")
                     break
 
-            # 2순위: 기타 로그아웃
             if not logout_btn:
-                for ch, c_cls, c_txt, parent, rect in ctrls:
-                    t = c_txt.strip()
+                for ch, c_cls, c_txt, parent, cid, rect in ctrls:
+                    t = c_txt.replace(' ', '')
                     if t in ['후불로그아웃', '로그아웃']:
-                        logout_btn = (ch, rect, t, parent)
-                        logger.info(f"🎯 2순위 '{t}' 버튼(HWND: {ch}, Rect: {rect}) 포착!")
+                        logout_btn = (ch, parent, rect, c_txt)
+                        logger.info(f"🎯 2순위 '{c_txt}' 버튼(HWND:{ch}) 포착!")
                         break
 
             if logout_btn:
-                btn_hwnd, btn_rect, btn_title, btn_parent = logout_btn
-                if btn_parent:
-                    user32.SetForegroundWindow(btn_parent)
-                    time.sleep(0.05)
-                click_control(btn_hwnd, btn_rect)
-                logger.info(f"✅ '{btn_title}' 버튼 클릭 전송 완료!")
+                btn_hwnd, parent_hwnd, btn_rect, btn_title = logout_btn
+                user32.SetForegroundWindow(parent_hwnd)
+                time.sleep(0.05)
+                click_control(btn_hwnd, parent_hwnd, btn_rect)
+                logger.info(f"✅ '{btn_title}' 버튼 클릭 완료!")
                 time.sleep(0.8)
 
-                # 혹시 확인 다이얼로그("로그아웃 하시겠습니까?")가 뜨면 확인 클릭
+                # 로그아웃 확인 다이얼로그 ("로그아웃 하시겠습니까?")
                 ctrls2 = get_all_pica_controls()
-                for ch, c_cls, c_txt, parent, rect in ctrls2:
-                    t = c_txt.strip()
-                    if t in ['확인', '예', 'OK']:
-                        logger.info(f"🎯 로그아웃 확인 다이얼로그 버튼('{t}', HWND: {ch}) 클릭!")
-                        click_control(ch, rect)
+                for ch, c_cls, c_txt, parent, cid, rect in ctrls2:
+                    if c_txt in ['확인', '예', 'OK']:
+                        logger.info(f"🎯 로그아웃 확인 다이얼로그 버튼('{c_txt}', HWND:{ch}) 클릭!")
+                        click_control(ch, parent, rect)
                         break
 
-                # Enter 키도 1회 보조 전송
                 user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
                 time.sleep(0.05)
                 user32.keybd_event(VK_RETURN, 0x1C, 2, 0)
-
                 time.sleep(1.0)
-                logger.info("🎉 [피카 잠금 완료] 피카가 화면보호기 잠금(대기) 상태로 정상 복귀되었습니다!")
+                logger.info("🎉 [피카 잠금 완료] 관리자 로그아웃 완료 -> 화면보호기 잠금 정상 복귀!")
             else:
-                logger.warning("⚠️ '관리자 로그아웃' 버튼을 찾지 못했습니다. 피카가 이미 잠금 상태이거나 실행 중이 아닙니다.")
+                logger.info("ℹ️ '관리자 로그아웃' 버튼이 없음 (이미 잠금 상태이거나 대기 화면)")
         except Exception as e:
             logger.error(f"피카 잠금 매크로 실행 오류: {e}")
 

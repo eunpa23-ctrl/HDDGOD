@@ -256,15 +256,17 @@ class ZeusClientAgent:
                 ram_percent = 0.0
                 ram_used_gb = 0.0
                 ram_total_gb = 0.0
-                try:
-                    import psutil
-                    cpu_usage = round(psutil.cpu_percent(interval=None), 1)
-                    vm = psutil.virtual_memory()
-                    ram_percent = round(vm.percent, 1)
-                    ram_used_gb = round(vm.used / (1024**3), 1)
-                    ram_total_gb = round(vm.total / (1024**3), 1)
-                except Exception:
-                    pass
+                # ⚡ CPU/RAM 자원 모니터링은 오직 서버 노드(메인 서버)일 때만 측정! (손님 PC 1~8번은 불필요한 부하 방지를 위해 완전 배제)
+                if self.is_server_node():
+                    try:
+                        import psutil
+                        cpu_usage = round(psutil.cpu_percent(interval=None), 1)
+                        vm = psutil.virtual_memory()
+                        ram_percent = round(vm.percent, 1)
+                        ram_used_gb = round(vm.used / (1024**3), 1)
+                        ram_total_gb = round(vm.total / (1024**3), 1)
+                    except Exception:
+                        pass
 
                 payload = {
                     "client_id": self.client_id,
@@ -707,6 +709,11 @@ exit /b 0
 
     def optimize_local_memory(self):
         """윈도우 프로세스 유휴 캐시 메모리 회수 (EmptyWorkingSet)"""
+        # 손님 PC에서 손님이 실제 이용 중일 때는 게임 프레임 드랍 방지를 위해 메모리 정리 건너뜀
+        if not self.is_server_node() and self.get_pica_state() == "USING":
+            logger.info("손님 실제 이용 중(USING)이므로 게임 보호를 위해 메모리 정리를 건너뜁니다.")
+            return {"status": "skipped", "message": "손님 이용 중 게임 보호"}
+
         try:
             import gc
             import ctypes

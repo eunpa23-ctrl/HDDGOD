@@ -252,6 +252,20 @@ class ZeusClientAgent:
                     except Exception:
                         pica_st = "UNKNOWN"
 
+                cpu_usage = 0.0
+                ram_percent = 0.0
+                ram_used_gb = 0.0
+                ram_total_gb = 0.0
+                try:
+                    import psutil
+                    cpu_usage = round(psutil.cpu_percent(interval=None), 1)
+                    vm = psutil.virtual_memory()
+                    ram_percent = round(vm.percent, 1)
+                    ram_used_gb = round(vm.used / (1024**3), 1)
+                    ram_total_gb = round(vm.total / (1024**3), 1)
+                except Exception:
+                    pass
+
                 payload = {
                     "client_id": self.client_id,
                     "ip": self.local_ip,
@@ -260,7 +274,11 @@ class ZeusClientAgent:
                     "netflix_status": self.netflix_bot.current_status,
                     "pica_status": pica_st,
                     "is_streaming": self.is_streaming_screen,
-                    "version": self.get_local_version()
+                    "version": self.get_local_version(),
+                    "cpu": cpu_usage,
+                    "ram": ram_percent,
+                    "ram_used_gb": ram_used_gb,
+                    "ram_total_gb": ram_total_gb
                 }
                 pkt = make_packet(PacketType.HEARTBEAT, payload)
                 await websocket.send(pkt)
@@ -316,6 +334,9 @@ class ZeusClientAgent:
                 elif action == CommandType.UNINSTALL_AGENT:
                     logger.info("🗑️ [원격 명령] 제우스 클라이언트 원격 완전 삭제(언인스톨) 실행...")
                     asyncio.create_task(asyncio.to_thread(self.uninstall_agent))
+                elif action in (CommandType.OPTIMIZE_MEMORY, "OPTIMIZE_MEMORY"):
+                    logger.info("⚡ [원격 명령] 유휴 캐시 메모리 최적화(EmptyWorkingSet) 실행...")
+                    asyncio.create_task(asyncio.to_thread(self.optimize_local_memory))
                 elif action == CommandType.START_SCREEN_STREAM:
                     logger.info("📡 [원격 제어] 화면 스트리밍 가동 명령 수신 -> 캡처 시작!")
                     self.is_streaming_screen = True
@@ -680,6 +701,46 @@ exit /b 0
                     os._exit(0)
         except Exception as e:
             logger.error(f"업데이트 확인 중 오류: {e}")
+
+    def optimize_local_memory(self):
+        """윈도우 프로세스 유휴 캐시 메모리 회수 (EmptyWorkingSet)"""
+        try:
+            import gc
+            import ctypes
+            import psutil
+            gc.collect()
+            before_vm = psutil.virtual_memory()
+
+            kernel32 = ctypes.windll.kernel32
+            psapi = ctypes.windll.psapi
+            trimmed_count = 0
+
+            for proc in psutil.process_iter(['pid']):
+                try:
+                    pid = proc.info['pid']
+                    if pid <= 4:
+                        continue
+                    h_process = kernel32.OpenProcess(0x001F0FFF, False, pid)
+                    if h_process:
+                        if psapi.EmptyWorkingSet(h_process):
+                            trimmed_count += 1
+                        kernel32.CloseHandle(h_process)
+                except Exception:
+                    pass
+
+            after_vm = psutil.virtual_memory()
+            freed_mb = round((before_vm.used - after_vm.used) / (1024 * 1024), 1)
+            logger.info(f"⚡ [메모리 최적화 완료] {trimmed_count}개 프로세스 정리, {freed_mb}MB 메모리 즉시 확보 ({before_vm.percent}% -> {after_vm.percent}%)")
+            return {
+                "status": "ok",
+                "trimmed_count": trimmed_count,
+                "freed_mb": freed_mb,
+                "current_ram_percent": after_vm.percent,
+                "available_gb": round(after_vm.available / (1024**3), 2)
+            }
+        except Exception as e:
+            logger.error(f"메모리 최적화 실패: {e}")
+            return {"status": "error", "message": str(e)}
 
     def uninstall_agent(self) -> None:
         """클라이언트 원격 완전 삭제 및 시스템 원상 복구"""

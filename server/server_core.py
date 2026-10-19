@@ -430,6 +430,15 @@ async def get_dashboard(request: Request):
     pc_list = load_pc_mapping()
     from server.pica_counter_controller import get_counter_seat_states
     c_states = get_counter_seat_states()
+    import psutil
+    srv_vm = psutil.virtual_memory()
+    server_stats = {
+        "cpu": round(psutil.cpu_percent(interval=None), 1),
+        "ram": round(srv_vm.percent, 1),
+        "ram_used_gb": round(srv_vm.used / (1024**3), 1),
+        "ram_total_gb": round(srv_vm.total / (1024**3), 1),
+        "server_ram_mb": round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+    }
     for pc in pc_list:
         cid = pc.get("id")
         s_num = pc.get("seat")
@@ -440,6 +449,10 @@ async def get_dashboard(request: Request):
             pc["pica"] = c_states.get(s_num) or c_info.get("pica_status", "UNKNOWN")
             pc["netflix"] = c_info.get("netflix_status", "CLOSED")
             pc["version"] = c_info.get("version", "")
+            pc["cpu"] = c_info.get("cpu", 0.0)
+            pc["ram"] = c_info.get("ram", 0.0)
+            pc["ram_used_gb"] = c_info.get("ram_used_gb", 0.0)
+            pc["ram_total_gb"] = c_info.get("ram_total_gb", 0.0)
         elif s_num in c_states:
             pc["pica"] = c_states[s_num]
     return templates.TemplateResponse(
@@ -447,7 +460,8 @@ async def get_dashboard(request: Request):
         name="dashboard.html",
         context={
             "initial_pc_list": json.dumps(pc_list, ensure_ascii=False),
-            "pc_count": len(pc_list)
+            "pc_count": len(pc_list),
+            "server_stats": json.dumps(server_stats, ensure_ascii=False)
         }
     )
 
@@ -458,6 +472,15 @@ async def get_mobile_dashboard(request: Request):
     pc_list = load_pc_mapping()
     from server.pica_counter_controller import get_counter_seat_states
     c_states = get_counter_seat_states()
+    import psutil
+    srv_vm = psutil.virtual_memory()
+    server_stats = {
+        "cpu": round(psutil.cpu_percent(interval=None), 1),
+        "ram": round(srv_vm.percent, 1),
+        "ram_used_gb": round(srv_vm.used / (1024**3), 1),
+        "ram_total_gb": round(srv_vm.total / (1024**3), 1),
+        "server_ram_mb": round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+    }
     for pc in pc_list:
         cid = pc.get("id")
         s_num = pc.get("seat")
@@ -468,6 +491,10 @@ async def get_mobile_dashboard(request: Request):
             pc["pica"] = c_states.get(s_num) or c_info.get("pica_status", "UNKNOWN")
             pc["netflix"] = c_info.get("netflix_status", "CLOSED")
             pc["version"] = c_info.get("version", "")
+            pc["cpu"] = c_info.get("cpu", 0.0)
+            pc["ram"] = c_info.get("ram", 0.0)
+            pc["ram_used_gb"] = c_info.get("ram_used_gb", 0.0)
+            pc["ram_total_gb"] = c_info.get("ram_total_gb", 0.0)
         elif s_num in c_states:
             pc["pica"] = c_states[s_num]
     return templates.TemplateResponse(
@@ -475,7 +502,8 @@ async def get_mobile_dashboard(request: Request):
         name="mobile_dashboard.html",
         context={
             "initial_pc_list": json.dumps(pc_list, ensure_ascii=False),
-            "pc_count": len(pc_list)
+            "pc_count": len(pc_list),
+            "server_stats": json.dumps(server_stats, ensure_ascii=False)
         }
     )
 
@@ -655,13 +683,17 @@ async def client_websocket(websocket: WebSocket, client_id: str):
             data = packet.get("data", {})
 
             if p_type == PacketType.HEARTBEAT:
-                # 3초 하트비트 수신 및 감시자 업데이트 (버전 정보 및 호스트명 포함)
+                # 3초 하트비트 수신 및 감시자 업데이트 (버전 정보, 호스트명, CPU/RAM 자원 포함)
                 reported_ip = data.get("ip", "") or client_ip
                 mac = data.get("mac", "")
                 uwf_st = data.get("uwf_status", "")
                 netflix_st = data.get("netflix_status", "")
                 ver_st = data.get("version", "")
                 pica_st = data.get("pica_status", "UNKNOWN")
+                cpu_metric = float(data.get("cpu", 0.0) or 0.0)
+                ram_metric = float(data.get("ram", 0.0) or 0.0)
+                ram_used_gb = float(data.get("ram_used_gb", 0.0) or 0.0)
+                ram_total_gb = float(data.get("ram_total_gb", 0.0) or 0.0)
 
                 # 좌석 ID 재검증 (MAC 또는 reported_ip로 매핑된 경우)
                 if not seat_id:
@@ -682,9 +714,9 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                         pass
 
                 target_watchdog_id = seat_id if seat_id else session_key
-                watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st)
+                watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st, cpu=cpu_metric, ram=ram_metric, ram_used_gb=ram_used_gb, ram_total_gb=ram_total_gb)
                 if session_key != target_watchdog_id:
-                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st)
+                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st, cpu=cpu_metric, ram=ram_metric, ram_used_gb=ram_used_gb, ram_total_gb=ram_total_gb)
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!
@@ -782,11 +814,14 @@ async def broadcast_dashboard_state():
         cpu_usage = psutil.cpu_percent(interval=None)
         ram_info = psutil.virtual_memory()
         ram_usage = ram_info.percent
-        server_ram_mb = round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+        ram_used_gb = round(ram_info.used / (1024**3), 1)
+        ram_total_gb = round(ram_info.total / (1024**3), 1)
         state_data = {
             "type": "FULL_STATE",
             "cpu": cpu_usage,
             "ram": ram_usage,
+            "ram_used_gb": ram_used_gb,
+            "ram_total_gb": ram_total_gb,
             "server_ram_mb": server_ram_mb,
             "auto_optimize": AUTO_OPTIMIZE_ENABLED,
             "clients": watchdog.clients
@@ -809,12 +844,16 @@ async def dashboard_websocket(websocket: WebSocket):
             cpu_usage = psutil.cpu_percent(interval=None)
             ram_info = psutil.virtual_memory()
             ram_usage = ram_info.percent
+            ram_used_gb = round(ram_info.used / (1024**3), 1)
+            ram_total_gb = round(ram_info.total / (1024**3), 1)
             server_ram_mb = round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
             
             state_data = {
                 "type": "FULL_STATE",
                 "cpu": cpu_usage,
                 "ram": ram_usage,
+                "ram_used_gb": ram_used_gb,
+                "ram_total_gb": ram_total_gb,
                 "server_ram_mb": server_ram_mb,
                 "auto_optimize": AUTO_OPTIMIZE_ENABLED,
                 "clients": watchdog.clients
@@ -972,12 +1011,17 @@ async def auto_optimize_loop():
     while True:
         await asyncio.sleep(3600)  # 1시간 대기
         if AUTO_OPTIMIZE_ENABLED:
-            import gc
-            import ctypes
-            gc.collect()
             try:
-                ctypes.windll.kernel32.SetProcessWorkingSetSize(ctypes.windll.kernel32.GetCurrentProcess(), -1, -1)
-                logger.info("1시간 주기 자동 메모리 최적화 완료")
+                await optimize_memory()
+                logger.info("1시간 주기 카운터 PC 자동 메모리 최적화 완료")
+            except Exception as e:
+                pass
+            try:
+                ws = get_client_ws("PC-09")
+                if ws:
+                    cmd = make_packet(PacketType.COMMAND, {"action": "OPTIMIZE_MEMORY"})
+                    await ws.send_text(cmd)
+                    logger.info("1시간 주기 메인 서버(PC-09) 원격 메모리 최적화 명령 발송")
             except Exception as e:
                 pass
 
@@ -1050,7 +1094,28 @@ async def execute_command_internal(target_id: str, action: str):
             else:
                 return {"status": "error", "message": f"피카 좌석 번호를 식별할 수 없습니다: {target_id}"}
 
-    # 2. WOL 켜기 명령 처리
+    # 2. 메모리 최적화 (EmptyWorkingSet) 명령 처리
+    if action in [CommandType.OPTIMIZE_MEMORY, "OPTIMIZE_MEMORY"]:
+        if target_id.upper() in ["SERVER", "HOST", "0", "LOCAL", "100", "SERVER_100"]:
+            return await optimize_memory()
+        elif target_id == "ALL":
+            res_local = await optimize_memory()
+            count = 0
+            for cid, ws in active_clients.items():
+                cmd = make_packet(PacketType.COMMAND, {"action": "OPTIMIZE_MEMORY"})
+                await ws.send_text(cmd)
+                count += 1
+            return {"status": "ok", "action": action, "local": res_local, "clients_count": count}
+        else:
+            ws = get_client_ws(target_id)
+            actual_cid = get_actual_client_id(target_id)
+            if ws:
+                cmd = make_packet(PacketType.COMMAND, {"action": "OPTIMIZE_MEMORY"})
+                await ws.send_text(cmd)
+                return {"status": "ok", "sent_to": actual_cid, "action": action, "message": f"{target_id}에 원격 메모리 최적화 명령 전달 완료"}
+            return {"status": "error", "message": f"클라이언트({target_id})가 오프라인입니다."}
+
+    # 3. WOL 켜기 명령 처리
     if action == "WOL":
         actual_cid = get_actual_client_id(target_id)
         mac = None

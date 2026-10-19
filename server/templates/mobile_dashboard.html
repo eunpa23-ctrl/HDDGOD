@@ -37,34 +37,7 @@
         </div>
     </header>
 
-    <!-- 서버 리소스 모니터 뷰 -->
-    <div class="px-4 pt-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-md flex justify-between items-center">
-            <div class="flex flex-col items-center flex-1 border-r border-slate-800">
-                <span class="text-[10px] text-slate-400 mb-1">CPU 사용량</span>
-                <div class="flex items-baseline gap-1">
-                    <span id="mob-cpu" class="text-lg font-bold text-sky-400">0.0</span>
-                    <span class="text-xs text-slate-500">%</span>
-                </div>
-            </div>
-            <div class="flex flex-col items-center flex-1 border-r border-slate-800">
-                <span class="text-[10px] text-slate-400 mb-1">RAM 사용량</span>
-                <div class="flex items-baseline gap-1">
-                    <span id="mob-ram" class="text-lg font-bold text-amber-400">0.0</span>
-                    <span class="text-xs text-slate-500">%</span>
-                </div>
-            </div>
-            <div class="flex flex-col items-center flex-1">
-                <span class="text-[10px] text-slate-400 mb-1">제우스 점유율</span>
-                <div class="flex items-baseline gap-1">
-                    <span id="mob-server-ram" class="text-lg font-bold text-emerald-400">0</span>
-                    <span class="text-xs text-slate-500">MB</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 손님 PC 이용 현황 요약 칩 (모바일) -->
+    <!-- 손님 PC 이용 현황 요약 칩 (모바일 상단) -->
     <div class="px-4 pt-3">
         <div class="grid grid-cols-3 gap-2">
             <div class="bg-gradient-to-br from-emerald-950/80 to-slate-900 border border-emerald-500/50 rounded-xl p-2.5 flex flex-col items-center shadow-[0_0_12px_rgba(16,185,129,0.2)]">
@@ -82,49 +55,97 @@
         </div>
     </div>
 
-    <!-- 🌟 전용 관리 서버 원격 제어 섹션 (서버 2대) -->
-    <div class="px-4 pt-3 space-y-2">
-        <!-- 1. 관리 서버 100 (HOST) -->
-        <button onclick="window.open('/remote/SERVER', '_blank')" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 border border-indigo-500/50 hover:border-indigo-400 active:border-indigo-300 rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(99,102,241,0.25)] active:scale-[0.98] transition group">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 group-hover:text-white transition shadow">
-                    <i class="fa-solid fa-server text-sm"></i>
-                </div>
-                <div class="flex flex-col text-left">
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                        <span class="font-extrabold text-xs text-white">관리 서버 100 (HOST)</span>
-                        <span class="text-[9px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-700/50 font-mono">192.168.0.100</span>
+    <!-- 🌟 전용 관리 서버 섹션 (서버 2대: 카운터 100 + 메인 9) -->
+    <div class="px-4 pt-3 space-y-2.5">
+        <!-- 1. 카운터 관리 서버 100 (HOST) -->
+        <div class="bg-gradient-to-r from-indigo-950/90 via-slate-900 to-indigo-950/60 border border-indigo-500/50 rounded-2xl p-3 shadow-lg space-y-2">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 shrink-0">
+                        <i class="fa-solid fa-server text-sm"></i>
                     </div>
-                    <span class="text-[10px] text-indigo-200/70">중앙 관제 및 WebSocket 통합 서버</span>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                            <span class="font-extrabold text-xs text-white">카운터 서버 (HOST 100)</span>
+                            <span class="text-[9px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-700/50 font-mono">192.168.0.100</span>
+                        </div>
+                        <span class="text-[10px] text-indigo-200/70">중앙 관제 및 WebSocket 서버</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="optimizeMemoryMobile('SERVER')" id="mob-srv100-opt-btn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-amber-300 border border-amber-500/40 font-bold rounded-xl text-xs flex items-center gap-1 transition shadow" title="카운터 서버 유휴 메모리 정리">
+                        <i class="fa-solid fa-broom text-[10px]"></i>
+                        <span>정리</span>
+                    </button>
+                    <button onclick="window.open('/remote/SERVER', '_blank')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition shadow">
+                        <i class="fa-solid fa-desktop text-[10px]"></i>
+                        <span>원격</span>
+                    </button>
                 </div>
             </div>
-            <div class="flex items-center gap-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-2.5 py-1.5 rounded-xl border border-indigo-400/40 shadow">
-                <i class="fa-solid fa-desktop text-[10px]"></i>
-                <span>원격 열기</span>
+
+            <!-- 카운터 서버 내부 실시간 CPU / RAM / 제우스 리소스 바 -->
+            <div class="grid grid-cols-3 gap-1.5 bg-slate-950/80 border border-slate-800/80 rounded-xl px-2 py-1.5 text-center">
+                <div>
+                    <span class="text-[9px] text-slate-400 block">CPU</span>
+                    <span id="mob-srv100-cpu" class="text-xs font-black text-sky-400 font-mono">0.0%</span>
+                </div>
+                <div class="border-x border-slate-800/80">
+                    <span class="text-[9px] text-slate-400 block">RAM 사용</span>
+                    <span id="mob-srv100-ram" class="text-xs font-black text-amber-400 font-mono">0.0%</span>
+                </div>
+                <div>
+                    <span class="text-[9px] text-slate-400 block">제우스 점유</span>
+                    <span id="mob-srv100-ram-mb" class="text-xs font-black text-emerald-400 font-mono">0 MB</span>
+                </div>
             </div>
-        </button>
+        </div>
 
         <!-- 2. 메인 서버 9번 (SERVER_MAIN) -->
-        <button onclick="window.open('/remote/PC-09', '_blank')" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-purple-950/90 via-slate-900 to-indigo-950/90 border border-purple-500/50 hover:border-purple-400 active:border-purple-300 rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(168,85,247,0.25)] active:scale-[0.98] transition group">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 group-hover:text-white transition shadow">
-                    <i class="fa-solid fa-server text-sm"></i>
-                </div>
-                <div class="flex flex-col text-left">
-                    <div class="flex items-center gap-1.5">
-                        <span id="mob-srv9-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                        <span class="font-extrabold text-xs text-white">메인 서버 9번 (SERVER_MAIN)</span>
-                        <span class="text-[9px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700/50 font-mono">192.168.0.2</span>
+        <div id="mob-srv9-card" class="bg-gradient-to-r from-purple-950/90 via-slate-900 to-purple-950/60 border border-purple-500/50 rounded-2xl p-3 shadow-lg space-y-2">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+                        <i class="fa-solid fa-server text-sm"></i>
                     </div>
-                    <span id="mob-srv9-subtext" class="text-[10px] text-purple-200/70">메인 데이터 서버 (피카 잠금해제 제외)</span>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="mob-srv9-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                            <span class="font-extrabold text-xs text-white">메인 서버 9번 (SERVER_MAIN)</span>
+                            <span class="text-[9px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700/50 font-mono">192.168.0.2</span>
+                        </div>
+                        <span id="mob-srv9-subtext" class="text-[10px] text-purple-200/70">메인 데이터 서버 (피카 제외)</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="optimizeMemoryMobile('PC-09')" id="mob-srv9-opt-btn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-amber-300 border border-amber-500/40 font-bold rounded-xl text-xs flex items-center gap-1 transition shadow" title="메인 서버 유휴 메모리 정리">
+                        <i class="fa-solid fa-broom text-[10px]"></i>
+                        <span>정리</span>
+                    </button>
+                    <button onclick="window.open('/remote/PC-09', '_blank')" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition shadow">
+                        <i class="fa-solid fa-desktop text-[10px]"></i>
+                        <span>원격</span>
+                    </button>
                 </div>
             </div>
-            <div class="flex items-center gap-1 text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-500 active:bg-purple-700 px-2.5 py-1.5 rounded-xl border border-purple-400/40 shadow">
-                <i class="fa-solid fa-desktop text-[10px]"></i>
-                <span>원격 열기</span>
+
+            <!-- 메인 서버 내부 실시간 CPU / RAM / RAM 용량 리소스 바 -->
+            <div class="grid grid-cols-3 gap-1.5 bg-slate-950/80 border border-slate-800/80 rounded-xl px-2 py-1.5 text-center">
+                <div>
+                    <span class="text-[9px] text-slate-400 block">CPU</span>
+                    <span id="mob-srv9-cpu" class="text-xs font-black text-sky-400 font-mono">--%</span>
+                </div>
+                <div class="border-x border-slate-800/80">
+                    <span class="text-[9px] text-slate-400 block">RAM 사용</span>
+                    <span id="mob-srv9-ram" class="text-xs font-black text-amber-400 font-mono">--%</span>
+                </div>
+                <div>
+                    <span class="text-[9px] text-slate-400 block">사용 용량</span>
+                    <span id="mob-srv9-ram-gb" class="text-xs font-black text-emerald-400 font-mono">-- / -- GB</span>
+                </div>
             </div>
-        </button>
+        </div>
     </div>
 
     <!-- PC 리스트 컨테이너 -->
@@ -134,6 +155,7 @@
 
     <script>
         let pcList = {{ initial_pc_list | safe }};
+        let initialServerStats = {{ server_stats | safe if server_stats else 'null' }};
         const container = document.getElementById('pc-list-container');
 
         function getNetflixBadgeHtml(netflix) {
@@ -236,8 +258,46 @@
                 container.innerHTML += html;
             });
         }
-        
+
+        function updateServerCardsUI(srvData) {
+            if (srvData) {
+                const srv100Cpu = document.getElementById('mob-srv100-cpu');
+                const srv100Ram = document.getElementById('mob-srv100-ram');
+                const srv100Mb = document.getElementById('mob-srv100-ram-mb');
+                if (srv100Cpu && srvData.cpu !== undefined) srv100Cpu.innerText = `${srvData.cpu}%`;
+                if (srv100Ram && srvData.ram !== undefined) srv100Ram.innerText = `${srvData.ram}%`;
+                if (srv100Mb && srvData.server_ram_mb !== undefined) srv100Mb.innerText = `${srvData.server_ram_mb} MB`;
+            }
+            const srv9 = pcList.find(p => p.seat === 9 || p.id === 'PC-09' || p.is_server);
+            if (srv9) {
+                const isSrvOnline = (srv9.status === 'ONLINE');
+                const srvDot = document.getElementById('mob-srv9-dot');
+                const srvSub = document.getElementById('mob-srv9-subtext');
+                if (srvDot) {
+                    srvDot.className = `w-2 h-2 rounded-full ${isSrvOnline ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-slate-600'}`;
+                }
+                if (srvSub) {
+                    srvSub.innerText = isSrvOnline 
+                        ? `메인 데이터 서버 (온라인 v${srv9.version || '-'})` 
+                        : '메인 데이터 서버 (오프라인)';
+                }
+                const srv9Cpu = document.getElementById('mob-srv9-cpu');
+                const srv9Ram = document.getElementById('mob-srv9-ram');
+                const srv9RamGb = document.getElementById('mob-srv9-ram-gb');
+                if (srv9Cpu) srv9Cpu.innerText = isSrvOnline && srv9.cpu !== undefined ? `${srv9.cpu}%` : '--%';
+                if (srv9Ram) srv9Ram.innerText = isSrvOnline && srv9.ram !== undefined ? `${srv9.ram}%` : '--%';
+                if (srv9RamGb) {
+                    if (isSrvOnline && srv9.ram_total_gb) {
+                        srv9RamGb.innerText = `${srv9.ram_used_gb || 0} / ${srv9.ram_total_gb} GB`;
+                    } else {
+                        srv9RamGb.innerText = '-- / -- GB';
+                    }
+                }
+            }
+        }
+
         renderInitialCards();
+        updateServerCardsUI(initialServerStats);
 
         // ── ⚠️ 손님 이용 중 원격 제어 경고 모달 제어 ──
         let pendingRemotePcId = null;
@@ -315,12 +375,7 @@
                 return;
             }
             if (data.type === 'FULL_STATE') {
-                // 상단 리소스 업데이트
-                if(data.cpu !== undefined) document.getElementById('mob-cpu').innerText = data.cpu;
-                if(data.ram !== undefined) document.getElementById('mob-ram').innerText = data.ram;
-                if(data.server_ram_mb !== undefined) document.getElementById('mob-server-ram').innerText = data.server_ram_mb;
                 if(data.auto_optimize !== undefined) updateMobAutoOptimizeUI(data.auto_optimize);
-
                 const clientsData = data.clients || {};
 
                 // PC 상태 업데이트
@@ -364,6 +419,10 @@
                         pc.pica = live.pica_status || 'UNKNOWN';
                         if (live.ip) pc.ip = live.ip;
                         if (live.mac && live.mac !== '00:00:00:00:00:00') pc.mac = live.mac;
+                        if (live.cpu !== undefined) pc.cpu = live.cpu;
+                        if (live.ram !== undefined) pc.ram = live.ram;
+                        if (live.ram_used_gb !== undefined) pc.ram_used_gb = live.ram_used_gb;
+                        if (live.ram_total_gb !== undefined) pc.ram_total_gb = live.ram_total_gb;
                     }
 
                     // DOM 업데이트
@@ -431,21 +490,8 @@
                 if (mobIdleEl) mobIdleEl.innerText = `${guestIdleCount} 대`;
                 if (mobNfEl) mobNfEl.innerText = `${netflixActiveCount} 대`;
 
-                // 9번 메인 서버 전용 카드 실시간 UI 갱신
-                const srv9 = pcList.find(p => p.seat === 9 || p.id === 'PC-09' || p.is_server);
-                if (srv9) {
-                    const isSrvOnline = (srv9.status === 'ONLINE');
-                    const srvDot = document.getElementById('mob-srv9-dot');
-                    const srvSub = document.getElementById('mob-srv9-subtext');
-                    if (srvDot) {
-                        srvDot.className = `w-2 h-2 rounded-full ${isSrvOnline ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-slate-600'}`;
-                    }
-                    if (srvSub) {
-                        srvSub.innerText = isSrvOnline 
-                            ? `메인 데이터 서버 (온라인 v${srv9.version || '-'}, 잠금해제 제외)` 
-                            : '메인 데이터 서버 (오프라인, 잠금해제 제외)';
-                    }
-                }
+                // 🌟 관리 서버(카운터 100 + 메인 9) 실시간 CPU/RAM 리소스 및 상태 갱신
+                updateServerCardsUI(data);
             }
         };
 
@@ -505,19 +551,36 @@
             }
         }
 
-        async function optimizeMemoryMobile() {
-            const btn = document.getElementById('mob-mem-btn');
-            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+        async function optimizeMemoryMobile(target = 'SERVER') {
+            const isServer = (target === 'SERVER' || target === 'HOST' || target === '100');
+            const btnId = isServer ? 'mob-srv100-opt-btn' : (target === 'PC-09' ? 'mob-srv9-opt-btn' : 'mob-mem-btn');
+            const btn = document.getElementById(btnId) || document.getElementById('mob-mem-btn');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i><span>정리중</span>';
             try {
-                const res = await fetch('/api/optimize_memory', { method: 'POST' });
+                const res = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target_id: target, command: 'OPTIMIZE_MEMORY' })
+                });
                 const data = await res.json();
                 if (btn) {
-                    btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400 text-sm"></i>';
-                    setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-broom text-sm"></i>'; }, 2000);
+                    btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400 text-[10px]"></i><span>완료</span>';
+                    setTimeout(() => { btn.innerHTML = origHtml; }, 2000);
                 }
-                alert(`⚡ [메모리 최적화 완료]\n• 정리된 프로세스: ${data.trimmed_count}개\n• 즉시 확보된 메모리: ${data.freed_mb} MB\n• 현재 전체 RAM 점유율: ${data.current_ram_percent}%`);
+                if (data.status === 'ok') {
+                    if (isServer && data.freed_mb !== undefined) {
+                        alert(`⚡ [카운터 서버 메모리 최적화 완료]\n• 정리된 프로세스: ${data.trimmed_count}개\n• 즉시 확보된 메모리: ${data.freed_mb} MB\n• 현재 RAM 점유율: ${data.current_ram_percent}%`);
+                    } else if (isServer && data.local) {
+                        alert(`⚡ [카운터 서버 메모리 최적화 완료]\n• 정리된 프로세스: ${data.local.trimmed_count}개\n• 즉시 확보된 메모리: ${data.local.freed_mb} MB\n• 현재 RAM 점유율: ${data.local.current_ram_percent}%`);
+                    } else {
+                        alert(`⚡ [메인 서버 9번 메모리 정리 완료]\n• 대상: 메인 서버 9번 (PC-09)\n• 유휴 프로세스 캐시 정리 명령이 성공적으로 전송되었습니다.`);
+                    }
+                } else {
+                    alert('메모리 정리 실패: ' + (data.message || '오류 발생'));
+                }
             } catch(err) {
-                if (btn) btn.innerHTML = '<i class="fa-solid fa-broom text-sm"></i>';
+                if (btn) btn.innerHTML = origHtml;
                 alert("메모리 최적화 실패: " + err);
             }
         }

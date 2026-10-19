@@ -526,6 +526,22 @@ async def get_remote_view(request: Request, client_id: str):
     else:
         logger.warning(f"[{client_id}] 원격 제어 대상 클라이언트를 찾을 수 없음 (오프라인)")
 
+    # 좌석 번호 및 실시간 피카 상태 조회
+    seat_num = get_seat_number_from_target(client_id) or get_seat_number_from_target(actual_cid)
+    from server.pica_counter_controller import get_last_known_counter_state, get_counter_seat_states
+    
+    current_pica_state = None
+    if seat_num:
+        current_pica_state = get_last_known_counter_state(seat_num)
+        if not current_pica_state:
+            states = get_counter_seat_states()
+            current_pica_state = states.get(seat_num)
+    
+    if not current_pica_state:
+        current_pica_state = c_info.get("pica_status", "LOCKED")
+
+    is_pica_admin = (str(current_pica_state).upper() == "ADMIN")
+
     return templates.TemplateResponse(
         request=request,
         name="remote_view.html",
@@ -535,7 +551,10 @@ async def get_remote_view(request: Request, client_id: str):
             "client_name": client_name,
             "client_ip": client_ip,
             "is_online": is_online,
-            "is_server": is_server
+            "is_server": is_server,
+            "is_pica_admin": is_pica_admin,
+            "pica_status": current_pica_state or "LOCKED",
+            "seat_num": seat_num
         }
     )
 
@@ -740,6 +759,31 @@ async def handle_auto_otp_flow(client_id: str):
     logger.warning(f"[{client_id}] 네이트 메일 자동 수신 타임아웃 -> 2차 카카오 알림톡 발송")
     otp_url = f"http://{SERVER_HOST}:{SERVER_PORT}/otp/{client_id}"
     kakao_notifier.send_otp_alert(client_id, otp_url)
+
+async def broadcast_dashboard_state():
+    """모든 대시보드 WebSocket 구독자에게 최신 FULL_STATE 즉시 전송"""
+    if not dashboard_subscribers:
+        return
+    try:
+        cpu_usage = psutil.cpu_percent(interval=None)
+        ram_info = psutil.virtual_memory()
+        ram_usage = ram_info.percent
+        server_ram_mb = round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+        state_data = {
+            "type": "FULL_STATE",
+            "cpu": cpu_usage,
+            "ram": ram_usage,
+            "server_ram_mb": server_ram_mb,
+            "auto_optimize": AUTO_OPTIMIZE_ENABLED,
+            "clients": watchdog.clients
+        }
+        msg = json.dumps(state_data, ensure_ascii=False)
+        await asyncio.gather(
+            *[ws.send_text(msg) for ws in list(dashboard_subscribers) if ws],
+            return_exceptions=True
+        )
+    except Exception as e:
+        logger.debug(f"Dashboard broadcast error: {e}")
 
 @app.websocket("/ws/dashboard")
 async def dashboard_websocket(websocket: WebSocket):
@@ -977,6 +1021,17 @@ async def execute_command_internal(target_id: str, action: str):
             seat_num = get_seat_number_from_target(target_id)
             if seat_num:
                 res = await asyncio.to_thread(set_pica_admin_mode, seat_num, enable)
+                if res.get("status") == "ok":
+                    new_st = "ADMIN" if enable else "LOCKED"
+                    import server.pica_counter_controller as _pcc
+                    _pcc._last_counter_states[seat_num] = new_st
+                    cid = f"PC-{seat_num:02d}"
+                    actual_cid = get_actual_client_id(cid)
+                    for t in set([cid, actual_cid, target_id]):
+                        if t and t in watchdog.clients:
+                            watchdog.clients[t]["pica_status"] = new_st
+                    # 대시보드 브로드캐스트 즉시 전송
+                    asyncio.create_task(broadcast_dashboard_state())
                 return res
             else:
                 return {"status": "error", "message": f"피카 좌석 번호를 식별할 수 없습니다: {target_id}"}
@@ -1351,6 +1406,26 @@ async def notify_tunnel_url_to_telegram():
                     logger.error(f"발송 실패: {e}")
             break
 
+
+@app.get("/api/pica/seat_state/{target_id}")
+async def get_seat_pica_state(target_id: str):
+    """특정 좌석의 실시간 피카 상태 조회 API (원격 제어 툴바 실시간 동기화용)"""
+    seat_num = get_seat_number_from_target(target_id)
+    if not seat_num:
+        actual_cid = get_actual_client_id(target_id)
+        seat_num = get_seat_number_from_target(actual_cid)
+    
+    st = "UNKNOWN"
+    if seat_num:
+        from server.pica_counter_controller import get_last_known_counter_state, get_counter_seat_states
+        st = get_last_known_counter_state(seat_num)
+        if not st:
+            c_states = get_counter_seat_states()
+            st = c_states.get(seat_num, "UNKNOWN")
+    if not st or st == "UNKNOWN":
+        cid = f"PC-{seat_num:02d}" if seat_num else target_id
+        st = watchdog.clients.get(cid, {}).get("pica_status", "UNKNOWN")
+    return {"status": "ok", "seat": seat_num, "pica_status": st, "is_admin": (str(st).upper() == "ADMIN")}
 
 @app.get("/api/pica/status")
 async def get_pica_status():

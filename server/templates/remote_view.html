@@ -73,14 +73,20 @@
 
             {% if not is_server %}
             <!-- 🌟 피카 관리자 로그인 / 잠금 상태 슬라이딩 토글 (시안 A) -->
-            <button id="pica-slider-btn" onclick="togglePicaSlider()" class="relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shadow-lg border active:scale-95 bg-slate-900 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]" title="클릭하여 관리자 로그인 및 잠금 상태 전환">
+            <button id="pica-slider-btn" onclick="togglePicaSlider()" 
+                class="relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shadow-lg border active:scale-95 {% if is_pica_admin %}bg-emerald-950 border-emerald-500/80 shadow-[0_0_16px_rgba(16,185,129,0.35)] flex-row-reverse{% else %}bg-slate-900 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]{% endif %}" 
+                title="클릭하여 관리자 로그인 및 잠금 상태 전환">
                 <!-- 슬라이딩 인디케이터 핸들 -->
-                <div id="pica-slider-knob" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 shadow-md flex items-center justify-center text-slate-950 transition-all duration-300">
-                    <i id="pica-slider-icon" class="fa-solid fa-lock text-[9px] sm:text-[10px]"></i>
+                <div id="pica-slider-knob" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full {% if is_pica_admin %}bg-emerald-400{% else %}bg-amber-500{% endif %} shadow-md flex items-center justify-center text-slate-950 transition-all duration-300">
+                    <i id="pica-slider-icon" class="fa-solid {% if is_pica_admin %}fa-unlock-keyhole{% else %}fa-lock{% endif %} text-[9px] sm:text-[10px]"></i>
                 </div>
                 <!-- 상태 텍스트 -->
-                <span id="pica-slider-label" class="text-[11px] sm:text-xs font-extrabold text-amber-300 tracking-tight transition-all duration-300">
+                <span id="pica-slider-label" class="text-[11px] sm:text-xs font-extrabold {% if is_pica_admin %}text-emerald-300 flex items-center gap-1.5{% else %}text-amber-300{% endif %} tracking-tight transition-all duration-300">
+                    {% if is_pica_admin %}
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 관리자 접속중
+                    {% else %}
                     잠김 상태
+                    {% endif %}
                 </span>
             </button>
             {% else %}
@@ -569,7 +575,7 @@
         }, { passive: false });
 
         // ── 🌟 피카 관리자 로그인 / 잠금 상태 슬라이딩 토글 로직 (시안 A) ──
-        let isPicaAdmin = false;
+        let isPicaAdmin = {{ 'true' if is_pica_admin else 'false' }};
         let isPicaSwitching = false;
 
         function updateSliderUI(isAdmin) {
@@ -596,6 +602,28 @@
             }
         }
 
+        async function syncPicaState() {
+            if (isPicaSwitching) return;
+            try {
+                const res = await fetch(`/api/pica/seat_state/${targetId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'ok' && data.is_admin !== undefined) {
+                        if (isPicaAdmin !== data.is_admin) {
+                            console.log(`[PICA SYNC] 서버 실시간 상태 변경 감지: ${isPicaAdmin} -> ${data.is_admin}`);
+                            isPicaAdmin = data.is_admin;
+                            updateSliderUI(isPicaAdmin);
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+        setInterval(syncPicaState, 2000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) syncPicaState();
+        });
+        window.addEventListener('focus', syncPicaState);
+
         window.togglePicaSlider = async function() {
             if (isPicaSwitching) return;
             isPicaSwitching = true;
@@ -612,6 +640,7 @@
                 console.log(`[PICA TOGGLE] ${action} 응답:`, data);
                 if (data.status === 'ok') {
                     isPicaAdmin = nextStateIsAdmin;
+                    updateSliderUI(isPicaAdmin);
                 } else {
                     console.warn(`[PICA TOGGLE] 명령 실패:`, data);
                     // 실패 시 원래 상태로 슬라이드 롤백
@@ -628,6 +657,7 @@
         };
 
         window.addEventListener('DOMContentLoaded', () => {
+            updateSliderUI(isPicaAdmin);
             setTimeout(fitToContainer, 50);
         });
     </script>

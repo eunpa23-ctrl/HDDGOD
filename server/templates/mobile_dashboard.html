@@ -294,10 +294,21 @@
         }
         loadSavedMapping();
 
-        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const socket = new WebSocket(`${wsProtocol}//${location.host}/ws/dashboard`);
+        let dashSocket = null;
+        let reconnectTimer = null;
 
-        socket.onmessage = function(event) {
+        function connectDashboardWs() {
+            if (dashSocket && (dashSocket.readyState === WebSocket.OPEN || dashSocket.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            dashSocket = new WebSocket(`${wsProtocol}//${location.host}/ws/dashboard`);
+
+            dashSocket.onopen = function() {
+                console.log("대시보드 실시간 WebSocket 연결 성공");
+            };
+
+            dashSocket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             if (data.type === 'log') {
                 handleMobLogMessage(data);
@@ -435,8 +446,36 @@
                             : '메인 데이터 서버 (오프라인, 잠금해제 제외)';
                     }
                 }
+            };
+
+            dashSocket.onclose = function() {
+                console.warn("대시보드 소켓 끊김 -> 2초 후 자동 재연결");
+                if (!reconnectTimer) {
+                    reconnectTimer = setTimeout(() => {
+                        reconnectTimer = null;
+                        connectDashboardWs();
+                    }, 2000);
+                }
+            };
+
+            dashSocket.onerror = function() {
+                try { dashSocket.close(); } catch(e) {}
+            };
+        }
+
+        connectDashboardWs();
+
+        // 탭 전환(원격 화면 방문 후 복귀 등) 시 즉시 최신 상태 매핑 및 WebSocket 복구
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                loadSavedMapping();
+                connectDashboardWs();
             }
-        };
+        });
+        window.addEventListener('focus', () => {
+            loadSavedMapping();
+            connectDashboardWs();
+        });
 
         async function sendCommand(target, cmd) {
             const pc = pcList.find(p => p.id === target);

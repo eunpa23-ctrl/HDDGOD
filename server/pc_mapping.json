@@ -89,9 +89,9 @@
   {
     "seat": 9,
     "id": "PC-09",
-    "name": "메인 서버 (9번)",
+    "name": "메인 서버",
     "ip": "192.168.0.2",
-    "mac": "00:00:00:00:00:00",
+    "mac": "88:c9:b3:bb:ab:df",
     "status": "ONLINE",
     "netflix": "CLOSED",
     "real_cid": "PC-09",

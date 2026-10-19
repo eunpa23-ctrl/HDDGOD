@@ -499,10 +499,11 @@ class ZeusClientAgent:
 
             # 서버 최신 버전 조회 (부팅 초기 네트워크 안정화 대기: 최대 3회 재시도)
             server_url = f"http://{self.server_ip}:{self.server_port}"
+            target_node = "server" if self.is_server_node() else "client"
             res = None
             for attempt in range(3):
                 try:
-                    res = requests.get(f"{server_url}/api/version", timeout=4)
+                    res = requests.get(f"{server_url}/api/version/{target_node}", timeout=4)
                     if res.status_code == 200:
                         break
                 except Exception:
@@ -516,7 +517,7 @@ class ZeusClientAgent:
 
             if force or (latest_version and latest_version != current_version):
                 reason = "강제 업데이트 명령" if force else f"현재: {current_version} -> 최신: {latest_version}"
-                logger.info(f"🔄 클라이언트 업데이트 진행! ({reason})")
+                logger.info(f"🔄 [{target_node.upper()}] 에이전트 업데이트 진행! ({reason})")
                 
                 # 원격 강제 명령(force=True)일 경우 백그라운드 스레드 크래시를 방지하기 위해 GUI 생성 건너뜀
                 use_gui = not force
@@ -549,8 +550,8 @@ class ZeusClientAgent:
                         use_gui = False
                         root = None
 
-                # 새 실행 파일 다운로드 (안정적인 30초 타임아웃)
-                exe_res = requests.get(f"{server_url}/api/download/update", stream=True, timeout=30)
+                # 새 실행 파일 다운로드 (전용 바이너리 분기, 30초 타임아웃)
+                exe_res = requests.get(f"{server_url}/api/download/update/{target_node}", stream=True, timeout=30)
                 if exe_res.status_code == 200:
                     total_length = exe_res.headers.get('content-length')
                     new_exe_path = os.path.join(app_dir, "ZeusAgent_new.exe")
@@ -604,6 +605,7 @@ class ZeusClientAgent:
                         f.write(latest_version)
 
                     # 1. 업데이트 배치 파일 생성 (견고한 무인 교체 루프)
+                    current_exe_name = os.path.basename(sys.executable) if getattr(sys, 'frozen', False) else ("ZeusAgent_Server.exe" if self.is_server_node() else "ZeusAgent.exe")
                     bat_path = os.path.join(app_dir, "update.bat")
                     bat_content = f"""@echo off
 setlocal enabledelayedexpansion
@@ -633,6 +635,7 @@ cd /d "%~dp0"
 :: 3초 대기 후 기존 프로세스 종료
 ping 127.0.0.1 -n 4 >nul
 taskkill /F /IM ZeusAgent.exe >nul 2>&1
+taskkill /F /IM ZeusAgent_Server.exe >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
 
 :: 잔여 temp 임시 폴더 삭제
@@ -642,15 +645,15 @@ if exist "%~dp0temp" rmdir /s /q "%~dp0temp" >nul 2>&1
 set RETRY=0
 :RETRY_MOVE
 if not exist "%~dp0ZeusAgent_new.exe" goto MOVE_VER
-del /f /q "%~dp0ZeusAgent.exe" >nul 2>&1
-move /y "%~dp0ZeusAgent_new.exe" "%~dp0ZeusAgent.exe" >nul 2>&1
+del /f /q "%~dp0{current_exe_name}" >nul 2>&1
+move /y "%~dp0ZeusAgent_new.exe" "%~dp0{current_exe_name}" >nul 2>&1
 if errorlevel 1 (
     set /a RETRY+=1
     if !RETRY! lss 30 (
         ping 127.0.0.1 -n 2 >nul
         goto RETRY_MOVE
     )
-    echo [update.bat] ERROR: ZeusAgent.exe 교체 실패 >> "%~dp0bat_debug.log"
+    echo [update.bat] ERROR: {current_exe_name} 교체 실패 >> "%~dp0bat_debug.log"
     goto LAUNCH
 )
 
@@ -659,7 +662,7 @@ if exist "%~dp0version_new.txt" move /y "%~dp0version_new.txt" "%~dp0version.txt
 
 :LAUNCH
 ping 127.0.0.1 -n 2 >nul
-start "" /D "%~dp0" "%~dp0ZeusAgent.exe"
+start "" /D "%~dp0" "%~dp0{current_exe_name}"
 exit /b 0
 """
                     with open(bat_path, "w", encoding="cp949") as f:

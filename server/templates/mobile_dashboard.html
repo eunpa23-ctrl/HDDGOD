@@ -102,7 +102,7 @@
             </div>
         </div>
 
-        <!-- 2. 메인 서버 9번 (SERVER_MAIN) -->
+        <!-- 2. 메인 서버 (SERVER_MAIN) -->
         <div id="mob-srv9-card" class="bg-gradient-to-r from-purple-950/90 via-slate-900 to-purple-950/60 border border-purple-500/50 rounded-2xl p-3 shadow-lg space-y-2">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -112,7 +112,7 @@
                     <div>
                         <div class="flex items-center gap-1.5">
                             <span id="mob-srv9-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                            <span class="font-extrabold text-xs text-white">메인 서버 9번 (SERVER_MAIN)</span>
+                            <span class="font-extrabold text-xs text-white">메인 서버 (SERVER_MAIN)</span>
                             <span class="text-[9px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700/50 font-mono">192.168.0.2</span>
                         </div>
                         <span id="mob-srv9-subtext" class="text-[10px] text-purple-200/70">메인 데이터 서버 (피카 제외)</span>
@@ -574,7 +574,7 @@
                     } else if (isServer && data.local) {
                         alert(`⚡ [카운터 서버 메모리 최적화 완료]\n• 정리된 프로세스: ${data.local.trimmed_count}개\n• 즉시 확보된 메모리: ${data.local.freed_mb} MB\n• 현재 RAM 점유율: ${data.local.current_ram_percent}%`);
                     } else {
-                        alert(`⚡ [메인 서버 9번 메모리 정리 완료]\n• 대상: 메인 서버 9번 (PC-09)\n• 유휴 프로세스 캐시 정리 명령이 성공적으로 전송되었습니다.`);
+                        alert(`⚡ [메인 서버 메모리 정리 완료]\n• 대상: 메인 서버 (SERVER_MAIN, 192.168.0.2)\n• 유휴 프로세스 캐시 정리 명령이 성공적으로 전송되었습니다.`);
                     }
                 } else {
                     alert('메모리 정리 실패: ' + (data.message || '오류 발생'));

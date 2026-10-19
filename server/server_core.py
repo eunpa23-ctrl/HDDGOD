@@ -925,12 +925,19 @@ async def send_command(client_id: str, action: str):
 
 @app.post("/api/command_all/{action}")
 async def send_command_all(action: str):
+    count = 0
     for cid, ws in active_clients.items():
+        if action in [CommandType.UPDATE_AGENT, "UPDATE_AGENT"]:
+            c_info = watchdog.clients.get(cid, {})
+            ip = c_info.get("ip") or getattr(ws, "client_ip", "")
+            if cid in ["PC-09", "SERVER_MAIN", "SERVER"] or ip in ["192.168.0.2", "192.168.0.100"]:
+                continue  # 손님 PC 전체 업데이트 시 메인 서버는 분리 보호!
         cmd = make_packet(PacketType.COMMAND, {"action": action})
         await ws.send_text(cmd)
         if action == CommandType.SHUTDOWN:
             watchdog.set_normal_shutdown(cid)
-    return {"status": "ok", "action": action, "count": len(active_clients)}
+        count += 1
+    return {"status": "ok", "action": action, "count": count}
 
 
 @app.post("/api/optimize_memory")
@@ -1147,12 +1154,19 @@ async def execute_command_internal(target_id: str, action: str):
 
     # 4. 전체 PC WebSocket 명령 브로드캐스트
     if target_id == "ALL":
+        count = 0
         for cid, ws in active_clients.items():
+            if action in [CommandType.UPDATE_AGENT, "UPDATE_AGENT"]:
+                c_info = watchdog.clients.get(cid, {})
+                ip = c_info.get("ip") or getattr(ws, "client_ip", "")
+                if cid in ["PC-09", "SERVER_MAIN", "SERVER"] or ip in ["192.168.0.2", "192.168.0.100"]:
+                    continue  # 손님 PC 전체 업데이트 시 메인 서버는 분리 보호!
             cmd = make_packet(PacketType.COMMAND, {"action": action})
             await ws.send_text(cmd)
             if action == CommandType.SHUTDOWN:
                 watchdog.set_normal_shutdown(cid)
-        return {"status": "ok", "action": action, "count": len(active_clients)}
+            count += 1
+        return {"status": "ok", "action": action, "count": count}
 
     # 5. 개별 PC WebSocket 명령 전송
     ws = get_client_ws(target_id)
@@ -1165,30 +1179,60 @@ async def execute_command_internal(target_id: str, action: str):
         return {"status": "ok", "sent_to": actual_cid, "action": action}
     return {"status": "error", "message": "클라이언트가 오프라인입니다."}
 
-# ── 클라이언트 자동 업데이트 API ───────────────────────────────
+# ── 클라이언트 & 메인 서버 자동 업데이트 API ───────────────────────────────
 @app.get("/api/version")
-async def get_version():
-    """최신 클라이언트 버전 반환"""
-    version_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.txt")
-    if os.path.exists(version_path):
-        try:
-            with open(version_path, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except Exception:
+@app.get("/api/version/{target}")
+async def get_version(target: Optional[str] = "client"):
+    """최신 버전 반환 (target='server'이면 메인 서버용, 'client'이면 손님 PC용)"""
+    is_srv = (str(target).lower() in ["server", "main", "server_main"])
+    if is_srv:
+        candidates = [
+            os.path.join(PROJECT_ROOT, "deploy", "ServerDeploy", "core", "version_server.txt"),
+            os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version_server.txt"),
+            os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.txt"),
+        ]
+    else:
+        candidates = [
+            os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.txt")
+        ]
+    for v_path in candidates:
+        if os.path.exists(v_path):
             try:
-                with open(version_path, "r", encoding="utf-16le") as f:
-                    return f.read().strip()
+                with open(v_path, "r", encoding="utf-8") as f:
+                    return f.read().strip().replace('\ufeff', '')
             except Exception:
-                pass
+                try:
+                    with open(v_path, "r", encoding="utf-16le") as f:
+                        return f.read().strip().replace('\ufeff', '')
+                except Exception:
+                    pass
     return "1.0.0"
 
 @app.get("/api/download/update")
-async def download_update():
-    """최신 클라이언트 실행 파일(ZeusAgent.exe) OTA 다운로드 (zip 폴백)"""
+@app.get("/api/download/update/{target}")
+async def download_update(target: Optional[str] = "client"):
+    """최신 실행 파일(ZeusAgent.exe 또는 ZeusAgent_Server.exe) OTA 다운로드"""
     from fastapi.responses import FileResponse
-    exe_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
-    if os.path.exists(exe_path):
-        return FileResponse(exe_path, filename="ZeusAgent.exe", media_type="application/octet-stream")
+    is_srv = (str(target).lower() in ["server", "main", "server_main"])
+    
+    if is_srv:
+        server_exe_candidates = [
+            os.path.join(PROJECT_ROOT, "deploy", "ServerDeploy", "core", "ZeusAgent_Server.exe"),
+            os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent_Server.exe"),
+            os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
+        ]
+        for p in server_exe_candidates:
+            if os.path.exists(p):
+                return FileResponse(p, filename="ZeusAgent_Server.exe", media_type="application/octet-stream")
+    
+    # 일반 손님 PC용
+    client_exe_candidates = [
+        os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
+    ]
+    for p in client_exe_candidates:
+        if os.path.exists(p):
+            return FileResponse(p, filename="ZeusAgent.exe", media_type="application/octet-stream")
+            
     zip_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "ZeusAgent.zip")
     if os.path.exists(zip_path):
         return FileResponse(zip_path, filename="ZeusAgent.zip", media_type="application/zip")
@@ -1227,6 +1271,17 @@ async def get_settings():
     if exe_exists:
         exe_size_str = f"{os.path.getsize(exe_path) / (1024 * 1024):.1f} MB"
 
+    srv_ver_path = os.path.join(PROJECT_ROOT, "deploy", "ServerDeploy", "core", "version_server.txt")
+    srv_exe_path = os.path.join(PROJECT_ROOT, "deploy", "ServerDeploy", "core", "ZeusAgent_Server.exe")
+    server_version = "4.2.1-server"
+    if os.path.exists(srv_ver_path):
+        try:
+            with open(srv_ver_path, "r", encoding="utf-8") as f:
+                server_version = f.read().strip().replace('\ufeff', '')
+        except Exception:
+            pass
+    srv_exe_size_str = f"{os.path.getsize(srv_exe_path) / (1024 * 1024):.1f} MB" if os.path.exists(srv_exe_path) else "0 MB"
+
     cfg_file = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "config.ini")
     import configparser
     cfg = configparser.ConfigParser()
@@ -1243,6 +1298,8 @@ async def get_settings():
         "client_version": client_version,
         "agent_file_exists": exe_exists,
         "agent_file_size": exe_size_str,
+        "server_version": server_version,
+        "server_agent_file_size": srv_exe_size_str,
         "windows_autostart": check_windows_autostart(),
         "supervisor_active": check_supervisor_active(),
         "telegram_bot_token": cfg.get("TELEGRAM", "BOT_TOKEN", fallback=""),
@@ -1321,39 +1378,62 @@ async def toggle_autostart(request: Request):
 
 @app.post("/api/settings/update_client")
 async def trigger_client_update(request: Request):
-    """클라이언트 에이전트 OTA 업데이트 강제 배포 API"""
+    """클라이언트 / 메인 서버 에이전트 OTA 업데이트 강제 배포 API"""
     data = await request.json()
     new_version = data.get("new_version", "").strip()
+    target = data.get("target", "client").lower()  # "client", "server", "all"
     
-    version_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.txt")
-    if new_version:
-        with open(version_path, "w", encoding="utf-8") as f:
-            f.write(new_version)
-
-    current_version = "1.0.0"
-    if os.path.exists(version_path):
-        try:
-            with open(version_path, "r", encoding="utf-8") as f:
-                current_version = f.read().strip()
-        except Exception:
+    is_srv = (target in ["server", "main", "server_main"])
+    is_all = (target in ["all", "both"])
+    
+    # 1. 버전 파일 갱신
+    if is_srv or is_all:
+        srv_ver_path = os.path.join(PROJECT_ROOT, "deploy", "ServerDeploy", "core", "version_server.txt")
+        if new_version:
             try:
-                with open(version_path, "r", encoding="utf-16le") as f:
-                    current_version = f.read().strip()
+                os.makedirs(os.path.dirname(srv_ver_path), exist_ok=True)
+                with open(srv_ver_path, "w", encoding="utf-8") as f:
+                    f.write(new_version)
+            except Exception:
+                pass
+    if not is_srv or is_all:
+        cli_ver_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "version.txt")
+        if new_version:
+            try:
+                with open(cli_ver_path, "w", encoding="utf-8") as f:
+                    f.write(new_version)
             except Exception:
                 pass
 
-    # 전체 클라이언트에 UPDATE_AGENT 명령 전송
+    current_ver = await get_version(target="server" if is_srv else "client")
+
+    # 2. 대상 클라이언트에 UPDATE_AGENT 명령 전송
     count = 0
     for cid, ws in active_clients.items():
-        cmd = make_packet(PacketType.COMMAND, {"action": CommandType.UPDATE_AGENT})
-        await ws.send_text(cmd)
-        count += 1
+        c_info = watchdog.clients.get(cid, {})
+        ip = c_info.get("ip") or getattr(ws, "client_ip", "")
+        is_client_server = (cid in ["PC-09", "SERVER_MAIN", "SERVER"] or ip in ["192.168.0.2", "192.168.0.100"])
+        
+        should_send = False
+        if is_all:
+            should_send = True
+        elif is_srv and is_client_server:
+            should_send = True
+        elif not is_srv and not is_client_server:
+            should_send = True
+            
+        if should_send:
+            cmd = make_packet(PacketType.COMMAND, {"action": CommandType.UPDATE_AGENT})
+            await ws.send_text(cmd)
+            count += 1
 
+    target_name = "메인 서버" if is_srv else ("전체 PC" if is_all else "손님 PC(1~8번)")
     return {
         "status": "ok",
-        "version": current_version,
+        "target": target,
+        "version": current_ver,
         "sent_count": count,
-        "message": f"버전 {current_version} 업데이트 명령이 {count}대 PC로 전송되었습니다."
+        "message": f"[{target_name}] 업데이트 명령이 {count}대에 전송되었습니다. (배포 버전: {current_ver})"
     }
 
 @app.post("/api/settings/test_telegram")

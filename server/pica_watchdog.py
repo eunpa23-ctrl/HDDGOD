@@ -103,7 +103,7 @@ class PicaWatchdog:
         return found_hwnd
 
     def get_login_window_hwnd(self) -> Optional[int]:
-        """PicaLive 로그인 또는 확인 대화상자 HWND 반환"""
+        """PicaLive 로그인 또는 확인 대화상자 HWND 반환 (화면 중앙에 위치하는 대화상자)"""
         ensure_desktop()
         pids = self.get_picalive_pids()
         if not pids:
@@ -119,10 +119,12 @@ class PicaWatchdog:
                 user32.GetWindowRect(h, ctypes.byref(r))
                 w = r.right - r.left
                 hh = r.bottom - r.top
-                # 로그인 창은 보통 크기가 200~700 사이의 다이얼로그임
+                # 로그인 창 크기 (100 < w <= 800, 50 < hh <= 600)
+                # 우측 하단 공지 팝업(r.left > 1300 and r.top > 650)은 철저히 배제하여 중앙 다이얼로그만 매칭!
                 if 100 < w <= 800 and 50 < hh <= 600:
-                    found_hwnd = h
-                    return False
+                    if not (r.left >= 1350 and r.top >= 650):
+                        found_hwnd = h
+                        return False
             return True
 
         user32.EnumWindows(WNDENUMPROC(enum), 0)
@@ -182,15 +184,21 @@ class PicaWatchdog:
         try:
             # 2. 창 활성화 및 최상위로 올리기
             win32gui.ShowWindow(login_hwnd, win32con.SW_RESTORE)
-            time.sleep(0.2)
+            time.sleep(0.3)
             user32.SetForegroundWindow(login_hwnd)
             time.sleep(0.4)
 
-            # 3. 비밀번호 입력 (클립보드 복사 후 Ctrl+V)
+            # 창 정중앙 클릭 (비밀번호 입력란에 포커스 확실히 주기)
+            r = wintypes.RECT()
+            user32.GetWindowRect(login_hwnd, ctypes.byref(r))
+            cx = (r.left + r.right) // 2
+            cy = (r.top + r.bottom) // 2
+            pyautogui.click(cx, cy)
+            time.sleep(0.3)
+
+            # 3. 비밀번호 입력 (클립보드 복사 후 붙여넣기)
             pyperclip.copy(self.password)
-            time.sleep(0.2)
-            
-            # 전체 선택 후 붙여넣기
+            time.sleep(0.15)
             pyautogui.hotkey('ctrl', 'a')
             time.sleep(0.1)
             pyautogui.hotkey('ctrl', 'v')
@@ -238,15 +246,17 @@ class PicaWatchdog:
             
             await asyncio.sleep(2)
 
-            # 3. LiveStarter.exe 실행 (os.startfile 또는 ShellExecute로 안전하게 윈도우 셸에서 구동)
+            # 3. 바탕화면 바로가기 또는 LiveStarter.exe 실행
+            lnk_path = r"C:\Users\Public\Desktop\PICA Live.lnk"
             program_dir = os.path.dirname(self.program_path)
-            logger.info(f"🚀 LiveStarter 실행 중: {self.program_path}")
+            target_to_launch = lnk_path if os.path.exists(lnk_path) else self.program_path
+            logger.info(f"🚀 PicaLive 재실행 중: {target_to_launch}")
             
             try:
-                os.startfile(self.program_path)
+                os.startfile(target_to_launch)
             except Exception as e:
                 logger.warning(f"os.startfile 실패, ShellExecute 시도: {e}")
-                ctypes.windll.shell32.ShellExecuteW(None, "open", self.program_path, None, program_dir, 1)
+                ctypes.windll.shell32.ShellExecuteW(None, "open", target_to_launch, None, program_dir, 1)
 
             # 4. PicaLive.exe 프로세스 기동 대기 (최대 30초)
             started = False

@@ -426,8 +426,22 @@ dashboard_subscribers: set = set()
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
-    """중앙 관제 및 IP 매핑 대시보드 (저장된 PC 목록 주입)"""
+    """중앙 관제 및 IP 매핑 대시보드 (실시간 상태 주입)"""
     pc_list = load_pc_mapping()
+    from server.pica_counter_controller import get_counter_seat_states
+    c_states = get_counter_seat_states()
+    for pc in pc_list:
+        cid = pc.get("id")
+        s_num = pc.get("seat")
+        actual_cid = get_actual_client_id(cid)
+        c_info = watchdog.clients.get(actual_cid) or watchdog.clients.get(cid)
+        if c_info:
+            pc["status"] = c_info.get("status", "OFFLINE")
+            pc["pica"] = c_states.get(s_num) or c_info.get("pica_status", "UNKNOWN")
+            pc["netflix"] = c_info.get("netflix_status", "CLOSED")
+            pc["version"] = c_info.get("version", "")
+        elif s_num in c_states:
+            pc["pica"] = c_states[s_num]
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",

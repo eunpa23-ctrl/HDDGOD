@@ -394,6 +394,28 @@
         </div>
     </div>
 
+    <!-- ⚠️ 손님 이용 중 원격 제어 경고 모달 -->
+    <div id="guest-warning-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+            <div class="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-2xl flex items-center justify-center mx-auto animate-pulse">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="space-y-1.5">
+                <h3 id="guest-modal-title" class="text-base font-extrabold text-white">PC 원격 접속</h3>
+                <p class="text-base font-black text-amber-300">손님이 이용중입니다.<br>그래도 접속 하시겠습니까?</p>
+                <p class="text-xs text-slate-400">원격 접속 시 손님 화면을 실시간 확인 및 제어하게 됩니다.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeGuestModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl text-xs font-extrabold text-slate-300 transition border border-slate-700">
+                    종료
+                </button>
+                <button onclick="confirmGuestConnect()" class="py-2.5 bg-amber-600 hover:bg-amber-500 active:bg-amber-400 rounded-xl text-xs font-extrabold text-white shadow-lg transition">
+                    접속
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ⚙️ 환경설정 통합 모달 -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-700 w-full max-w-3xl rounded-2xl p-6 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
@@ -634,6 +656,34 @@
             const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
             const el = document.getElementById('stat-total');
             if (el) el.innerText = `${guestPcs.length} 대`;
+
+            let onlineCount = 0;
+            let netflixCount = 0;
+            let guestActiveCount = 0;
+            let guestIdleCount = 0;
+
+            guestPcs.forEach(pc => {
+                if (pc.status === 'ONLINE') {
+                    onlineCount++;
+                    const nf = (pc.netflix || '').toUpperCase();
+                    if (nf === 'RUNNING' || nf === 'LOGGED_IN') netflixCount++;
+                    const st = (pc.pica || '').toUpperCase();
+                    if (st === 'USING' || st === 'UNLOCKED') {
+                        guestActiveCount++;
+                    } else {
+                        guestIdleCount++;
+                    }
+                }
+            });
+
+            const elActive = document.getElementById('stat-guest-active');
+            if (elActive) elActive.innerText = `${guestActiveCount} 대`;
+            const elIdle = document.getElementById('stat-guest-idle');
+            if (elIdle) elIdle.innerText = `${guestIdleCount} 대`;
+            const elOff = document.getElementById('stat-offline');
+            if (elOff) elOff.innerText = `${guestPcs.length - onlineCount} 대`;
+            const elNf = document.getElementById('stat-netflix');
+            if (elNf) elNf.innerText = `${netflixCount} 대`;
         }
 
         
@@ -782,9 +832,14 @@
                     // 손님 PC(1~8번)만 통계 카운트에 포함
                     if (!pc.is_server && pc.seat !== 9) {
                         onlineCount++;
-                        if (pc.netflix === 'RUNNING' || pc.netflix === 'LOGGED_IN') netflixCount++;
-                        if (pc.pica === 'UNLOCKED') guestActiveCount++;
-                        else if (pc.pica === 'LOCKED') guestIdleCount++;
+                        const nf = (pc.netflix || '').toUpperCase();
+                        if (nf === 'RUNNING' || nf === 'LOGGED_IN') netflixCount++;
+                        const st = (pc.pica || '').toUpperCase();
+                        if (st === 'USING' || st === 'UNLOCKED') {
+                            guestActiveCount++;
+                        } else {
+                            guestIdleCount++;
+                        }
                     }
                 } else {
                     pc.status = 'OFFLINE';
@@ -1142,9 +1197,35 @@
             }
         }
 
+        let pendingRemoteTarget = null;
+
         function openRemoteView(seatId, realCid) {
             const target = realCid || seatId;
-            window.open(`/remote/${target}`, '_blank', 'width=1000,height=700');
+            const pc = pcList.find(p => p.id === seatId || p.real_cid === target || p.id === target);
+            const picaStatus = pc ? (pc.pica || '').toUpperCase() : '';
+            if (picaStatus === 'USING') {
+                pendingRemoteTarget = target;
+                const modal = document.getElementById('guest-warning-modal');
+                const title = document.getElementById('guest-modal-title');
+                if (title) title.innerText = `${pc ? pc.name : seatId} 원격 접속 확인`;
+                if (modal) modal.classList.remove('hidden');
+            } else {
+                window.open(`/remote/${target}`, '_blank', 'width=1000,height=700');
+            }
+        }
+
+        function closeGuestModal() {
+            pendingRemoteTarget = null;
+            const modal = document.getElementById('guest-warning-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function confirmGuestConnect() {
+            if (pendingRemoteTarget) {
+                const target = pendingRemoteTarget;
+                closeGuestModal();
+                window.open(`/remote/${target}`, '_blank', 'width=1000,height=700');
+            }
         }
 
         // --- ⚙️ 환경설정(Settings) 통합 모달 스크립트 ---

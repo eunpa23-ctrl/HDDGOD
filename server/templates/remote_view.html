@@ -54,32 +54,34 @@
         }
     </style>
 </head>
-<body class="flex flex-col h-screen select-none bg-black">
+<body class="flex flex-col h-screen w-full max-w-full overflow-hidden select-none bg-black">
     <!-- 상단 툴바 -->
-    <div class="h-[50px] bg-slate-900 border-b border-slate-800 flex items-center justify-between px-2 sm:px-4 text-xs text-white z-20 shrink-0">
-        <div class="font-bold flex items-center gap-1.5 sm:gap-2">
+    <div class="h-[50px] w-full max-w-full bg-slate-900 border-b border-slate-800 flex items-center justify-between px-2 sm:px-4 text-xs text-white z-20 shrink-0">
+        <div class="font-bold flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span id="status-dot" class="w-2.5 h-2.5 rounded-full {{ 'bg-emerald-500 animate-pulse' if is_online else 'bg-rose-500' }}"></span>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                <span class="text-xs sm:text-sm font-extrabold text-white truncate max-w-[120px] sm:max-w-none">{{ client_name }} ({{ client_id }})</span>
-                <span class="text-[10px] text-sky-400 font-mono bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800/40">IP: {{ client_ip if client_ip else '미확인' }}</span>
+            <div class="flex items-center gap-1.5">
+                <span class="text-xs sm:text-sm font-extrabold text-white whitespace-nowrap">{{ client_name }}</span>
+                <span class="hidden sm:inline text-[10px] text-sky-400 font-mono bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800/40">{{ client_ip if client_ip else '' }}</span>
             </div>
         </div>
 
-        <div class="flex items-center gap-1 sm:gap-2">
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
             <!-- 화면 크기 초기화 -->
             <button onclick="resetZoom()" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded font-semibold transition flex items-center gap-1 text-[11px]" title="화면 크기 맞춤">
                 <i class="fa-solid fa-expand"></i> <span class="hidden sm:inline">화면맞춤</span>
             </button>
 
             {% if not is_server %}
-            <!-- 피카 잠금 해제 매크로 -->
-            <button onclick="sendPicaUnlock()" class="px-2 sm:px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm" title="피카 관리자 로그인 잠금 해제">
-                <i class="fa-solid fa-unlock-keyhole"></i> <span class="hidden sm:inline">피카해제</span>
-            </button>
-
-            <!-- 피카 화면보호기 잠금 복구 -->
-            <button onclick="sendPicaLock()" class="px-2 sm:px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded font-bold transition flex items-center gap-1 text-[11px] text-white shadow-sm border border-slate-600/40" title="피카 관리자 로그아웃 -> 화면보호기 잠금 복구">
-                <i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">피카잠금</span>
+            <!-- 🌟 피카 관리자 로그인 / 잠금 상태 슬라이딩 토글 (시안 A) -->
+            <button id="pica-slider-btn" onclick="togglePicaSlider()" class="relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shadow-lg border active:scale-95 bg-slate-900 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]" title="클릭하여 관리자 로그인 및 잠금 상태 전환">
+                <!-- 슬라이딩 인디케이터 핸들 -->
+                <div id="pica-slider-knob" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 shadow-md flex items-center justify-center text-slate-950 transition-all duration-300">
+                    <i id="pica-slider-icon" class="fa-solid fa-lock text-[9px] sm:text-[10px]"></i>
+                </div>
+                <!-- 상태 텍스트 -->
+                <span id="pica-slider-label" class="text-[11px] sm:text-xs font-extrabold text-amber-300 tracking-tight transition-all duration-300">
+                    잠김 상태
+                </span>
             </button>
             {% else %}
             <!-- 서버 PC 전용 뱃지 -->
@@ -89,14 +91,14 @@
             {% endif %}
 
             <!-- 닫기 -->
-            <button onclick="window.close()" class="px-2 sm:px-3 py-1.5 bg-rose-800 hover:bg-rose-700 rounded font-semibold transition">
+            <button onclick="window.close()" class="px-2.5 sm:px-3 py-1.5 bg-rose-800 hover:bg-rose-700 rounded font-semibold transition">
                 닫기
             </button>
         </div>
     </div>
 
     <!-- 메인 터치/화면 컨테이너 -->
-    <div id="touch-container" class="flex-1 relative bg-black overflow-hidden w-full h-full touch-none select-none">
+    <div id="touch-container" class="flex-1 relative bg-black overflow-hidden w-full max-w-full h-full min-w-0 touch-none select-none">
         
         <!-- 로딩 / 오프라인 인디케이터 -->
         <div id="loading-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/95 text-slate-300 gap-3 z-30">
@@ -566,45 +568,62 @@
             }
         }, { passive: false });
 
-        // 키보드 텍스트 전송
-        window.sendKeyText = function() {
-            const input = document.getElementById('key-input');
-            if (input.value) {
-                sendEvent('TEXT', 0, 0, { text: input.value });
-                input.value = '';
-            }
-        };
-        document.getElementById('key-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendKeyText();
-        });
+        // ── 🌟 피카 관리자 로그인 / 잠금 상태 슬라이딩 토글 로직 (시안 A) ──
+        let isPicaAdmin = false;
+        let isPicaSwitching = false;
 
-        // 피카 관리프로그램 잠금 해제 매크로 전송
-        window.sendPicaUnlock = function() {
-            if (confirm("피카 관리자 로그인을 실행하여 화면 잠금을 해제하시겠습니까?")) {
-                fetch(`/api/command/${targetId}/UNLOCK_PICA`, { method: 'POST' })
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log("UNLOCK_PICA 응답:", data);
-                    })
-                    .catch(err => {
-                        console.error("UNLOCK_PICA 오류:", err);
-                        alert("명령 전송 실패: " + err);
-                    });
-            }
-        };
+        function updateSliderUI(isAdmin) {
+            const btn = document.getElementById('pica-slider-btn');
+            const knob = document.getElementById('pica-slider-knob');
+            const icon = document.getElementById('pica-slider-icon');
+            const label = document.getElementById('pica-slider-label');
+            if (!btn || !knob || !icon || !label) return;
 
-        // 피카 관리자 로그아웃 -> 화면보호기 잠금 복구 전송
-        window.sendPicaLock = function() {
-            if (confirm("피카 관리자 로그아웃을 실행하여 화면보호기 잠금 상태로 복구하시겠습니까?")) {
-                fetch(`/api/command/${targetId}/LOCK_PICA`, { method: 'POST' })
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log("LOCK_PICA 응답:", data);
-                    })
-                    .catch(err => {
-                        console.error("LOCK_PICA 오류:", err);
-                        alert("명령 전송 실패: " + err);
-                    });
+            if (isAdmin) {
+                // 관리자 접속중 (우측 슬라이딩, 에메랄드 네온)
+                btn.className = "relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shadow-lg border active:scale-95 bg-emerald-950 border-emerald-500/80 shadow-[0_0_16px_rgba(16,185,129,0.35)] flex-row-reverse";
+                knob.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-400 shadow-md flex items-center justify-center text-slate-950 transition-all duration-300";
+                icon.className = "fa-solid fa-unlock-keyhole text-[9px] sm:text-[10px]";
+                label.className = "text-[11px] sm:text-xs font-extrabold text-emerald-300 tracking-tight transition-all duration-300 flex items-center gap-1.5";
+                label.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 관리자 접속중';
+            } else {
+                // 잠김 상태 (좌측 슬라이딩, 앰버 골드)
+                btn.className = "relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shadow-lg border active:scale-95 bg-slate-900 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]";
+                knob.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 shadow-md flex items-center justify-center text-slate-950 transition-all duration-300";
+                icon.className = "fa-solid fa-lock text-[9px] sm:text-[10px]";
+                label.className = "text-[11px] sm:text-xs font-extrabold text-amber-300 tracking-tight transition-all duration-300";
+                label.innerHTML = '잠김 상태';
+            }
+        }
+
+        window.togglePicaSlider = async function() {
+            if (isPicaSwitching) return;
+            isPicaSwitching = true;
+
+            const nextStateIsAdmin = !isPicaAdmin;
+            const action = nextStateIsAdmin ? 'UNLOCK_PICA' : 'LOCK_PICA';
+            
+            // 즉시 슬라이딩 애니메이션 선반영
+            updateSliderUI(nextStateIsAdmin);
+
+            try {
+                const res = await fetch(`/api/command/${targetId}/${action}`, { method: 'POST' });
+                const data = await res.json();
+                console.log(`[PICA TOGGLE] ${action} 응답:`, data);
+                if (data.status === 'ok') {
+                    isPicaAdmin = nextStateIsAdmin;
+                } else {
+                    console.warn(`[PICA TOGGLE] 명령 실패:`, data);
+                    // 실패 시 원래 상태로 슬라이드 롤백
+                    updateSliderUI(isPicaAdmin);
+                    alert(`요청 처리 실패: ${data.message || '알 수 없는 오류'}`);
+                }
+            } catch (err) {
+                console.error(`[PICA TOGGLE] 네트워크 오류:`, err);
+                updateSliderUI(isPicaAdmin);
+                alert(`네트워크 통신 오류: ${err.message}`);
+            } finally {
+                isPicaSwitching = false;
             }
         };
 

@@ -279,10 +279,10 @@
                     data.forEach(newPc => {
                         const existing = pcList.find(p => p.id === newPc.id);
                         if (existing) {
-                            newPc.status = existing.status || 'OFFLINE';
-                            newPc.pica = existing.pica || 'UNKNOWN';
-                            newPc.netflix = existing.netflix || 'CLOSED';
-                            newPc.version = existing.version || '';
+                            newPc.status = (existing.status === 'ONLINE' ? 'ONLINE' : (newPc.status || 'OFFLINE'));
+                            newPc.pica = newPc.pica || existing.pica || 'UNKNOWN';
+                            newPc.netflix = existing.netflix || newPc.netflix || 'CLOSED';
+                            newPc.version = existing.version || newPc.version || '';
                         }
                     });
                     pcList = data;
@@ -446,7 +446,8 @@
                             : '메인 데이터 서버 (오프라인, 잠금해제 제외)';
                     }
                 }
-            };
+            }
+        };
 
             dashSocket.onclose = function() {
                 console.warn("대시보드 소켓 끊김 -> 2초 후 자동 재연결");

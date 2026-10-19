@@ -33,6 +33,17 @@ class WebSocketLogHandler(logging.Handler):
         """로그 레코드를 WebSocket으로 전송 (비동기 없이 즉시)"""
         try:
             msg = self.format(record)
+
+            # [루프/증폭 방지] 네트워크/웹소켓 자체 오류 및 프레임 전송 실패 로그는 웹소켓 스트리밍에서 완전 배제
+            block_keywords = [
+                "websockets", "keepalive", "화면 프레임 전송", "연결 대기",
+                "no close frame", "connection closed", "websocketloghandler",
+                "1011 (internal error)", "connection open"
+            ]
+            msg_lower = msg.lower()
+            if any(k in msg_lower for k in block_keywords):
+                return
+
             payload = {
                 "client_id": getattr(self.agent, "client_id", "unknown"),
                 "level": record.levelname,

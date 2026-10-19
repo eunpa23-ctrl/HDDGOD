@@ -509,7 +509,7 @@ async def get_mobile_dashboard(request: Request):
 
 @app.get("/api/get_mapping")
 async def get_mapping():
-    """저장된 PC 목록 조회 API (실시간 카운터 피카 상태 병합)"""
+    """저장된 PC 목록 조회 API (실시간 카운터 피카 상태 및 하트비트 버전 병합)"""
     pc_list = load_pc_mapping()
     try:
         from server.pica_counter_controller import get_last_known_counter_state
@@ -518,6 +518,19 @@ async def get_mapping():
             st = get_last_known_counter_state(s_num)
             if st:
                 pc["pica"] = st
+            # 실시간 하트비트 클라이언트 정보(버전, 온라인 상태) 병합
+            cid = pc.get("id")
+            c_info = watchdog.clients.get(cid, {})
+            if not c_info and pc.get("ip"):
+                for k, v in watchdog.clients.items():
+                    if v.get("ip") == pc.get("ip"):
+                        c_info = v
+                        break
+            if c_info:
+                if c_info.get("version"):
+                    pc["version"] = c_info.get("version")
+                if c_info.get("status"):
+                    pc["status"] = c_info.get("status")
     except Exception:
         pass
     return pc_list
@@ -756,27 +769,45 @@ async def client_websocket(websocket: WebSocket, client_id: str):
             elif p_type == PacketType.LOG_STREAM:
                 # 실시간 로그 스트리밍: 대시보드로 중계 + 파일 저장
                 level = data.get("level", "INFO")
-                msg = data.get("message", "")
+                msg = str(data.get("message", "")).strip()
                 ts = data.get("timestamp", time.strftime("%H:%M:%S"))
                 log_tag = seat_id or session_key or client_id
-                log_entry = {
-                    "type": "log",
-                    "client_id": log_tag,
-                    "level": level,
-                    "message": msg,
-                    "timestamp": ts
-                }
-                # 대시보드 WebSocket으로 실시간 중계
-                import json as _json
-                await asyncio.gather(
-                    *[ws.send_text(_json.dumps(log_entry, ensure_ascii=False))
-                      for ws in list(dashboard_subscribers) if ws],
-                    return_exceptions=True
-                )
-                # 파일 저장 (PC별 로그 파일)
+
+                # [폭증/루프 로그 필터링] 화면 프레임 및 웹소켓 keepalive 루프 로그는 과부하 방지
+                is_spam_error = any(k in msg for k in ["화면 프레임 전송 일시 지연", "keepalive ping timeout", "no close frame"])
+                
+                # 대시보드 WebSocket으로 실시간 중계 (스팸 에러는 대시보드 과부하 방지)
+                if not is_spam_error:
+                    log_entry = {
+                        "type": "log",
+                        "client_id": log_tag,
+                        "level": level,
+                        "message": msg,
+                        "timestamp": ts
+                    }
+                    import json as _json
+                    await asyncio.gather(
+                        *[ws.send_text(_json.dumps(log_entry, ensure_ascii=False))
+                          for ws in list(dashboard_subscribers) if ws],
+                        return_exceptions=True
+                    )
+
+                # 파일 저장 (PC별 로그 파일 - 최대 2MB 로테이션 및 비대화 원천 차단)
                 log_dir = os.path.join(PROJECT_ROOT, "server", "client_logs")
                 os.makedirs(log_dir, exist_ok=True)
                 log_path = os.path.join(log_dir, f"{log_tag}.log")
+                
+                # 파일 크기 검사 (2MB 초과 시 최근 1,000줄만 남기고 롤오버)
+                if os.path.exists(log_path) and os.path.getsize(log_path) > 2 * 1024 * 1024:
+                    try:
+                        with open(log_path, "r", encoding="utf-8", errors="ignore") as rf:
+                            lines = rf.readlines()
+                        if len(lines) > 1000:
+                            with open(log_path, "w", encoding="utf-8") as wf:
+                                wf.writelines(lines[-1000:])
+                    except Exception:
+                        pass
+
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(f"[{ts}] [{level}] {msg}\n")
 

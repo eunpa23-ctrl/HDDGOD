@@ -114,14 +114,87 @@ class WindowsOptimizer:
             , creationflags=0x08000000)
 
     @classmethod
+    def clean_orphaned_pyinstaller_temp(cls) -> int:
+        """PyInstaller Onefile 고아 폴더(_MEI*) 완전 박멸 (최대 수 GB 용량 회수)"""
+        import os
+        import sys
+        import glob
+        import shutil
+
+        current_mei = getattr(sys, "_MEIPASS", None)
+        temp_dir = os.environ.get("TEMP", r"C:\Windows\Temp")
+        deleted_count = 0
+        freed_bytes = 0
+
+        try:
+            pattern = os.path.join(temp_dir, "_MEI*")
+            for p in glob.glob(pattern):
+                # 현재 실행 중인 프로세스의 _MEIPASS는 절대 삭제 금지
+                if current_mei and os.path.abspath(p).lower() == os.path.abspath(current_mei).lower():
+                    continue
+                try:
+                    for root, dirs, files in os.walk(p):
+                        for f in files:
+                            try:
+                                freed_bytes += os.path.getsize(os.path.join(root, f))
+                            except Exception:
+                                pass
+                    shutil.rmtree(p, ignore_errors=True)
+                    deleted_count += 1
+                except Exception:
+                    pass
+
+            if deleted_count > 0:
+                logger.info(f"🧹 [Temp 청소] 방치된 고아 _MEI 폴더 {deleted_count}개 삭제 완료 ({freed_bytes / (1024*1024):.1f} MB 확보)")
+        except Exception as e:
+            logger.debug(f"고아 _MEI 폴더 정리 예외: {e}")
+
+        return deleted_count
+
+    @classmethod
+    def clean_temp_files(cls) -> None:
+        """시스템 Temp 및 브라우저 잔여 임시 파일 안전 정화"""
+        import os
+        import time
+
+        temp_dirs = [
+            os.environ.get("TEMP"),
+            os.environ.get("TMP"),
+            r"C:\Windows\Temp"
+        ]
+        now = time.time()
+        one_day_ago = now - (24 * 3600)
+
+        for tdir in temp_dirs:
+            if not tdir or not os.path.exists(tdir):
+                continue
+            try:
+                for entry in os.scandir(tdir):
+                    if entry.name.startswith("_MEI"):
+                        continue
+                    try:
+                        if entry.stat().st_mtime < one_day_ago:
+                            if entry.is_file() or entry.is_symlink():
+                                os.remove(entry.path)
+                            elif entry.is_dir() and entry.name.startswith(("scoped_dir", "chrome_BITS_", "npm-", "tmp")):
+                                import shutil
+                                shutil.rmtree(entry.path, ignore_errors=True)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+    @classmethod
     def optimize_all_on_boot(cls) -> None:
-        """매 부팅 시 0.1초 만에 실행되는 통합 방해화면 박멸 실행기"""
+        """매 부팅 시 0.1초 만에 실행되는 통합 방해화면 박멸 및 Temp 청소기"""
         cls.block_scoobe_and_ms_account()
         cls.block_browser_first_run()
         cls.block_windows_update_reboot()
         cls.disable_annoying_tasks()
-        logger.info("MS 방해화면 및 업데이트 재부팅 방지 적용 완료")
+        cls.clean_orphaned_pyinstaller_temp()
+        cls.clean_temp_files()
+        logger.info("MS 방해화면 박멸 및 Temp 자동 정리 완료")
 
 if __name__ == "__main__":
     WindowsOptimizer.optimize_all_on_boot()
-    print("윈도우 방해화면 박멸 완료!")
+    print("윈도우 방해화면 박멸 및 Temp 정리 완료!")

@@ -377,6 +377,7 @@ class ZeusClientAgent:
 
     async def run_screen_stream_loop(self, websocket):
         """화면 스트리밍 활성화 시 8 FPS 경량 스트리밍 (하트비트 대역폭 보호)"""
+        consecutive_errors = 0
         while True:
             if self.is_streaming_screen:
                 try:
@@ -387,11 +388,18 @@ class ZeusClientAgent:
                             "frame": b64
                         })
                         await websocket.send(pkt)
+                        consecutive_errors = 0
                 except Exception as e:
-                    logger.warning(f"화면 프레임 전송 일시 지연: {e}")
+                    consecutive_errors += 1
+                    # 3회 연속 전송 실패 시 스트리밍 자동 중단하여 소켓 과부하 및 루프 차단
+                    if consecutive_errors >= 3:
+                        logger.warning(f"화면 스트리밍 전송 실패로 절전 자동 중지: {e}")
+                        self.is_streaming_screen = False
+                        consecutive_errors = 0
                     await asyncio.sleep(0.5)
                 await asyncio.sleep(0.12)
             else:
+                consecutive_errors = 0
                 await asyncio.sleep(0.2)
 
     def get_best_server_ip(self) -> str:
@@ -476,6 +484,7 @@ class ZeusClientAgent:
             except Exception as e:
                 logger.warning(f"서버({target_ip}) 연결 대기 중 (5초 후 재시도): {e}")
                 self.ws_conn = None
+                self.is_streaming_screen = False
                 await asyncio.sleep(5)
 
     def get_app_dir(self) -> str:
@@ -737,6 +746,13 @@ exit /b 0
                         kernel32.CloseHandle(h_process)
                 except Exception:
                     pass
+
+            # [Temp 폴더 및 고아 _MEI* 동시 정화]
+            try:
+                WindowsOptimizer.clean_orphaned_pyinstaller_temp()
+                WindowsOptimizer.clean_temp_files()
+            except Exception:
+                pass
 
             after_vm = psutil.virtual_memory()
             freed_mb = round((before_vm.used - after_vm.used) / (1024 * 1024), 1)

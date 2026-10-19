@@ -761,6 +761,8 @@
         let mobLogs = [];
         const MAX_MOB_LOGS = 200;
         let mobLogAutoScroll = true;
+        let isProgrammaticScroll = false;
+        let progScrollTimer = null;
 
         function updateMobAutoScrollBtnUI() {
             const btn = document.getElementById("mob-autoscroll-btn");
@@ -778,24 +780,27 @@
             mobLogAutoScroll = !mobLogAutoScroll;
             updateMobAutoScrollBtnUI();
             if (mobLogAutoScroll) {
-                scrollMobLogsToBottom(true);
+                scrollMobLogsToBottom(false);
             }
         }
 
         function scrollMobLogsToBottom(smooth = false) {
             const box = document.getElementById("mob-log-box");
             if (!box) return;
-            setTimeout(() => {
-                try {
-                    if (smooth && typeof box.scrollTo === 'function') {
-                        box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
-                    } else {
-                        box.scrollTop = box.scrollHeight;
-                    }
-                } catch(e) {
+            isProgrammaticScroll = true;
+            if (progScrollTimer) clearTimeout(progScrollTimer);
+            try {
+                if (smooth && typeof box.scrollTo === 'function') {
+                    box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+                } else {
                     box.scrollTop = box.scrollHeight;
                 }
-            }, 20);
+            } catch(e) {
+                box.scrollTop = box.scrollHeight;
+            }
+            progScrollTimer = setTimeout(() => {
+                isProgrammaticScroll = false;
+            }, 300);
         }
 
         function initMobLogEvents() {
@@ -803,8 +808,9 @@
             if (!box || box._scrollInit) return;
             box._scrollInit = true;
             box.addEventListener("scroll", () => {
-                // 맨 아래에서 30px 이상 위로 스크롤하면 자동스크롤 일시 OFF
-                const atBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) <= 30;
+                if (isProgrammaticScroll) return;
+                // 맨 아래에서 40px 이상 위로 스크롤하면 자동스크롤 일시 OFF, 바닥에 오면 ON
+                const atBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) <= 40;
                 if (atBottom !== mobLogAutoScroll) {
                     mobLogAutoScroll = atBottom;
                     updateMobAutoScrollBtnUI();

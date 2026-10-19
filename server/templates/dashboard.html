@@ -1561,6 +1561,8 @@
         const logBox = document.getElementById('log-box');
         const logFilter = document.getElementById('log-filter');
         let logAutoScroll = true;
+        let isPcProgrammaticScroll = false;
+        let pcProgScrollTimer = null;
         let allLogs = [];
         const MAX_LOGS = 300;
 
@@ -1580,24 +1582,27 @@
             logAutoScroll = !logAutoScroll;
             updatePcAutoScrollBtnUI();
             if (logAutoScroll) {
-                scrollLogsToBottom(true);
+                scrollLogsToBottom(false);
             }
         }
 
         function scrollLogsToBottom(smooth = false) {
             const box = document.getElementById('log-box');
             if (!box) return;
-            setTimeout(() => {
-                try {
-                    if (smooth && typeof box.scrollTo === 'function') {
-                        box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
-                    } else {
-                        box.scrollTop = box.scrollHeight;
-                    }
-                } catch(e) {
+            isPcProgrammaticScroll = true;
+            if (pcProgScrollTimer) clearTimeout(pcProgScrollTimer);
+            try {
+                if (smooth && typeof box.scrollTo === 'function') {
+                    box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+                } else {
                     box.scrollTop = box.scrollHeight;
                 }
-            }, 20);
+            } catch(e) {
+                box.scrollTop = box.scrollHeight;
+            }
+            pcProgScrollTimer = setTimeout(() => {
+                isPcProgrammaticScroll = false;
+            }, 300);
         }
 
         function appendLog(entry) {
@@ -1662,7 +1667,8 @@
 
         if (logBox) {
             logBox.addEventListener('scroll', () => {
-                const atBottom = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 30;
+                if (isPcProgrammaticScroll) return;
+                const atBottom = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 40;
                 if (atBottom !== logAutoScroll) {
                     logAutoScroll = atBottom;
                     updatePcAutoScrollBtnUI();

@@ -1184,14 +1184,14 @@ async def get_version():
 
 @app.get("/api/download/update")
 async def download_update():
-    """최신 클라이언트 실행 파일 또는 패키지 다운로드"""
+    """최신 클라이언트 실행 파일(ZeusAgent.exe) OTA 다운로드 (zip 폴백)"""
     from fastapi.responses import FileResponse
-    zip_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "ZeusAgent.zip")
-    if os.path.exists(zip_path):
-        return FileResponse(zip_path, filename="ZeusAgent.zip")
     exe_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "core", "ZeusAgent.exe")
     if os.path.exists(exe_path):
-        return FileResponse(exe_path, filename="ZeusAgent.exe")
+        return FileResponse(exe_path, filename="ZeusAgent.exe", media_type="application/octet-stream")
+    zip_path = os.path.join(PROJECT_ROOT, "deploy", "ClientDeploy", "ZeusAgent.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(zip_path, filename="ZeusAgent.zip", media_type="application/zip")
     return HTMLResponse("Update file not found", status_code=404)
 
 @app.get("/api/download/vcredist")

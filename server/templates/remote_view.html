@@ -78,13 +78,8 @@
 
             <!-- 키보드 텍스트 전송 -->
             <input id="key-input" type="text" placeholder="입력 후 전송" class="bg-slate-950 border border-slate-700 px-2 py-1.5 rounded text-xs text-white w-20 sm:w-36 focus:outline-none focus:border-indigo-500">
-            <button onclick="sendKeyText()" class="px-2 sm:px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition flex items-center gap-1" title="텍스트 입력 전송">
+            <button onclick="sendKeyText()" class="px-2 sm:px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition flex items-center gap-1">
                 <i class="fa-solid fa-paper-plane"></i>
-            </button>
-
-            <!-- 🌟 팝업/관리자창 즉시 닫기 (ESC) 원터치 버튼 -->
-            <button onclick="sendEscKey()" class="px-2 sm:px-2.5 py-1.5 bg-rose-950/80 hover:bg-rose-900 active:bg-rose-800 border border-rose-600/50 rounded font-bold transition flex items-center gap-1 text-[11px] text-rose-300 shadow-sm" title="손님 PC 화면의 팝업/관리자 로그인 창 닫기 (ESC)">
-                <i class="fa-solid fa-xmark text-rose-400"></i> <span class="hidden sm:inline">창닫기(ESC)</span>
             </button>
 
             {% if not is_server %}
@@ -593,11 +588,6 @@
         document.getElementById('key-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendKeyText();
         });
-
-        // 팝업/관리자 로그인 다이얼로그 즉시 닫기 (ESC 전송)
-        window.sendEscKey = function() {
-            sendEvent('KEY', 0, 0, { key: 'escape' });
-        };
 
         // 피카 관리프로그램 잠금 해제 매크로 전송
         window.sendPicaUnlock = function() {

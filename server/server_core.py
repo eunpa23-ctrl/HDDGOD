@@ -223,14 +223,6 @@ async def favicon():
         return FileResponse(favicon_path, media_type="image/x-icon")
     return HTMLResponse("", status_code=404)
 
-@app.get("/api/icons/list")
-async def get_icons_list():
-    """서버의 마스터 아이콘 폴더 파일 목록 반환 API"""
-    if os.path.exists(MASTER_ICONS_DIR):
-        items = os.listdir(MASTER_ICONS_DIR)
-        return {"icons": [item for item in items if os.path.isfile(os.path.join(MASTER_ICONS_DIR, item))]}
-    return {"icons": []}
-
 watchdog = WOLWatchdog(timeout_sec=10)
 mail_extractor = NateMailOTPExtractor()
 kakao_notifier = KakaoNotifier()
@@ -1639,12 +1631,6 @@ async def get_pica_status():
         "auto_login_enabled": pica_dog.auto_login_enabled,
         "password_masked": "*" * len(pica_dog.password) if pica_dog.password else ""
     }
-
-@app.post("/api/pica/restart")
-async def manual_restart_pica():
-    from server.pica_watchdog import pica_dog
-    asyncio.create_task(pica_dog.recover_picalive())
-    return {"status": "ok", "message": "PicaLive 복구 작업이 시작되었습니다."}
 
 @app.post("/api/pica/settings")
 async def save_pica_settings(request: Request):

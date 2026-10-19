@@ -227,15 +227,6 @@
                             <i class="fa-solid fa-download"></i> 업뎃
                         </button>
                     </div>
-                    <!-- 피카 관리자 로그인 / 잠금 복구 버튼 -->
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <button onclick="sendCommand('${pc.id}', 'UNLOCK_PICA')" class="py-2 bg-amber-950/80 active:bg-amber-900 border border-amber-600/50 rounded-xl text-xs font-bold text-amber-300 flex items-center justify-center gap-1.5 shadow">
-                            <i class="fa-solid fa-unlock-keyhole text-[10px]"></i> 관리자 로그인
-                        </button>
-                        <button onclick="sendCommand('${pc.id}', 'LOCK_PICA')" class="py-2 bg-slate-800 active:bg-slate-700 border border-slate-700 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1.5 shadow">
-                            <i class="fa-solid fa-lock text-[10px]"></i> 잠금 복구
-                        </button>
-                    </div>
                 </div>`;
                 container.innerHTML += html;
             });

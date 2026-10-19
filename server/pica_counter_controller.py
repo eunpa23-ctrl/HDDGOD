@@ -31,6 +31,71 @@ SEAT_COORDS = {
 }
 
 _action_lock = threading.Lock()
+_last_counter_states: Dict[int, str] = {}
+
+def get_last_known_counter_state(seat_num: int) -> Optional[str]:
+    """가장 최근에 카운터 PicaLive 화면에서 판별된 좌석 상태 반환"""
+    return _last_counter_states.get(seat_num)
+
+def get_counter_seat_states() -> Dict[int, str]:
+    """
+    카운터(서버) 화면의 PicaLive 각 좌석 카드 색상을 실시간(0.5ms) 샘플링하여 판별
+    - 'ADMIN': 점주 관리자 로그인 (연두/올리브색 카드, 🔑 열쇠 아이콘)
+    - 'USING': 손님 실제 로그인 이용 중 (보라색 카드, 남은시간 표시)
+    - 'LOCKED': 빈자리 대기 잠금 (청록색 카드)
+    - 'OFFLINE': PC 꺼짐 (어두운 회색/검은색 카드)
+    """
+    global _last_counter_states
+    try:
+        ensure_desktop()
+        pica = get_pica_hwnd()
+        if not pica or user32.IsIconic(pica):
+            return _last_counter_states
+
+        hdc = user32.GetDC(0)
+        if not hdc:
+            return _last_counter_states
+
+        results = {}
+        try:
+            for seat, (sx, sy) in SEAT_COORDS.items():
+                samples = []
+                for dx in [-20, 0, 20]:
+                    for dy in [-20, 0, 20]:
+                        color = gdi32.GetPixel(hdc, sx + dx, sy + dy)
+                        r = color & 0xFF
+                        g = (color >> 8) & 0xFF
+                        b = (color >> 16) & 0xFF
+                        samples.append((r, g, b))
+
+                for dy in [-15, 15]:
+                    color = gdi32.GetPixel(hdc, sx, sy + dy)
+                    samples.append((color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF))
+
+                purple_count = sum(1 for (r, g, b) in samples if b > g + 15 and b > 80 and r > g)
+                black_count = sum(1 for (r, g, b) in samples if r < 45 and g < 45 and b < 45)
+                teal_count = sum(1 for (r, g, b) in samples if g > 130 and g > r + 80 and b > 80)
+                admin_count = sum(1 for (r, g, b) in samples if (g > r and r > b and g > 65 and b < 60) or (r > 200 and g > 200 and b > 200) or (r > 120 and g > 200 and b < 80))
+
+                if purple_count >= 3:
+                    st = "USING"
+                elif black_count >= 8:
+                    st = "OFFLINE"
+                elif admin_count >= 4:
+                    st = "ADMIN"
+                elif teal_count >= 5:
+                    st = "LOCKED"
+                else:
+                    st = "LOCKED"
+                results[seat] = st
+
+            _last_counter_states = results
+            return results
+        finally:
+            user32.ReleaseDC(0, hdc)
+    except Exception as e:
+        logger.error(f"좌석 상태 색상 판별 예외: {e}")
+        return _last_counter_states
 
 def ensure_desktop():
     """현재 스레드를 Default 윈도우 데스크톱에 연결"""

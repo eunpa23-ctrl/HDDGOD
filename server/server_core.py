@@ -142,11 +142,36 @@ def kill_duplicate_servers():
     if killed:
         import time as _t; _t.sleep(1)  # 포트 해제 대기
 
+async def pica_counter_sync_loop():
+    """
+    카운터(서버) 화면의 PicaLive 각 좌석 카드 색상을 1.5초마다 초고속(0.5ms) 읽어
+    watchdog.clients의 pica_status를 'ADMIN', 'USING', 'LOCKED'로 실시간 동기화합니다.
+    """
+    from server.pica_counter_controller import get_counter_seat_states
+    while True:
+        try:
+            states = await asyncio.to_thread(get_counter_seat_states)
+            if states:
+                pcs = load_pc_mapping()
+                for p in pcs:
+                    s_num = p.get("seat")
+                    if s_num in states:
+                        seat_st = states[s_num]
+                        cid = p.get("id")
+                        actual_cid = get_actual_client_id(cid)
+
+                        for target in set([cid, actual_cid]):
+                            if target and target in watchdog.clients:
+                                watchdog.clients[target]["pica_status"] = seat_st
+        except Exception as e:
+            logger.debug(f"Pica counter sync loop error: {e}")
+        await asyncio.sleep(1.5)
 
 @asynccontextmanager
 async def lifespan(app):
     # ── 서버 시작 ────────────────────────────────────────────────
     asyncio.create_task(watchdog.run_watchdog_loop())
+    asyncio.create_task(pica_counter_sync_loop())
     asyncio.create_task(tunnel_manager.start())
     asyncio.create_task(notify_tunnel_url_to_telegram())
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
@@ -417,15 +442,20 @@ async def get_dashboard(request: Request):
 async def get_mobile_dashboard(request: Request):
     """스마트폰 전용 모바일 관제 대시보드"""
     pc_list = load_pc_mapping()
+    from server.pica_counter_controller import get_counter_seat_states
+    c_states = get_counter_seat_states()
     for pc in pc_list:
         cid = pc.get("id")
+        s_num = pc.get("seat")
         actual_cid = get_actual_client_id(cid)
         c_info = watchdog.clients.get(actual_cid) or watchdog.clients.get(cid)
         if c_info:
             pc["status"] = c_info.get("status", "OFFLINE")
-            pc["pica"] = c_info.get("pica_status", "UNKNOWN")
+            pc["pica"] = c_states.get(s_num) or c_info.get("pica_status", "UNKNOWN")
             pc["netflix"] = c_info.get("netflix_status", "CLOSED")
             pc["version"] = c_info.get("version", "")
+        elif s_num in c_states:
+            pc["pica"] = c_states[s_num]
     return templates.TemplateResponse(
         request=request,
         name="mobile_dashboard.html",
@@ -437,8 +467,18 @@ async def get_mobile_dashboard(request: Request):
 
 @app.get("/api/get_mapping")
 async def get_mapping():
-    """저장된 PC 목록 조회 API"""
-    return load_pc_mapping()
+    """저장된 PC 목록 조회 API (실시간 카운터 피카 상태 병합)"""
+    pc_list = load_pc_mapping()
+    try:
+        from server.pica_counter_controller import get_last_known_counter_state
+        for pc in pc_list:
+            s_num = pc.get("seat")
+            st = get_last_known_counter_state(s_num)
+            if st:
+                pc["pica"] = st
+    except Exception:
+        pass
+    return pc_list
 
 @app.get("/remote/{client_id}", response_class=HTMLResponse)
 async def get_remote_view(request: Request, client_id: str):
@@ -595,6 +635,18 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                     seat_id = resolve_seat_for_ip_or_mac(ip=reported_ip, mac=mac)
                     if seat_id and seat_id != session_key:
                         active_clients[seat_id] = websocket
+
+                # ⚡ 카운터(PicaLive 메인 창) 실측 좌석 색상 판별 결과 우선 적용 (관리자 vs 손님이용 완벽 구분)
+                target_seat = seat_id or resolve_seat_for_ip_or_mac(ip=reported_ip, mac=mac)
+                if target_seat:
+                    try:
+                        s_num = int(str(target_seat).replace("PC-", "").replace("pc-", ""))
+                        from server.pica_counter_controller import get_last_known_counter_state
+                        known_st = get_last_known_counter_state(s_num)
+                        if known_st and known_st != "OFFLINE":
+                            pica_st = known_st
+                    except Exception:
+                        pass
 
                 target_watchdog_id = seat_id if seat_id else session_key
                 watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st)

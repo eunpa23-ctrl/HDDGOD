@@ -849,12 +849,15 @@
                 let picaBadgeHtml = '';
                 let picaRowHtml = '';
                 if (isOnline) {
-                    if (pc.pica === 'UNLOCKED') {
-                        picaBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 flex items-center gap-1 shadow-[0_0_8px_rgba(52,211,153,0.3)] animate-pulse" title="손님이 로그인하여 이용 중"><i class="fa-solid fa-user-check text-[10px]"></i> 손님 사용중</span>`;
-                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-emerald-300 font-extrabold flex items-center gap-1"><i class="fa-solid fa-user text-[11px]"></i> 👤 손님 사용중</span></div>`;
+                    if (pc.pica === 'ADMIN') {
+                        picaBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center gap-1 shadow-[0_0_8px_rgba(56,189,248,0.3)]" title="관리자 모드로 로그인됨"><i class="fa-solid fa-unlock-keyhole text-[10px]"></i> 관리자로그인</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-sky-400 font-extrabold flex items-center gap-1"><i class="fa-solid fa-unlock-keyhole text-[11px]"></i> ⚡ 관리자로그인</span></div>`;
+                    } else if (pc.pica === 'USING' || pc.pica === 'UNLOCKED') {
+                        picaBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-400/50 flex items-center gap-1 shadow-[0_0_8px_rgba(168,85,247,0.3)] animate-pulse" title="손님이 로그인하여 이용 중"><i class="fa-solid fa-user-check text-[10px]"></i> 손님이용중</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-purple-300 font-extrabold flex items-center gap-1"><i class="fa-solid fa-user text-[11px]"></i> 👤 손님이용중</span></div>`;
                     } else if (pc.pica === 'LOCKED') {
-                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1 shadow-sm" title="피카 화면보호기 잠김 (빈자리/대기)"><i class="fa-solid fa-lock text-[9px]"></i> 빈자리</span>`;
-                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-amber-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 🔒 빈자리 (대기)</span></div>`;
+                        picaBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1 shadow-sm" title="피카 화면보호기 잠김 (빈자리/대기)"><i class="fa-solid fa-lock text-[9px]"></i> 잠김상태</span>`;
+                        picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-amber-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 🔒 잠김상태</span></div>`;
                     } else {
                         picaRowHtml = `<div class="flex justify-between items-center"><span>이용 상태:</span><span class="text-slate-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> 온라인 대기</span></div>`;
                     }

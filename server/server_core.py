@@ -417,14 +417,20 @@ async def get_dashboard(request: Request):
 async def get_mobile_dashboard(request: Request):
     """스마트폰 전용 모바일 관제 대시보드"""
     pc_list = load_pc_mapping()
+    for pc in pc_list:
+        cid = pc.get("id")
+        actual_cid = get_actual_client_id(cid)
+        c_info = watchdog.clients.get(actual_cid) or watchdog.clients.get(cid)
+        if c_info:
+            pc["status"] = c_info.get("status", "OFFLINE")
+            pc["pica"] = c_info.get("pica_status", "UNKNOWN")
+            pc["netflix"] = c_info.get("netflix_status", "CLOSED")
+            pc["version"] = c_info.get("version", "")
     return templates.TemplateResponse(
         request=request,
         name="mobile_dashboard.html",
         context={
             "initial_pc_list": json.dumps(pc_list, ensure_ascii=False),
-
-
-
             "pc_count": len(pc_list)
         }
     )

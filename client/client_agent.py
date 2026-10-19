@@ -248,7 +248,7 @@ class ZeusClientAgent:
                 pica_st = "NONE"
                 if not self.is_server_node():
                     try:
-                        pica_st = "LOCKED" if self.is_pica_locked() else "UNLOCKED"
+                        pica_st = self.get_pica_state()
                     except Exception:
                         pica_st = "UNKNOWN"
 
@@ -778,9 +778,11 @@ exit /b 0
             pass
         return False
 
-    def is_pica_locked(self) -> bool:
-        """피카 관리프로그램 화면 잠금 상태 판별
-        - 손님 PC는 관리자 또는 손님이 명확히 로그인하지 않은 모든 상태가 '잠김(대기)'
+    def get_pica_state(self) -> str:
+        """피카 관리프로그램 화면 잠금/사용 상태 3단계 정밀 판별
+        - 'ADMIN': 점주 관리자 로그인 상태 ('관리자로그아웃' 버튼 감지)
+        - 'USING': 손님 실제 이용 중 ('후불로그아웃', '선불로그아웃', '남은시간', '사용시간' 감지)
+        - 'LOCKED': 빈자리 화면보호기 잠김 상태 (대기)
         """
         self._pica_debug_count = getattr(self, "_pica_debug_count", 0) + 1
         do_log = (self._pica_debug_count % 5 == 1)
@@ -788,7 +790,7 @@ exit /b 0
         if self.is_server_node():
             if do_log:
                 logger.warning(f"🚨 [피카감지디버그] is_server_node=True! ip={self.local_ip}, cid={self.client_id}")
-            return False
+            return "NONE"
         try:
             import ctypes
             from ctypes import wintypes
@@ -802,7 +804,7 @@ exit /b 0
             except Exception:
                 pass
 
-            is_in_use = False
+            detected_mode = "LOCKED"
 
             WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
@@ -824,24 +826,29 @@ exit /b 0
                 return True
 
             def check_text(hwnd, txt: str):
-                nonlocal is_in_use
+                nonlocal detected_mode
                 t = txt.strip().replace(' ', '')
                 if not t:
                     return
-                for k in ['관리자로그아웃', '관리자로그아웃버튼', '후불로그아웃']:
+                # 1. 관리자 모드 우선 감지 (관리자로그아웃 버튼 창이 화면에 보임)
+                for k in ['관리자로그아웃', '관리자로그아웃버튼']:
                     if k in t:
                         cr = wintypes.RECT()
                         user32.GetWindowRect(hwnd, ctypes.byref(cr))
                         if is_rect_visible_on_screen(cr):
-                            logger.info(f"🔓 [피카 관리자 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
-                            is_in_use = True
-                for k in ['남은시간:', '잔여시간:', '사용시간:']:
+                            logger.info(f"⚡ [피카 관리자 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
+                            detected_mode = "ADMIN"
+                            return
+                # 2. 손님 이용 중 감지 (후불/선불 로그아웃, 잔여/사용시간 창이 화면에 보임)
+                for k in ['후불로그아웃', '선불로그아웃', '남은시간:', '잔여시간:', '사용시간:']:
                     if k in t:
                         cr = wintypes.RECT()
                         user32.GetWindowRect(hwnd, ctypes.byref(cr))
                         if is_rect_visible_on_screen(cr):
-                            logger.info(f"🔓 [피카 손님 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
-                            is_in_use = True
+                            if detected_mode != "ADMIN":
+                                logger.info(f"👤 [피카 손님 감지] 활성 화면상 포착: k={k}, RECT=({cr.left},{cr.top},{cr.right},{cr.bottom})")
+                                detected_mode = "USING"
+                            return
 
             def enum_proc(h, lp):
                 if user32.IsWindowVisible(h):
@@ -861,17 +868,16 @@ exit /b 0
             user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
 
             if do_log:
-                logger.warning(f"🔍 [피카감지상태] is_in_use={is_in_use} -> {'UNLOCKED' if is_in_use else 'LOCKED'}")
+                logger.warning(f"🔍 [피카감지상태] state={detected_mode}")
 
-            # 관리자 또는 손님이 실제 이용 중이면 -> UNLOCKED (False)
-            if is_in_use:
-                return False
-
-            # 그 외 모든 손님 PC는 기본적으로 '잠김(대기)' 상태 -> LOCKED (True)
-            return True
+            return detected_mode
         except Exception as e:
             logger.error(f"피카 잠금 판별 오류: {e}")
-            return True
+            return "LOCKED"
+
+    def is_pica_locked(self) -> bool:
+        """기존 화면 잠금 여부 호환 (대기 상태이면 True)"""
+        return self.get_pica_state() == "LOCKED"
 
     def unlock_pica_screen(self):
         """PC 관리 에이전트(피카/PICA) 화면 잠금 해제 -> 관리자 로그인 수행 (피카 유지 및 카운터 관리자 표기)"""

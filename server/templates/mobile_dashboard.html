@@ -149,20 +149,26 @@
 
         function getPicaBadgeHtml(pica, isOnline) {
             if (!isOnline) return '';
-            if (pica === 'LOCKED') {
+            const st = (pica || '').toUpperCase();
+            if (st === 'ADMIN') {
+                return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-950/80 text-sky-400 border border-sky-600/40 flex items-center gap-1"><i class="fa-solid fa-unlock-keyhole text-[9px]"></i> 관리자</span>';
+            } else if (st === 'USING' || st === 'UNLOCKED') {
+                return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 flex items-center gap-1"><i class="fa-solid fa-user text-[9px]"></i> 손님</span>';
+            } else if (st === 'LOCKED') {
                 return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-600/40 flex items-center gap-1"><i class="fa-solid fa-lock text-[9px]"></i> 잠김</span>';
-            } else if (pica === 'UNLOCKED') {
-                return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 flex items-center gap-1"><i class="fa-solid fa-lock-open text-[9px]"></i> 사용중</span>';
             }
             return '';
         }
 
         function getPicaTextHtml(pica, isOnline) {
-            if (!isOnline) return '<span class="text-slate-500">오프라인</span>';
-            if (pica === 'LOCKED') {
-                return '<span class="text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> 잠김 (대기)</span>';
-            } else if (pica === 'UNLOCKED') {
-                return '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock-open text-[10px]"></i> 사용중 (해제)</span>';
+            if (!isOnline) return '<span class="text-slate-500 font-semibold">오프라인</span>';
+            const st = (pica || '').toUpperCase();
+            if (st === 'ADMIN') {
+                return '<span class="text-sky-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-unlock-keyhole text-[11px]"></i> 관리자로그인</span>';
+            } else if (st === 'USING' || st === 'UNLOCKED') {
+                return '<span class="text-emerald-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-user text-[11px]"></i> 손님이용중</span>';
+            } else if (st === 'LOCKED') {
+                return '<span class="text-amber-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-lock text-[11px]"></i> 잠김상태</span>';
             }
             return '<span class="text-slate-400">-</span>';
         }
@@ -196,10 +202,9 @@
                         </div>
                     </div>
 
-                    <!-- 상세 정보 바: 피카 잠금 상태 + 넷플릭스 상태 -->
+                    <!-- 상세 정보 바: 피카 상태 + 넷플릭스 상태 -->
                     <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
                         <div class="flex items-center gap-1.5">
-                            <span class="text-slate-400">화면잠금:</span>
                             <span id="pica-text-${pc.id}">
                                 ${getPicaTextHtml(pc.pica, isOnline)}
                             </span>
@@ -214,7 +219,7 @@
 
                     <!-- 액션 버튼 그리드 -->
                     <div class="grid grid-cols-4 gap-2">
-                        <button onclick="window.open('/remote/${pc.id}', '_blank')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-slate-600 transition shadow">
+                        <button onclick="requestRemoteView('${pc.id}')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-slate-600 transition shadow">
                             <i class="fa-solid fa-desktop"></i> 원격
                         </button>
                         <button onclick="sendCommand('${pc.id}', 'REBOOT')" class="py-2.5 bg-sky-900 hover:bg-sky-800 text-sky-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:bg-sky-700 transition shadow">
@@ -234,12 +239,52 @@
         
         renderInitialCards();
 
+        // ── ⚠️ 손님 이용 중 원격 제어 경고 모달 제어 ──
+        let pendingRemotePcId = null;
+
+        function requestRemoteView(pcId) {
+            const pc = pcList.find(p => p.id === pcId);
+            const picaStatus = pc ? (pc.pica || '').toUpperCase() : '';
+            if (picaStatus === 'USING' || picaStatus === 'UNLOCKED') {
+                pendingRemotePcId = pcId;
+                const modal = document.getElementById('guest-warning-modal');
+                const title = document.getElementById('guest-modal-title');
+                if (title) title.innerText = `${pc ? pc.name : pcId} 원격 접속 확인`;
+                if (modal) modal.classList.remove('hidden');
+            } else {
+                window.open(`/remote/${pcId}`, '_blank');
+            }
+        }
+
+        function closeGuestModal() {
+            pendingRemotePcId = null;
+            const modal = document.getElementById('guest-warning-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function confirmGuestConnect() {
+            if (pendingRemotePcId) {
+                const target = pendingRemotePcId;
+                closeGuestModal();
+                window.open(`/remote/${target}`, '_blank');
+            }
+        }
+
         // 서버에 저장된 최신 매핑 정보 비동기 동기화
         async function loadSavedMapping() {
             try {
                 const res = await fetch('/api/get_mapping');
                 const data = await res.json();
                 if (data && Array.isArray(data) && data.length > 0) {
+                    data.forEach(newPc => {
+                        const existing = pcList.find(p => p.id === newPc.id);
+                        if (existing) {
+                            newPc.status = existing.status || 'OFFLINE';
+                            newPc.pica = existing.pica || 'UNKNOWN';
+                            newPc.netflix = existing.netflix || 'CLOSED';
+                            newPc.version = existing.version || '';
+                        }
+                    });
                     pcList = data;
                     renderInitialCards();
                 }
@@ -356,7 +401,8 @@
                 pcList.forEach(pc => {
                     if (pc.seat === 9 || pc.id === 'PC-09' || pc.is_server) return;
                     if (pc.status === 'ONLINE') {
-                        if (pc.pica === 'UNLOCKED') {
+                        const st = (pc.pica || '').toUpperCase();
+                        if (st === 'USING' || st === 'UNLOCKED') {
                             guestActiveCount++;
                         } else {
                             guestIdleCount++;
@@ -826,6 +872,28 @@
             <div class="p-2.5 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400 shrink-0">
                 <span>클라이언트 실시간 이벤트 자동 수신</span>
                 <button onclick="closeMobLogModal()" class="px-3.5 py-1 bg-slate-800 text-slate-200 rounded-lg font-bold">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚠️ 손님 이용 중 원격 제어 경고 모달 -->
+    <div id="guest-warning-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-5 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-2xl flex items-center justify-center mx-auto animate-pulse">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="space-y-1.5">
+                <h3 id="guest-modal-title" class="text-base font-extrabold text-white">PC 원격 접속</h3>
+                <p class="text-sm font-black text-amber-300">손님이 이용중입니다.<br>그래도 접속 하시겠습니까?</p>
+                <p class="text-[11px] text-slate-400">원격 접속 시 손님 화면을 실시간 확인 및 제어하게 됩니다.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="closeGuestModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl text-xs font-extrabold text-slate-300 transition border border-slate-700">
+                    종료
+                </button>
+                <button onclick="confirmGuestConnect()" class="py-2.5 bg-amber-600 hover:bg-amber-500 active:bg-amber-400 rounded-xl text-xs font-extrabold text-white shadow-lg transition">
+                    접속
+                </button>
             </div>
         </div>
     </div>

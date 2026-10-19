@@ -11,6 +11,7 @@ import logging
 import threading
 from ctypes import wintypes
 from typing import Optional, Dict, Any
+from PIL import ImageGrab
 
 logger = logging.getLogger("PicaCounterController")
 
@@ -39,10 +40,10 @@ def get_last_known_counter_state(seat_num: int) -> Optional[str]:
 
 def get_counter_seat_states() -> Dict[int, str]:
     """
-    카운터(서버) 화면의 PicaLive 각 좌석 카드 색상을 실시간(0.5ms) 샘플링하여 판별
-    - 'ADMIN': 점주 관리자 로그인 (연두/올리브색 카드, 🔑 열쇠 아이콘)
+    카운터(서버) 화면의 PicaLive 각 좌석 카드 색상을 고속(약 50ms) 이미지 캡처로 정밀 판별
+    - 'ADMIN': 점주 관리자 로그인 (🔑 흰색 열쇠 아이콘 AND 연두색 '관리자' 텍스트 동시 감지)
     - 'USING': 손님 실제 로그인 이용 중 (보라색 카드, 남은시간 표시)
-    - 'LOCKED': 빈자리 대기 잠금 (청록색 카드)
+    - 'LOCKED': 빈자리 대기 잠금 (청록색 카드, 포커스/선택된 빈자리 포함)
     - 'OFFLINE': PC 꺼짐 (어두운 회색/검은색 카드)
     """
     global _last_counter_states
@@ -52,47 +53,55 @@ def get_counter_seat_states() -> Dict[int, str]:
         if not pica or user32.IsIconic(pica):
             return _last_counter_states
 
-        hdc = user32.GetDC(0)
-        if not hdc:
-            return _last_counter_states
+        # 좌석 영역 전체 단일 고속 캡처 (약 40~60ms)
+        bbox = (450, 220, 1300, 800)
+        img = ImageGrab.grab(bbox=bbox)
 
         results = {}
-        try:
-            for seat, (sx, sy) in SEAT_COORDS.items():
-                samples = []
-                for dx in [-20, 0, 20]:
-                    for dy in [-20, 0, 20]:
-                        color = gdi32.GetPixel(hdc, sx + dx, sy + dy)
-                        r = color & 0xFF
-                        g = (color >> 8) & 0xFF
-                        b = (color >> 16) & 0xFF
-                        samples.append((r, g, b))
+        for seat, (sx, sy) in SEAT_COORDS.items():
+            lx = sx - bbox[0]
+            ly = sy - bbox[1]
 
-                for dy in [-15, 15]:
-                    color = gdi32.GetPixel(hdc, sx, sy + dy)
-                    samples.append((color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF))
+            # 1. 카드 중앙 및 상하 샘플링 (보라색 손님이용 / 검은색 오프라인 감지)
+            center_samples = []
+            for dx in [-20, 0, 20]:
+                for dy in [-20, 0, 20]:
+                    center_samples.append(img.getpixel((lx + dx, ly + dy))[:3])
+            for dy in [-15, 15]:
+                center_samples.append(img.getpixel((lx, ly + dy))[:3])
 
-                purple_count = sum(1 for (r, g, b) in samples if b > g + 15 and b > 80 and r > g)
-                black_count = sum(1 for (r, g, b) in samples if r < 45 and g < 45 and b < 45)
-                teal_count = sum(1 for (r, g, b) in samples if g > 130 and g > r + 80 and b > 80)
-                admin_count = sum(1 for (r, g, b) in samples if (g > r and r > b and g > 65 and b < 60) or (r > 200 and g > 200 and b > 200) or (r > 120 and g > 200 and b < 80))
+            purple_cnt = sum(1 for (r, g, b) in center_samples if b > g + 15 and b > 80 and r > g)
+            black_cnt = sum(1 for (r, g, b) in center_samples if r < 45 and g < 45 and b < 45)
 
-                if purple_count >= 3:
-                    st = "USING"
-                elif black_count >= 8:
-                    st = "OFFLINE"
-                elif admin_count >= 4:
-                    st = "ADMIN"
-                elif teal_count >= 5:
-                    st = "LOCKED"
-                else:
-                    st = "LOCKED"
-                results[seat] = st
+            # 2. 관리자 🔑 흰색 열쇠 아이콘 검출 (상단 영역 dy = -20 ~ -8)
+            white_key_cnt = 0
+            for dx in range(-15, 16, 2):
+                for dy in range(-20, -7, 2):
+                    r, g, b = img.getpixel((lx + dx, ly + dy))[:3]
+                    if r > 195 and g > 195 and b > 195:
+                        white_key_cnt += 1
 
-            _last_counter_states = results
-            return results
-        finally:
-            user32.ReleaseDC(0, hdc)
+            # 3. 관리자 🟩 연두색 "관리자" 텍스트 검출 (하단 영역 dy = 10 ~ 24)
+            lime_admin_cnt = 0
+            for dx in range(-25, 26, 2):
+                for dy in range(10, 25, 2):
+                    r, g, b = img.getpixel((lx + dx, ly + dy))[:3]
+                    if g > 175 and g > r + 30 and b < 100:
+                        lime_admin_cnt += 1
+
+            if purple_cnt >= 3:
+                st = "USING"
+            elif black_cnt >= 8:
+                st = "OFFLINE"
+            elif white_key_cnt >= 5 and lime_admin_cnt >= 4:
+                st = "ADMIN"
+            else:
+                st = "LOCKED"
+
+            results[seat] = st
+
+        _last_counter_states = results
+        return results
     except Exception as e:
         logger.error(f"좌석 상태 색상 판별 예외: {e}")
         return _last_counter_states

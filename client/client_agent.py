@@ -318,41 +318,18 @@ class ZeusClientAgent:
                     asyncio.create_task(asyncio.to_thread(self.uninstall_agent))
                 elif action == CommandType.START_SCREEN_STREAM:
                     logger.info("📡 [원격 제어] 화면 스트리밍 가동 명령 수신 -> 캡처 시작!")
-                    already_streaming = self.is_streaming_screen
                     self.is_streaming_screen = True
-                    # 점주가 원격 접속 시 피카가 잠겨 있으면 자동으로 관리자 로그인 실행! (단, 서버 PC는 제외)
-                    # 이미 스트리밍 중인 상태에서의 중복 수신은 잠금해제 재실행을 철저히 방지!
-                    if not self.is_server_node():
-                        try:
-                            if not already_streaming:
-                                if self.is_pica_locked():
-                                    logger.info("🔓 [원격 접속 감지] 피카 화면 잠금 감지됨 -> 관리자 자동 로그인 시작!")
-                                    self.was_pica_locked_on_stream_start = False
-                                    asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
-                                else:
-                                    self.was_pica_locked_on_stream_start = False
-                        except Exception as e:
-                            logger.warning(f"피카 잠금 상태 자동 감지 예외: {e}")
+                    # ⚠️ 손님 PC에서 피카 관리자 로그인(Ctrl+Alt+Shift+X) 자동 실행 일체 금지!
+                    # 카운터 서버에서 직접 우클릭 제어하므로 손님 PC는 화면 스트리밍만 안전하게 수행합니다.
                 elif action == CommandType.STOP_SCREEN_STREAM:
                     logger.info("💤 [원격 제어] 화면 스트리밍 절전 중지 명령 수신!")
                     self.is_streaming_screen = False
-                    # 원격 접속 시작 시 잠겨 있던 PC라면, 나갈 때 자동으로 화면보호기 잠금 복구!
-                    if getattr(self, "was_pica_locked_on_stream_start", False) and not self.is_server_node():
-                        logger.info("🔒 [원격 퇴장] 입장 시 잠겨 있던 PC이므로 화면보호기 잠금으로 자동 복구합니다.")
-                        self.was_pica_locked_on_stream_start = False
-                        asyncio.create_task(asyncio.to_thread(self.lock_pica_screen))
                 elif action == CommandType.UNLOCK_PICA:
-                    if self.is_server_node():
-                        logger.info("ℹ️ [원격 명령] 서버 PC이므로 피카 잠금 해제 명령을 건너뜁니다.")
-                    else:
-                        logger.info("🔓 [원격 명령] 피카 관리프로그램 잠금 해제 매크로 실행!")
-                        asyncio.create_task(asyncio.to_thread(self.unlock_pica_screen))
+                    # 카운터 서버 직접 제어로 일원화 (손님 PC 매크로 실행 안 함)
+                    logger.info("ℹ️ [원격 명령] 피카 관리자 로그인은 카운터 서버에서 직접 제어되므로 손님 PC 매크로는 건너뜁니다.")
                 elif action == CommandType.LOCK_PICA:
-                    if self.is_server_node():
-                        logger.info("ℹ️ [원격 명령] 서버 PC이므로 피카 잠금 복구 명령을 건너뜁니다.")
-                    else:
-                        logger.info("🔒 [원격 명령] 피카 관리프로그램 화면보호기 잠금 복구 실행!")
-                        asyncio.create_task(asyncio.to_thread(self.lock_pica_screen))
+                    # 카운터 서버 직접 제어로 일원화 (손님 PC 매크로 실행 안 함)
+                    logger.info("ℹ️ [원격 명령] 피카 잠금 복구는 카운터 서버에서 직접 제어되므로 손님 PC 매크로는 건너뜁니다.")
 
             elif p_type == PacketType.OTP_SUBMIT:
                 # 네이버 메일에서 자동 추출되었거나 점주가 입력한 4자리 코드

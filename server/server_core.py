@@ -938,7 +938,22 @@ async def execute_command_internal(target_id: str, action: str):
             return {"status": "ok", "wol_sent_mac": mac, "target": target_id}
         return {"status": "error", "message": "MAC 주소를 찾을 수 없습니다."}
 
-    # 3. 전체 PC WebSocket 명령 브로드캐스트
+    # 3. 팝업 / 관리자창 닫기 (ESC 키 전송)
+    if action in ["CLOSE_POPUP", "ESC"]:
+        if target_id == "ALL":
+            for cid, ws in active_clients.items():
+                pkt = make_packet(PacketType.REMOTE_INPUT, {"event": "KEY", "key": "escape"})
+                await ws.send_text(pkt)
+            return {"status": "ok", "action": action, "count": len(active_clients)}
+        else:
+            ws = get_client_ws(target_id)
+            if ws:
+                pkt = make_packet(PacketType.REMOTE_INPUT, {"event": "KEY", "key": "escape"})
+                await ws.send_text(pkt)
+                return {"status": "ok", "message": f"{target_id}에 ESC 키 전송 완료"}
+            return {"status": "error", "message": "클라이언트가 오프라인입니다."}
+
+    # 4. 전체 PC WebSocket 명령 브로드캐스트
     if target_id == "ALL":
         for cid, ws in active_clients.items():
             cmd = make_packet(PacketType.COMMAND, {"action": action})
@@ -947,7 +962,7 @@ async def execute_command_internal(target_id: str, action: str):
                 watchdog.set_normal_shutdown(cid)
         return {"status": "ok", "action": action, "count": len(active_clients)}
 
-    # 4. 개별 PC WebSocket 명령 전송
+    # 5. 개별 PC WebSocket 명령 전송
     ws = get_client_ws(target_id)
     actual_cid = get_actual_client_id(target_id)
     if ws:
@@ -1279,16 +1294,21 @@ async def notify_tunnel_url_to_telegram():
             break
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("server_core:app", host=SERVER_HOST, port=SERVER_PORT, reload=False)
 @app.get("/api/pica/status")
 async def get_pica_status():
     from server.pica_watchdog import pica_dog
+    main_hwnd = pica_dog.get_main_window_hwnd()
+    login_hwnd = pica_dog.get_login_window_hwnd()
     return {
         "is_enabled": pica_dog.is_enabled,
         "is_running": pica_dog.is_running,
         "process_running": pica_dog.is_process_running(),
+        "pids": pica_dog.get_picalive_pids(),
+        "main_window_alive": main_hwnd is not None,
+        "main_window_hwnd": main_hwnd,
+        "login_window_hwnd": login_hwnd,
+        "last_status_msg": pica_dog.last_status_msg,
+        "recovery_count": pica_dog.recovery_count,
         "program_path": pica_dog.program_path,
         "process_name": pica_dog.process_name,
         "watch_interval": pica_dog.watch_interval,
@@ -1296,6 +1316,12 @@ async def get_pica_status():
         "auto_login_enabled": pica_dog.auto_login_enabled,
         "password_masked": "*" * len(pica_dog.password) if pica_dog.password else ""
     }
+
+@app.post("/api/pica/restart")
+async def manual_restart_pica():
+    from server.pica_watchdog import pica_dog
+    asyncio.create_task(pica_dog.recover_picalive())
+    return {"status": "ok", "message": "PicaLive 복구 작업이 시작되었습니다."}
 
 @app.post("/api/pica/settings")
 async def save_pica_settings(request: Request):
@@ -1429,6 +1455,12 @@ async def get_ai_client_logs(client_id: str, lines: int = 50):
         "logs": recent_logs,
         "error_reports": recent_errors
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server_core:app", host=SERVER_HOST, port=SERVER_PORT, reload=False)
+
 
 
 

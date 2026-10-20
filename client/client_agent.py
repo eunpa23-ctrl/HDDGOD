@@ -59,9 +59,24 @@ class ZeusClientAgent:
         logging.getLogger().addHandler(self.ws_log_handler)
 
     def get_client_identity(self) -> str:
-        """호스트명 기반 고유 클라이언트 ID 생성 (예: PC-01)"""
-        hostname = socket.gethostname()
-        return hostname
+        """IP 기반 고유 좌석 ID(예: PC-02) 또는 호스트명 생성 (노하드 마스터 복제 방어)"""
+        try:
+            ip = self.get_local_ip()
+            if ip and ip.startswith("192.168.0."):
+                last_octet = int(ip.split(".")[-1])
+                # 192.168.0.91~98 -> PC-01~PC-08
+                if 91 <= last_octet <= 98:
+                    seat_num = last_octet - 90
+                    return f"PC-{seat_num:02d}"
+                elif last_octet in [1, 3, 4, 5, 6, 7, 8]:
+                    return f"PC-{last_octet:02d}"
+                elif last_octet == 2:
+                    return "SERVER_MAIN"
+                elif last_octet == 100:
+                    return "SERVER"
+        except Exception:
+            pass
+        return socket.gethostname()
 
     def get_local_ip(self) -> str:
         # 1. 관리 서버 IP를 목적지로 소켓을 연결하여 실제 통신 중인 로컬 LAN IP 추출 (가장 정확)

@@ -159,10 +159,18 @@ async def pica_counter_sync_loop():
                         seat_st = states[s_num]
                         cid = p.get("id")
                         actual_cid = get_actual_client_id(cid)
+                        p_ip = p.get("ip")
 
-                        for target in set([cid, actual_cid]):
+                        targets = set([cid, actual_cid])
+                        for target in targets:
                             if target and target in watchdog.clients:
                                 watchdog.clients[target]["pica_status"] = seat_st
+                        
+                        # IP 매칭 클라이언트 동기화 (노하드 동일 호스트명 완벽 방어)
+                        if p_ip:
+                            for k, v in watchdog.clients.items():
+                                if v.get("ip") == p_ip:
+                                    v["pica_status"] = seat_st
         except Exception as e:
             logger.debug(f"Pica counter sync loop error: {e}")
         await asyncio.sleep(1.5)
@@ -223,7 +231,7 @@ async def favicon():
         return FileResponse(favicon_path, media_type="image/x-icon")
     return HTMLResponse("", status_code=404)
 
-watchdog = WOLWatchdog(timeout_sec=10)
+watchdog = WOLWatchdog(timeout_sec=25)
 mail_extractor = NateMailOTPExtractor()
 kakao_notifier = KakaoNotifier()
 remote_relay = RemoteRelay()
@@ -706,13 +714,15 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                     if seat_id and seat_id != session_key:
                         active_clients[seat_id] = websocket
 
-                # ⚡ 카운터(PicaLive 메인 창) 실측 좌석 색상 판별 결과 우선 적용 (관리자 vs 손님이용 완벽 구분)
+                # ⚡ 카운터(PicaLive 메인 창) 실측 좌석 색상 판별 결과 '절대 우선권' 부여
                 target_seat = seat_id or resolve_seat_for_ip_or_mac(ip=reported_ip, mac=mac)
                 if target_seat:
                     try:
                         s_num = int(str(target_seat).replace("PC-", "").replace("pc-", ""))
-                        from server.pica_counter_controller import get_last_known_counter_state
+                        from server.pica_counter_controller import get_last_known_counter_state, get_counter_seat_states
                         known_st = get_last_known_counter_state(s_num)
+                        if not known_st:
+                            known_st = get_counter_seat_states().get(s_num)
                         if known_st and known_st != "OFFLINE":
                             pica_st = known_st
                     except Exception:
@@ -720,8 +730,6 @@ async def client_websocket(websocket: WebSocket, client_id: str):
 
                 target_watchdog_id = seat_id if seat_id else session_key
                 watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st, cpu=cpu_metric, ram=ram_metric, ram_used_gb=ram_used_gb, ram_total_gb=ram_total_gb)
-                if session_key != target_watchdog_id:
-                    watchdog.update_heartbeat(session_key, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st, cpu=cpu_metric, ram=ram_metric, ram_used_gb=ram_used_gb, ram_total_gb=ram_total_gb)
 
             elif p_type == PacketType.OTP_REQUIRED:
                 # 넷플릭스 4자리 인증번호 필요 감지!

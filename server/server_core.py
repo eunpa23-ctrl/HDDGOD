@@ -401,15 +401,12 @@ def get_actual_client_id(target_id: str) -> str:
             if c_info.get("mac", "").lower() == target_mac.lower():
                 return cid
 
-    # 3. 호스트명 매칭 (hostname 속성 확인)
+    # 3. 호스트명 매칭 (hostname 속성 확인 - IP가 일치하거나 미지정인 경우만)
     for cid in active_clients:
         c_info = watchdog.clients.get(cid, {})
         if c_info.get("hostname") == target_id:
-            return cid
-
-    # 4. 로컬 테스트 및 단일 클라이언트 매핑 (1번방 열었을 때 접속자가 1명이면 자동 매칭)
-    if len(active_clients) == 1 and (target_id in ["PC-01", "1", "PC-1"] or target_id not in watchdog.clients):
-        return next(iter(active_clients.keys()))
+            if not target_ip or c_info.get("ip") == target_ip:
+                return cid
 
     return target_id
 

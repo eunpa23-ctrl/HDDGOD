@@ -50,12 +50,26 @@ def get_counter_seat_states() -> Dict[int, str]:
     try:
         ensure_desktop()
         pica = get_pica_hwnd()
-        if not pica or user32.IsIconic(pica):
+        if not pica:
             return _last_counter_states
+        if user32.IsIconic(pica):
+            user32.ShowWindow(pica, 9) # SW_RESTORE
+            time.sleep(0.05)
+        if not user32.IsZoomed(pica):
+            user32.ShowWindow(pica, 3) # SW_MAXIMIZE
+            time.sleep(0.05)
 
         # 좌석 영역 전체 단일 고속 캡처 (약 40~60ms)
         bbox = (450, 220, 1300, 800)
         img = ImageGrab.grab(bbox=bbox)
+
+        # ⚡ 피카 메인 화면 배경 유효성 검사 (좌석 사이 빈 공간 x: 800, y: 500 부근)
+        # 피카 관리창 정상 배경색: 약 (38, 38, 38)
+        # 만약 크롬 등 타 창이 피카 창을 가리고 있으면 색상 판별 중단하여 오판 원천 차단!
+        bg_check = img.getpixel((800 - bbox[0], 500 - bbox[1]))[:3]
+        is_pica_bg = (abs(bg_check[0] - 38) <= 15 and abs(bg_check[1] - 38) <= 15 and abs(bg_check[2] - 38) <= 15)
+        if not is_pica_bg:
+            return _last_counter_states
 
         results = {}
         for seat, (sx, sy) in SEAT_COORDS.items():
@@ -70,7 +84,8 @@ def get_counter_seat_states() -> Dict[int, str]:
             for dy in [-15, 15]:
                 center_samples.append(img.getpixel((lx, ly + dy))[:3])
 
-            purple_cnt = sum(1 for (r, g, b) in center_samples if b > g + 15 and b > 80 and r > g)
+            # 실제 피카 손님 이용 카드 보라색: R > 70, B > 110, B > G + 25, R > G + 10
+            purple_cnt = sum(1 for (r, g, b) in center_samples if r > 70 and b > 110 and b > g + 25 and r > g + 10)
             black_cnt = sum(1 for (r, g, b) in center_samples if r < 45 and g < 45 and b < 45)
 
             # 2. 관리자 🔑 흰색 열쇠 아이콘 검출 (상단 영역 dy = -20 ~ -8)

@@ -358,11 +358,9 @@
 
                 // PC 상태 업데이트
                 pcList.forEach(pc => {
-                    // 1순위: PC ID 일치
-                    let live = clientsData[pc.id];
-
-                    // 2순위: IP 주소 일치
-                    if (!live) {
+                    // ⚡ 1순위: IP 주소 일치 (매장 방 고유 고정 IP 기준 절대 매핑)
+                    let live = null;
+                    if (pc.ip) {
                         for (const cid in clientsData) {
                             const c = clientsData[cid];
                             if (c.ip && c.ip === pc.ip) {
@@ -372,7 +370,7 @@
                         }
                     }
 
-                    // 3순위: MAC 주소 일치
+                    // 2순위: MAC 주소 일치
                     if (!live && pc.mac && pc.mac !== '00:00:00:00:00:00') {
                         for (const cid in clientsData) {
                             const c = clientsData[cid];
@@ -383,10 +381,12 @@
                         }
                     }
 
-                    // 4순위: 로컬 테스트 모드 (단일 클라이언트 연결 시 1번 PC에 매핑)
-                    if (!live && pc.seat === 1 && Object.keys(clientsData).length > 0) {
-                        const ckeys = Object.keys(clientsData);
-                        live = clientsData[ckeys[0]];
+                    // 3순위: PC ID 고유 식별자 일치 (예: PC-01)
+                    if (!live && pc.id && clientsData[pc.id]) {
+                        const c = clientsData[pc.id];
+                        if (!pc.ip || !c.ip || pc.ip === c.ip) {
+                            live = c;
+                        }
                     }
 
                     const isOnline = Boolean(live && live.status === 'ONLINE');

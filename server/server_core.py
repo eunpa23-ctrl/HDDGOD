@@ -1632,6 +1632,15 @@ async def get_pica_status():
         "password_masked": "*" * len(pica_dog.password) if pica_dog.password else ""
     }
 
+@app.post("/api/pica/restart")
+async def manual_restart_pica():
+    """PicaLive 관리프로그램 강제 재시작 및 자동 복구 API"""
+    from server.pica_watchdog import pica_dog
+    if pica_dog.is_recovering:
+        return {"status": "busy", "message": "이미 PicaLive 복구 작업이 진행 중입니다."}
+    asyncio.create_task(pica_dog.recover_picalive())
+    return {"status": "ok", "message": "PicaLive 재실행 및 자동 복구 작업이 시작되었습니다."}
+
 @app.post("/api/pica/settings")
 async def save_pica_settings(request: Request):
     data = await request.json()
@@ -1654,8 +1663,9 @@ async def save_pica_settings(request: Request):
         cfg.set("PICA", "PROCESS_NAME", data["process_name"])
     if "auto_login_enabled" in data:
         cfg.set("PICA", "AUTO_LOGIN", str(data["auto_login_enabled"]))
-    if "password" in data and data["password"] and data["password"] != "***":
-        cfg.set("PICA", "PASSWORD", data["password"])
+    raw_pwd = str(data.get("password", "")).strip()
+    if raw_pwd and not all(c == '*' for c in raw_pwd) and raw_pwd != "***":
+        cfg.set("PICA", "PASSWORD", raw_pwd)
         
     for cf in set([cfg_file, main_cfg_file]):
         try:

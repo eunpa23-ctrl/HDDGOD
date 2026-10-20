@@ -107,16 +107,18 @@ def get_counter_seat_states() -> Dict[int, str]:
         return _last_counter_states
 
 def ensure_desktop():
-    """현재 스레드를 Default 윈도우 데스크톱에 연결"""
+    """현재 스레드를 활성 입력 데스크톱(또는 Default 데스크톱)에 연결"""
     try:
-        hdesk = user32.OpenDesktopW('Default', 0, False, 0x01FF)
+        hdesk = user32.OpenInputDesktop(0, False, 0x01FF)
+        if not hdesk:
+            hdesk = user32.OpenDesktopW('Default', 0, False, 0x01FF)
         if hdesk:
             user32.SetThreadDesktop(hdesk)
     except Exception as e:
         logger.warning(f"SetThreadDesktop 예외: {e}")
 
 def get_pica_hwnd() -> Optional[int]:
-    """PicaLive 메인 윈도우 HWND 반환"""
+    """PicaLive 메인 윈도우 HWND 반환 (전체화면 및 최소화 아이콘 지원)"""
     import psutil
     pids = [p.pid for p in psutil.process_iter() if 'picalive' in p.name().lower()]
     if not pids:
@@ -131,7 +133,12 @@ def get_pica_hwnd() -> Optional[int]:
             user32.GetWindowRect(h, ctypes.byref(r))
             w = r.right - r.left
             h_h = r.bottom - r.top
-            if w > 800 and h_h > 600:
+            is_iconic = user32.IsIconic(h)
+            length = user32.GetWindowTextLengthW(h)
+            buf = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(h, buf, length + 1)
+            title = buf.value.lower()
+            if (w > 800 and h_h > 600) or (is_iconic and "picalive" in title) or ("picalive" in title and "ver" in title):
                 found_hwnd = h
                 return False
         return True

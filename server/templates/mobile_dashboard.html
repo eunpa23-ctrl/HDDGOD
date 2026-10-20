@@ -55,6 +55,9 @@
                     <span class="text-[8px] bg-indigo-950 text-indigo-300 px-1 py-0.2 rounded border border-indigo-700/50 font-mono shrink-0">192.168.0.100</span>
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="restartPicaMobile()" class="px-1.5 py-0.5 bg-rose-950 hover:bg-rose-900 active:bg-rose-800 text-rose-300 border border-rose-500/40 font-bold rounded text-[9px] flex items-center gap-0.5 shadow" title="카운터 피카 프로그램 강제 재시작">
+                        <i class="fa-solid fa-rotate text-[8px]"></i><span>피카</span>
+                    </button>
                     <button onclick="optimizeMemoryMobile('SERVER')" id="mob-srv100-opt-btn" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-amber-300 border border-amber-500/40 font-bold rounded text-[9px] flex items-center gap-0.5 shadow" title="카운터 서버 유휴 메모리 정리">
                         <i class="fa-solid fa-broom text-[8px]"></i><span>정리</span>
                     </button>
@@ -731,6 +734,17 @@
                 if (msg) msg.innerText = '저장 실패: ' + e;
             }
         }
+
+        async function restartPicaMobile() {
+            if (!confirm("⚠️ 카운터 PicaLive(피카) 관리프로그램을 강제 재시작하시겠습니까?\n프로세스가 재실행되고 자동 로그인이 수행됩니다.")) return;
+            try {
+                const res = await fetch('/api/pica/restart', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message || "PicaLive 복구 명령이 전달되었습니다.");
+            } catch (e) {
+                alert("피카 재시작 요청 실패: " + e);
+            }
+        }
     
         // --- 🔴 실시간 클라이언트 로그 모바일 뷰어 ---
         let mobLogs = [];
@@ -966,7 +980,12 @@
                 <hr class="border-slate-800">
 
                 <div class="space-y-2">
-                    <span class="font-bold text-sm text-green-400 flex items-center gap-2"><i class="fa-solid fa-shield-dog"></i> Pica 감시 센터</span>
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm text-green-400 flex items-center gap-2"><i class="fa-solid fa-shield-dog"></i> Pica 감시 센터</span>
+                        <button type="button" onclick="restartPicaMobile()" class="px-2 py-0.5 bg-rose-950 hover:bg-rose-900 active:bg-rose-800 text-rose-300 border border-rose-600/40 font-bold rounded text-[10px] flex items-center gap-1 shadow">
+                            <i class="fa-solid fa-rotate text-[9px]"></i> 강제 재시작
+                        </button>
+                    </div>
                     <div class="flex gap-4 mb-2">
                         <label class="flex items-center gap-1.5"><input type="checkbox" id="mcfg-pica-enabled" class="rounded"> <span class="text-xs text-slate-300">자동 감시</span></label>
                         <label class="flex items-center gap-1.5"><input type="checkbox" id="mcfg-pica-auto-login" class="rounded"> <span class="text-xs text-slate-300">자동 로그인</span></label>

@@ -202,6 +202,9 @@
                         <button onclick="window.open('/remote/SERVER', '_blank')" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-mobile-screen"></i> 화면 원격 제어
                         </button>
+                        <button onclick="restartPicaLive()" class="px-2.5 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-600/40 font-bold rounded-lg transition flex items-center justify-center gap-1 shadow" title="카운터 PicaLive 관리프로그램 강제 재시작 및 자동 복구">
+                            <i class="fa-solid fa-rotate text-[10px]"></i> 피카 재시작
+                        </button>
                         <button onclick="optimizeServerMemory()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 font-bold rounded-lg transition flex items-center justify-center gap-1" title="카운터 서버 메모리 최적화">
                             <i class="fa-solid fa-broom"></i> 정리
                         </button>
@@ -640,9 +643,12 @@
                             <label class="block text-slate-400 mb-1 font-semibold">자동 로그인 비밀번호</label>
                             <input id="cfg-pica-password" type="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs focus:border-green-500 outline-none" placeholder="새 비밀번호 입력 시에만 저장됨">
                         </div>
-                        <div class="flex items-end">
-                            <button onclick="savePicaSettings()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-green-400 rounded-lg px-4 py-2 font-bold transition flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-save"></i> 피카 설정 저장 및 적용
+                        <div class="flex items-end gap-2">
+                            <button onclick="savePicaSettings()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-green-400 rounded-lg px-3 py-2 font-bold transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-save"></i> 설정 저장
+                            </button>
+                            <button onclick="restartPicaLive()" class="px-4 py-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-600/50 text-rose-300 rounded-lg font-bold transition flex items-center justify-center gap-1.5 shadow" title="PicaLive 프로세스 강제 재실행 및 자동 로그인 복구">
+                                <i class="fa-solid fa-rotate text-xs"></i> 강제 재시작
                             </button>
                         </div>
                     </div>
@@ -1832,6 +1838,20 @@ async function savePicaSettings() {
         loadPicaSettings();
     } catch(e) {
         alert("Pica 설정 저장 실패");
+    }
+}
+
+async function restartPicaLive() {
+    if (!confirm("⚠️ 카운터 PC의 PicaLive(피카) 관리프로그램을 강제 재시작하시겠습니까?\n기존 프로세스를 종료하고 LiveStarter를 재실행하여 자동 로그인을 수행합니다.")) return;
+    try {
+        const res = await fetch('/api/pica/restart', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || "PicaLive 복구 명령이 전달되었습니다.");
+        if (typeof loadPicaSettings === 'function') {
+            loadPicaSettings();
+        }
+    } catch (e) {
+        alert("피카 재시작 요청 실패: " + e);
     }
 }
 

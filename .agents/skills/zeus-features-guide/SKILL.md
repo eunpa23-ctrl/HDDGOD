@@ -103,3 +103,20 @@ description: >-
 - **레거시 API 정리**: `/api/icons/list`, `/api/pica/restart` 엔드포인트 제거.
 - **도구함 아카이빙**: 과거 1회성 스크립트 7종을 `archive_old_scripts/` 로 안전 분리.
 
+### 5.3 카운터 피카 완전 무인 복구 & 자동로그인 릴리즈 (`v5.2.0`)
+- **카운터 실제 데스크톱(`WinSta0\Default`) 바인딩 프로세스 기동**:
+  - 파이썬 기본 `subprocess` 대신 `win32process.CreateProcess(..., si.lpDesktop=r"WinSta0\Default")`를 사용하여 백그라운드 세션 갇힘 현상 원천 해결 및 실제 카운터 모니터 표출 성공.
+- **3단계 정밀 상태 감시 엔진 (3-State Watchdog Engine)**:
+  - `OFFLINE`: 프로세스 사망 $\rightarrow$ 프로세스 재기동
+  - `LOGIN_REQUIRED`: 프로세스는 켜졌으나 비밀번호 미입력 대기 상태 $\rightarrow$ Win32 직접 메시지 주입 기반 무인 로그인 수행
+  - `NORMAL_OPERATION`: 메인 좌석 그리드가 온전히 뜬 상태 $\rightarrow$ 정상 영업 판정
+- **Win32 초고속 직접 메시지 로그인 & 실화면 이중 검증**:
+  - 앞을 가리는 `LiveUp`("이미 실행중") 팝업 자동 감지 및 제거
+  - 자식 Edit 컨트롤에 `WM_SETTEXT` 비밀번호 직접 주입 & `BM_CLICK` / Enter 전송 (한/영 키 및 포커스 무관 100% 무인 로그인)
+  - `mss` 기반 실제 모니터 화면 캡처(`pica_last_verify.png`) 및 HWND 이중 교차 검증 완비.
+- **로그인 보조 방해 창(`상품주문목록`) 자동 종료 및 메인 좌석 화면 최상위 활성화**:
+  - 로그인 직후 비동기로 열려 좌석 배치표를 가리는 `상품주문목록` 창을 자동 감지하여 `WM_CLOSE`로 닫고 좌석 화면 전면 배치.
+  - 35초 안전 유예 기간(Grace Period)을 두어 시작 팝업만 닫고, 사장님이 일상 영업 중 수동으로 여는 창은 일체 간섭하지 않도록 보호.
+- **윈도우 부팅 시 제우스 서버 및 관제 자동 시작**:
+  - `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\ZeusServer.lnk` (`WindowStyle = 7` 최소화) 등록 완료.
+

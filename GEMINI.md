@@ -32,3 +32,15 @@
 ## 7. PICA Counter Screen Reference & Alignment (Mandatory)
 - **피카 카운터 관리프로그램 화면 기준 대조**: 좌석 상태(사용중, 잠김/대기, 오프라인) 판별 및 디버깅 시 반드시 카운터 PC의 피카 관리프로그램 실제 화면을 캡처/참조하여 제우스 대시보드와 100% 일치하도록 검증한다.
 - **손님 이용 좌석 절대 불간섭**: 피카 화면상 손님이 이용 중인 좌석(예: PC-01 등)은 원격 재부팅, 에이전트 강제 업데이트, 화면 제어 등 어떠한 조작도 절대 수행하지 않는다.
+
+## 8. Windows GUI Process Execution & Unattended Control Rules (Golden Prompt Rules - Mandatory)
+- **백그라운드 가상 세션 기동 절대 금지**:
+  - GUI 프로그램(피카, 넷플릭스 등)을 실행할 때 기본 `subprocess.Popen`을 단독으로 사용하지 않는다. (Python `subprocess.STARTUPINFO`는 `lpDesktop` 속성을 지원하지 않아 `WinSta0\Default`에 전달되지 못하고 백그라운드 세션에 갇힘)
+  - 반드시 `win32process.CreateProcess`를 사용하고 `si.lpDesktop = r"WinSta0\Default"`를 명시하여 실제 사용자 모니터 데스크톱 화면에 정상 표출되도록 기동한다.
+- **마우스 좌표 클릭(pyautogui) 원천 배제**:
+  - 해상도, DPI 배율, 윈도우 포커스, 한/영 키 상태에 취약한 마우스 좌표 클릭(`pyautogui`)에 의존하지 않는다.
+  - 자식 Edit/Button 컨트롤을 탐색하여 Win32 메시지(`WM_SETTEXT`, `BM_CLICK`, `VK_RETURN`)를 메모리에 직접 주입하여 100% 무인 신뢰성을 보장한다.
+- **방해 팝업 및 보조 창 사전/사후 자동 정리**:
+  - 기동 전/후에 앞을 가리는 "이미 실행중(`LiveUp`)" 팝업이나, 기동 후 비동기로 열려 메인 화면을 가리는 "상품주문목록" 등의 보조 창을 감지하여 즉시 `WM_CLOSE`로 닫고, 메인 작업 창을 `SetForegroundWindow`로 최상위 전면에 올린다.
+- **실제 화면 캡처 교차 검증(mss) 의무화**:
+  - 프로세스 PID나 HWND의 단순 존재 여부만으로 성공을 단정 짓지 말고, 반드시 `ensure_desktop()` 후 `mss`로 실제 모니터 화면을 캡처하여 시각적으로 온전히 표출되었는지 직접 교차 검증한다.

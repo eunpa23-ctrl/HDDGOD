@@ -408,8 +408,9 @@
                     return;
                 }
 
-                // 롱프레스 이전 10px 이상 이동 시 롱프레스 취소 (일반 화면 팬/커서 이동)
-                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // 롱프레스 이전 25px 이상 이동 시 롱프레스 취소 (모바일 미세 떨림 감안 허용치 완화)
+                const touchDist = Math.hypot(dx, dy);
+                if (touchDist > 25) {
                     movedSignificantly = true;
                     cancelLongPress();
                 }
@@ -478,12 +479,13 @@
                     return;
                 }
 
-                // 🌟 2) 순수 단일 탭 좌클릭 (0.5초 미만 짧은 탭)
-                if (isTouching && !hasPinched && !isPinching && !movedSignificantly &&
-                    pinchCooldown >= 400 && touchDuration < 500 && e.changedTouches.length === 1) {
-                    
-                    const clientX = e.changedTouches[0].clientX;
-                    const clientY = e.changedTouches[0].clientY;
+                // 🌟 2) 순수 단일 탭 좌클릭 (0.6초 미만 짧은 탭, 총 이동 거리 25px 이내)
+                const lastTouch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+                const dist = lastTouch ? Math.hypot(lastTouch.clientX - startX, lastTouch.clientY - startY) : 999;
+
+                if (!hasPinched && !isPinching && pinchCooldown >= 250 && touchDuration < 600 && dist <= 25 && lastTouch) {
+                    const clientX = lastTouch.clientX;
+                    const clientY = lastTouch.clientY;
                     const pos = screenToImageRatio(clientX, clientY);
 
                     if (pos.valid) {
@@ -578,12 +580,44 @@
         let isPicaAdmin = {{ 'true' if is_pica_admin else 'false' }};
         let isPicaSwitching = false;
 
-        function updateSliderUI(isAdmin) {
+        // 모바일 하단 플로팅 토스트 알림
+        function showToast(message, isError = false) {
+            let toast = document.getElementById('remote-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'remote-toast';
+                toast.className = 'fixed bottom-14 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold z-50 flex items-center gap-2 transition-all duration-300 pointer-events-none opacity-0';
+                document.body.appendChild(toast);
+            }
+            toast.className = `fixed bottom-14 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold z-50 flex items-center gap-2 transition-all duration-300 pointer-events-none opacity-100 ${
+                isError 
+                    ? 'bg-rose-950/95 text-rose-200 border border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.4)]' 
+                    : 'bg-emerald-950/95 text-emerald-200 border border-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-check text-emerald-400'}"></i> <span>${message}</span>`;
+            
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.className = toast.className.replace('opacity-100', 'opacity-0');
+            }, 3000);
+        }
+
+        function updateSliderUI(isAdmin, isLoading = false) {
             const btn = document.getElementById('pica-slider-btn');
             const knob = document.getElementById('pica-slider-knob');
             const icon = document.getElementById('pica-slider-icon');
             const label = document.getElementById('pica-slider-label');
             if (!btn || !knob || !icon || !label) return;
+
+            if (isLoading) {
+                // 전환 처리 중 로딩 상태
+                btn.className = "relative h-8 sm:h-9 px-3 rounded-full flex items-center gap-2 cursor-wait select-none shadow-lg border opacity-90 bg-indigo-950 border-indigo-500/80 shadow-[0_0_16px_rgba(99,102,241,0.35)]";
+                knob.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-indigo-500 shadow-md flex items-center justify-center text-white transition-all duration-300";
+                icon.className = "fa-solid fa-circle-notch fa-spin text-[10px]";
+                label.className = "text-[11px] sm:text-xs font-extrabold text-indigo-300 tracking-tight transition-all duration-300";
+                label.innerHTML = '전환 처리 중...';
+                return;
+            }
 
             if (isAdmin) {
                 // 관리자 접속중 (우측 슬라이딩, 에메랄드 네온)
@@ -612,7 +646,7 @@
                         if (isPicaAdmin !== data.is_admin) {
                             console.log(`[PICA SYNC] 서버 실시간 상태 변경 감지: ${isPicaAdmin} -> ${data.is_admin}`);
                             isPicaAdmin = data.is_admin;
-                            updateSliderUI(isPicaAdmin);
+                            updateSliderUI(isPicaAdmin, false);
                         }
                     }
                 }
@@ -631,8 +665,8 @@
             const nextStateIsAdmin = !isPicaAdmin;
             const action = nextStateIsAdmin ? 'UNLOCK_PICA' : 'LOCK_PICA';
             
-            // 즉시 슬라이딩 애니메이션 선반영
-            updateSliderUI(nextStateIsAdmin);
+            // 🌟 1) 즉시 로딩 스피너 및 '전환 처리 중...' 시각 피드백 제공!
+            updateSliderUI(nextStateIsAdmin, true);
 
             try {
                 const res = await fetch(`/api/command/${targetId}/${action}`, { method: 'POST' });
@@ -640,17 +674,18 @@
                 console.log(`[PICA TOGGLE] ${action} 응답:`, data);
                 if (data.status === 'ok') {
                     isPicaAdmin = nextStateIsAdmin;
-                    updateSliderUI(isPicaAdmin);
+                    updateSliderUI(isPicaAdmin, false);
+                    showToast(nextStateIsAdmin ? '🔑 관리자 로그인 성공' : '🔒 좌석 잠금 복구 완료', false);
                 } else {
                     console.warn(`[PICA TOGGLE] 명령 실패:`, data);
                     // 실패 시 원래 상태로 슬라이드 롤백
-                    updateSliderUI(isPicaAdmin);
-                    alert(`요청 처리 실패: ${data.message || '알 수 없는 오류'}`);
+                    updateSliderUI(isPicaAdmin, false);
+                    showToast(`요청 실패: ${data.message || '좌석 상태 확인 필요'}`, true);
                 }
             } catch (err) {
                 console.error(`[PICA TOGGLE] 네트워크 오류:`, err);
-                updateSliderUI(isPicaAdmin);
-                alert(`네트워크 통신 오류: ${err.message}`);
+                updateSliderUI(isPicaAdmin, false);
+                showToast(`네트워크 오류: ${err.message}`, true);
             } finally {
                 isPicaSwitching = false;
             }

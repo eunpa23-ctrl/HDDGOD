@@ -172,8 +172,8 @@ def get_popup_menu_rect() -> Optional[tuple]:
             user32.GetWindowRect(h, ctypes.byref(r))
             w = r.right - r.left
             h_h = r.bottom - r.top
-            # 피카라이브 우클릭 메뉴: 너비 180~260, 높이 200~500
-            if 'windowsforms' in c.value.lower() and 180 <= w <= 260 and 200 <= h_h <= 500:
+            # 피카라이브 우클릭 메뉴: 너비 170~280, 높이 180~550 (윈도우 배율 고려)
+            if 'windowsforms' in c.value.lower() and 170 <= w <= 280 and 180 <= h_h <= 550:
                 rect = (r.left, r.top, r.right, r.bottom)
                 return False
         return True
@@ -201,7 +201,7 @@ def set_pica_admin_mode(seat_num: int, enable: bool) -> Dict[str, Any]:
         user32.GetCursorPos(ctypes.byref(orig_pt))
 
         try:
-            # 1. PicaLive 창 활성화
+            # 1. PicaLive 창 활성화 및 포커스 보장
             is_iconic = user32.IsIconic(pica)
             user32.keybd_event(0x12, 0, 0, 0)
             user32.keybd_event(0x12, 0, 2, 0)
@@ -209,27 +209,27 @@ def set_pica_admin_mode(seat_num: int, enable: bool) -> Dict[str, Any]:
             user32.ShowWindow(pica, 3) # SW_MAXIMIZE
             user32.SetForegroundWindow(pica)
             user32.BringWindowToTop(pica)
-            time.sleep(0.4 if is_iconic else 0.15)
+            time.sleep(0.4 if is_iconic else 0.25)
 
-            # 2. 해당 좌석 카드 정중앙으로 이동 후 우클릭 (최대 2회 시도)
+            # 2. 해당 좌석 카드 정중앙으로 이동 후 우클릭 (최대 3회 시도)
             sx, sy = SEAT_COORDS[seat_num]
             menu_rect = None
-            for attempt in range(2):
+            for attempt in range(3):
                 user32.SetCursorPos(sx, sy)
-                time.sleep(0.08)
+                time.sleep(0.1)
                 user32.mouse_event(8, 0, 0, 0, 0) # RIGHTDOWN
-                time.sleep(0.04)
+                time.sleep(0.05)
                 user32.mouse_event(16, 0, 0, 0, 0) # RIGHTUP
 
-                # 3. 우클릭 팝업 메뉴 감지
-                for _ in range(10):
+                # 3. 우클릭 팝업 메뉴 감지 (최대 1.2초 동안 확인)
+                for _ in range(15):
                     time.sleep(0.08)
                     menu_rect = get_popup_menu_rect()
                     if menu_rect:
                         break
                 if menu_rect:
                     break
-                time.sleep(0.15)
+                time.sleep(0.2)
 
             if not menu_rect:
                 logger.warning(f"⚠️ 좌석 {seat_num}번 우클릭 팝업 메뉴 감지 실패")

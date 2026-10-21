@@ -32,15 +32,31 @@ class RemoteRelay:
         return len(self.viewers.get(client_id, set()))
 
     async def broadcast_frame(self, client_id: str, frame_base64: str):
-        """클라이언트 PC에서 전송된 화면 프레임을 모든 뷰어에게 중계"""
-        if client_id not in self.viewers:
+        """단일 client_id에 등록된 뷰어에게 프레임 전송"""
+        await self.broadcast_frame_to_targets([client_id], frame_base64)
+
+    async def broadcast_frame_to_targets(self, target_ids: list, frame_base64: str):
+        """다중 식별자(좌석ID, 호스트명, 세션키)에 등록된 모든 뷰어에게 중복 없이 안전하게 1회만 프레임 전송"""
+        unique_viewers = set()
+        for tid in target_ids:
+            if tid and tid in self.viewers:
+                unique_viewers.update(self.viewers[tid])
+
+        if not unique_viewers:
             return
+
         dead_sockets = set()
-        msg = frame_base64
-        for ws in self.viewers[client_id]:
+        import json
+        msg = json.dumps({"frame": frame_base64, "dpr": 1.0})
+        for ws in unique_viewers:
             try:
                 await ws.send_text(msg)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"🚨 [RemoteRelay] 뷰어({ws.client}) 프레임 송신 실패 ({type(e).__name__}): {e}")
                 dead_sockets.add(ws)
-        for dead in dead_sockets:
-            self.remove_viewer(client_id, dead)
+
+        if dead_sockets:
+            for tid in list(self.viewers.keys()):
+                for dead in dead_sockets:
+                    self.remove_viewer(tid, dead)
+

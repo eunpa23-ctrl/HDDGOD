@@ -25,6 +25,7 @@ except ImportError:
 
 logger = logging.getLogger("ScreenStreamer")
 _thread_local = threading.local()
+_capture_lock = threading.Lock()
 
 def ensure_default_desktop():
     """백그라운드/가상 데스크톱 환경에서도 실제 물리 화면(WinSta0\\default 데스크톱)에 스레드를 바인딩"""
@@ -78,77 +79,78 @@ class ScreenStreamer:
     def capture_frame_base64(self) -> str:
         """화면을 캡처하여 최적화된 JPEG base64 문자열로 반환"""
         ensure_default_desktop()
-        try:
-            img = None
-            sct = get_thread_sct()
-            if sct:
-                try:
-                    monitor = sct.monitors[1]
-                    sct_img = sct.grab(monitor)
-                    img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
-                except Exception as e1:
+        with _capture_lock:
+            try:
+                img = None
+                sct = get_thread_sct()
+                if sct:
                     try:
-                        _thread_local.sct = mss.mss()
-                        sct = _thread_local.sct
                         monitor = sct.monitors[1]
                         sct_img = sct.grab(monitor)
                         img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
-                    except Exception as e2:
-                        logger.error(f"mss grab failed: e1={e1}, e2={e2}")
-                        img = None
+                    except Exception as e1:
+                        try:
+                            _thread_local.sct = mss.mss()
+                            sct = _thread_local.sct
+                            monitor = sct.monitors[1]
+                            sct_img = sct.grab(monitor)
+                            img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+                        except Exception as e2:
+                            logger.error(f"mss grab failed: e1={e1}, e2={e2}")
+                            img = None
 
-            if not img:
+                if not img:
+                    try:
+                        from PIL import ImageGrab
+                        img = ImageGrab.grab()
+                    except Exception as e_grab:
+                        logger.error(f"ImageGrab failed: {e_grab}")
+                        pass
+
+                if not img:
+                    w = self.screen_w if self.screen_w > 0 else 1920
+                    h = self.screen_h if self.screen_h > 0 else 1080
+                    img = Image.new("RGB", (w, h), color=(15, 23, 42))
+
+                # 캡처된 원본 모니터 크기로 해상도 동기화 (DPI 오차 0%)
+                self.screen_w = img.width
+                self.screen_h = img.height
+
+                # 화면 위에 실제 마우스 커서 화살표 선명하게 합성
                 try:
-                    from PIL import ImageGrab
-                    img = ImageGrab.grab()
-                except Exception as e_grab:
-                    logger.error(f"ImageGrab failed: {e_grab}")
+                    class POINT(ctypes.Structure):
+                        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+                    pt = POINT()
+                    if ctypes.windll.user32.GetCursorPos(ctypes.byref(pt)):
+                        cx, cy = pt.x, pt.y
+                        if 0 <= cx < img.width and 0 <= cy < img.height:
+                            from PIL import ImageDraw
+                            draw = ImageDraw.Draw(img)
+                            points = [
+                                (cx, cy),
+                                (cx, cy + 18),
+                                (cx + 5, cy + 14),
+                                (cx + 9, cy + 21),
+                                (cx + 12, cy + 19),
+                                (cx + 8, cy + 12),
+                                (cx + 14, cy + 12)
+                            ]
+                            draw.polygon(points, fill="white", outline="black")
+                except Exception:
                     pass
 
-            if not img:
-                w = self.screen_w if self.screen_w > 0 else 1920
-                h = self.screen_h if self.screen_h > 0 else 1080
-                img = Image.new("RGB", (w, h), color=(15, 23, 42))
+                # 가로 폭 리사이즈 (대역폭 절약 및 모바일 최적화)
+                if img.width > self.target_width:
+                    ratio = self.target_width / float(img.width)
+                    new_height = int(float(img.height) * ratio)
+                    img = img.resize((self.target_width, new_height), Image.Resampling.BILINEAR)
 
-            # 캡처된 원본 모니터 크기로 해상도 동기화 (DPI 오차 0%)
-            self.screen_w = img.width
-            self.screen_h = img.height
-
-            # 화면 위에 실제 마우스 커서 화살표 선명하게 합성
-            try:
-                class POINT(ctypes.Structure):
-                    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-                pt = POINT()
-                if ctypes.windll.user32.GetCursorPos(ctypes.byref(pt)):
-                    cx, cy = pt.x, pt.y
-                    if 0 <= cx < img.width and 0 <= cy < img.height:
-                        from PIL import ImageDraw
-                        draw = ImageDraw.Draw(img)
-                        points = [
-                            (cx, cy),
-                            (cx, cy + 18),
-                            (cx + 5, cy + 14),
-                            (cx + 9, cy + 21),
-                            (cx + 12, cy + 19),
-                            (cx + 8, cy + 12),
-                            (cx + 14, cy + 12)
-                        ]
-                        draw.polygon(points, fill="white", outline="black")
-            except Exception:
-                pass
-
-            # 가로 폭 리사이즈 (대역폭 절약 및 모바일 최적화)
-            if img.width > self.target_width:
-                ratio = self.target_width / float(img.width)
-                new_height = int(float(img.height) * ratio)
-                img = img.resize((self.target_width, new_height), Image.Resampling.BILINEAR)
-
-            buf = io.BytesIO()
-            img.save(buf, format="JPEG", quality=self.quality, optimize=True)
-            return base64.b64encode(buf.getvalue()).decode("utf-8")
-        except Exception as e:
-            logger.error(f"화면 캡처 실패: {e}")
-            return ""
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=self.quality, optimize=True)
+                return base64.b64encode(buf.getvalue()).decode("utf-8")
+            except Exception as e:
+                logger.error(f"화면 캡처 실패: {e}")
+                return ""
 
     def handle_remote_input(self, event_type: str, data: dict) -> None:
         """모바일 터치 및 마우스/키보드 입력 이벤트 실행"""

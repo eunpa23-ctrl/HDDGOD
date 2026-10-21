@@ -141,7 +141,81 @@
         const statusDot = document.getElementById('status-dot');
 
         const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${wsProtocol}//${location.host}/ws/remote_view/${targetId}`);
+        let ws = null;
+        let wsReconnectTimer = null;
+        let wsPingTimer = null;
+
+        function connectWebSocket() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+            try {
+                ws = new WebSocket(`${wsProtocol}//${location.host}/ws/remote_view/${targetId}`);
+            } catch (err) {
+                scheduleReconnect();
+                return;
+            }
+
+            ws.onopen = () => {
+                console.log('[Remote] Connected');
+                if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+                if (wsPingTimer) clearInterval(wsPingTimer);
+                wsPingTimer = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ event: 'PING' }));
+                    }
+                }, 5000);
+            };
+
+            ws.onmessage = (e) => {
+                if (!firstFrameReceived) {
+                    firstFrameReceived = true;
+                    if (overlay) overlay.style.display = 'none';
+                    img.classList.remove('opacity-0');
+                }
+                try {
+                    let frameData = "";
+                    if (e.data.startsWith('{')) {
+                        const parsed = JSON.parse(e.data);
+                        if (parsed.event === 'PONG') return;
+                        frameData = parsed.frame || parsed.image || "";
+                    } else {
+                        frameData = e.data;
+                    }
+                    if (!frameData) return;
+
+                    const fullSrc = "data:image/jpeg;base64," + frameData;
+                    if (!isRendering) {
+                        isRendering = true;
+                        img.src = fullSrc;
+                    } else {
+                        // 🌟 이전 프레임 디코딩 중일 때는 최신 프레임만 대기열에 저장 (화면 프리징 및 메모리 폭주 100% 방지)
+                        pendingFrameSrc = fullSrc;
+                    }
+                } catch (err) {}
+            };
+
+            ws.onerror = (err) => {
+                console.warn('[Remote WS Error]', err);
+                if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+            };
+
+            ws.onclose = () => {
+                console.log('[Remote WS Closed] 1초 후 자동 재연결...');
+                if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
+                if (wsPingTimer) clearInterval(wsPingTimer);
+                scheduleReconnect();
+            };
+        }
+
+        function scheduleReconnect() {
+            if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+            wsReconnectTimer = setTimeout(() => {
+                connectWebSocket();
+            }, 1000);
+        }
+
+        connectWebSocket();
 
         let firstFrameReceived = false;
         let imgNaturalW = 1920;
@@ -181,38 +255,30 @@
         window.resetZoom = fitToContainer;
         window.addEventListener('resize', fitToContainer);
 
-        ws.onopen = () => { console.log('[Remote] Connected'); };
-        ws.onmessage = (e) => {
-            if (!firstFrameReceived) {
-                firstFrameReceived = true;
-                if (overlay) overlay.style.display = 'none';
-                img.classList.remove('opacity-0');
-            }
-            try {
-                if (e.data.startsWith('{')) {
-                    const parsed = JSON.parse(e.data);
-                    img.src = "data:image/jpeg;base64," + (parsed.image || parsed.frame || "");
-                } else {
-                    img.src = "data:image/jpeg;base64," + e.data;
-                }
-            } catch (err) {
-                img.src = "data:image/jpeg;base64," + e.data;
-            }
-        };
+        let isRendering = false;
+        let pendingFrameSrc = null;
 
         img.onload = () => {
+            isRendering = false;
             if (img.naturalWidth && (imgNaturalW !== img.naturalWidth || imgNaturalH !== img.naturalHeight)) {
                 imgNaturalW = img.naturalWidth;
                 imgNaturalH = img.naturalHeight;
                 fitToContainer();
             }
+            if (pendingFrameSrc) {
+                const nextSrc = pendingFrameSrc;
+                pendingFrameSrc = null;
+                isRendering = true;
+                img.src = nextSrc;
+            }
         };
 
-        ws.onerror = () => { if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500'; };
-        ws.onclose = () => { if (statusDot) statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-600'; };
+        img.onerror = () => {
+            isRendering = false;
+        };
 
         function sendEvent(type, xRatio, yRatio, extra = {}) {
-            if (ws.readyState === WebSocket.OPEN) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ event: type, x: xRatio, y: yRatio, ...extra }));
             }
         }
@@ -234,13 +300,18 @@
             return { valid: false, imgX, imgY };
         }
 
-        function showHitMarker(imgX, imgY, isRight = false) {
+        // 🌟 화면 터치 즉시 어디든 보이는 명확한 파란색(우클릭은 황금주황색) 터치 피드백 마커
+        function showHitMarker(clientX, clientY, isRight = false) {
+            const cRect = container.getBoundingClientRect();
+            const relX = clientX - cRect.left;
+            const relY = clientY - cRect.top;
+
             const marker = document.createElement('div');
             marker.className = 'touch-hit-marker' + (isRight ? ' right-click' : '');
-            marker.style.left = `${imgX}px`;
-            marker.style.top = `${imgY}px`;
-            wrapper.appendChild(marker);
-            setTimeout(() => marker.remove(), 1200);
+            marker.style.left = `${relX}px`;
+            marker.style.top = `${relY}px`;
+            container.appendChild(marker);
+            setTimeout(() => marker.remove(), 1000);
         }
 
         // --- 터치 및 마우스 조작 인터랙션 ---
@@ -337,10 +408,7 @@
                         if (navigator.vibrate) {
                             try { navigator.vibrate(60); } catch(err) {}
                         }
-                        const pos = screenToImageRatio(targetClientX, targetClientY);
-                        if (pos.valid) {
-                            showHitMarker(pos.imgX, pos.imgY, true); // 황금주황색 마커
-                        }
+                        showHitMarker(targetClientX, targetClientY, true); // 황금주황색 마커
                     }
                 }, 500);
             }
@@ -464,9 +532,9 @@
                         }
                     } else {
                         // 🖱️ Case B: 0.5초 꾹 누르고 있다가 그 자리에서 손가락을 뗌 -> 우클릭 (RIGHT CLICK)!
+                        showHitMarker(startX, startY, true); // 황금주황색 마커
                         const origPos = screenToImageRatio(startX, startY);
                         if (origPos.valid) {
-                            showHitMarker(origPos.imgX, origPos.imgY, true); // 황금주황색 마커
                             sendEvent('CLICK', origPos.x, origPos.y, { button: 'right' });
                         }
                     }
@@ -486,10 +554,10 @@
                 if (!hasPinched && !isPinching && pinchCooldown >= 250 && touchDuration < 600 && dist <= 25 && lastTouch) {
                     const clientX = lastTouch.clientX;
                     const clientY = lastTouch.clientY;
-                    const pos = screenToImageRatio(clientX, clientY);
+                    showHitMarker(clientX, clientY, false); // 하늘색 좌클릭 마커 즉시 표출
 
+                    const pos = screenToImageRatio(clientX, clientY);
                     if (pos.valid) {
-                        showHitMarker(pos.imgX, pos.imgY, false); // 하늘색 좌클릭 마커
                         sendEvent('CLICK', pos.x, pos.y, { button: 'left' });
                     }
                     e.preventDefault();

@@ -746,13 +746,13 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                     }))
 
             elif p_type == PacketType.SCREEN_FRAME:
-                # 원격 제어 화면 프레임 릴레이 (좌석 ID, 세션키, 호스트명 동시 중계)
                 frame = data.get("frame", "")
-                await remote_relay.broadcast_frame(session_key, frame)
-                if seat_id and seat_id != session_key:
-                    await remote_relay.broadcast_frame(seat_id, frame)
-                if client_id != session_key:
-                    await remote_relay.broadcast_frame(client_id, frame)
+                targets = [k for k in [session_key, seat_id, client_id] if k]
+                v_cnt = sum(remote_relay.get_viewer_count(t) for t in targets)
+                cnt = getattr(app.state, f"fc_{session_key}", 0) + 1
+                setattr(app.state, f"fc_{session_key}", cnt)
+                logger.info(f"[{session_key}] 📺 프레임 #{cnt} 수신 (바이트: {len(frame)}, 대상 뷰어수: {v_cnt}명)")
+                asyncio.create_task(remote_relay.broadcast_frame_to_targets(targets, frame))
 
             elif p_type == PacketType.ERROR_REPORT:
                 error_msg = data.get("error", "Unknown error")
@@ -912,18 +912,16 @@ async def remote_view_websocket(websocket: WebSocket, client_id: str):
         return
 
     actual_cid = get_actual_client_id(client_id)
-    prev_viewers = remote_relay.get_viewer_count(client_id) + (remote_relay.get_viewer_count(actual_cid) if actual_cid != client_id else 0)
     remote_relay.add_viewer(client_id, websocket)
     if actual_cid != client_id:
         remote_relay.add_viewer(actual_cid, websocket)
 
-    # 뷰어가 최초로 접속할 때만 화면 스트리밍 시작 명령 발송 (중복 발송 방지)
-    if prev_viewers == 0:
-        ws = get_client_ws(client_id)
-        if ws:
-            cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
-            await ws.send_text(cmd)
-            logger.info(f"[{actual_cid}] 최초 뷰어 접속 확인 -> 화면 스트리밍 즉각 시작 명령 전송!")
+    # 뷰어 접속 즉시 해당 PC에 화면 스트리밍 가동 명령 전달 (멱등성 보장)
+    ws = get_client_ws(client_id)
+    if ws:
+        cmd = make_packet(PacketType.COMMAND, {"action": CommandType.START_SCREEN_STREAM})
+        await ws.send_text(cmd)
+        logger.info(f"[{actual_cid}] 뷰어 접속 확인 -> 화면 스트리밍 즉각 시작 명령 전송")
 
     try:
         while True:
@@ -934,16 +932,20 @@ async def remote_view_websocket(websocket: WebSocket, client_id: str):
             if target_ws:
                 pkt = make_packet(PacketType.REMOTE_INPUT, evt_data)
                 await target_ws.send_text(pkt)
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, Exception) as e:
+        logger.warning(f"[{client_id}] 뷰어 세션 연결 종료: {type(e).__name__}: {e}")
+    finally:
         remote_relay.remove_viewer(client_id, websocket)
         if actual_cid != client_id:
             remote_relay.remove_viewer(actual_cid, websocket)
-        # 뷰어가 아무도 없으면 스트리밍 중지
+        
+        # 해당 PC를 보고 있는 뷰어가 아무도 없을 때만 화면 스트리밍 절전 중지
+        remain_viewers = remote_relay.get_viewer_count(client_id) + (remote_relay.get_viewer_count(actual_cid) if actual_cid != client_id else 0)
         target_ws = get_client_ws(client_id)
-        if target_ws and actual_cid not in remote_relay.viewers and client_id not in remote_relay.viewers:
+        if target_ws and remain_viewers == 0:
             cmd = make_packet(PacketType.COMMAND, {"action": CommandType.STOP_SCREEN_STREAM})
             await target_ws.send_text(cmd)
-            logger.info(f"[{actual_cid}] 모든 뷰어 퇴장 -> 화면 스트리밍 절전 중지")
+            logger.info(f"[{actual_cid}] 모든 뷰어 퇴장 (남은 수: 0) -> 화면 스트리밍 절전 중지")
 
 # --- 제어 REST API ---
 

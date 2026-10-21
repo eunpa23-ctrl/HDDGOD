@@ -49,6 +49,7 @@ class ZeusClientAgent:
         self.streamer = ScreenStreamer()
         self.is_streaming_screen = False
         self.ws_conn = None
+        self.send_lock = None
         self.otp_needed = False
         self.otp_sent = False
         self.cred_needed = False
@@ -57,6 +58,15 @@ class ZeusClientAgent:
         # 실시간 로그 스트리머: 모든 로그를 서버 대시보드로 자동 전송
         self.ws_log_handler = WebSocketLogHandler(agent_ref=self, level=logging.INFO)
         logging.getLogger().addHandler(self.ws_log_handler)
+
+    async def safe_send(self, ws, pkt):
+        """웹소켓 동시 호출 충돌(ConcurrencyError) 원천 방지 안전 전송"""
+        if not ws:
+            return
+        if self.send_lock is None:
+            self.send_lock = asyncio.Lock()
+        async with self.send_lock:
+            await ws.send(pkt)
 
     def get_client_identity(self) -> str:
         """IP 기반 고유 좌석 ID(예: PC-02) 또는 호스트명 생성 (노하드 마스터 복제 방어)"""
@@ -278,7 +288,7 @@ class ZeusClientAgent:
                     "ram_total_gb": ram_total_gb
                 }
                 pkt = make_packet(PacketType.HEARTBEAT, payload)
-                await websocket.send(pkt)
+                await self.safe_send(websocket, pkt)
 
                 # 4자리 OTP 대기 상태이고 아직 서버에 전송하지 않았으면 즉각 발송
                 if self.otp_needed and not self.otp_sent:
@@ -287,7 +297,7 @@ class ZeusClientAgent:
                         "client_id": self.client_id,
                         "ip": self.local_ip
                     })
-                    await websocket.send(otp_pkt)
+                    await self.safe_send(websocket, otp_pkt)
                     logger.info("📡 [ZeusAgent] 서버로 OTP_REQUIRED 즉시 전송 완료!")
 
                 # 넷플릭스 1회용 계정 정보 필요 시 서버에 요청
@@ -298,7 +308,7 @@ class ZeusClientAgent:
                         cred_pkt = make_packet(PacketType.CREDENTIAL_REQUEST, {
                             "client_id": self.client_id
                         })
-                        await websocket.send(cred_pkt)
+                        await self.safe_send(websocket, cred_pkt)
                         logger.info("📡 [ZeusAgent] 서버로 넷플릭스 계정 정보(CREDENTIAL_REQUEST) 요청 전송 완료!")
 
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
@@ -372,7 +382,6 @@ class ZeusClientAgent:
 
     async def run_screen_stream_loop(self, websocket):
         """화면 스트리밍 활성화 시 8 FPS 경량 스트리밍 (하트비트 대역폭 보호)"""
-        consecutive_errors = 0
         while True:
             if self.is_streaming_screen:
                 try:
@@ -382,19 +391,12 @@ class ZeusClientAgent:
                             "client_id": self.client_id,
                             "frame": b64
                         })
-                        await websocket.send(pkt)
-                        consecutive_errors = 0
+                        await self.safe_send(websocket, pkt)
                 except Exception as e:
-                    consecutive_errors += 1
-                    # 3회 연속 전송 실패 시 스트리밍 자동 중단하여 소켓 과부하 및 루프 차단
-                    if consecutive_errors >= 3:
-                        logger.warning(f"화면 스트리밍 전송 실패로 절전 자동 중지: {e}")
-                        self.is_streaming_screen = False
-                        consecutive_errors = 0
-                    await asyncio.sleep(0.5)
+                    logger.debug(f"화면 프레임 일시 송신 지연: {e}")
+                    await asyncio.sleep(0.2)
                 await asyncio.sleep(0.12)
             else:
-                consecutive_errors = 0
                 await asyncio.sleep(0.2)
 
     def get_best_server_ip(self) -> str:
@@ -466,7 +468,7 @@ class ZeusClientAgent:
                                 "error": "Crash from previous run",
                                 "traceback": err_text
                             })
-                            await ws.send(pkt)
+                            await self.safe_send(ws, pkt)
                             os.remove(crash_log_path) # 성공 시 삭제
                         except Exception:
                             pass

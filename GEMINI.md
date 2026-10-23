@@ -2,8 +2,8 @@
 
 ## 1. Single Project Root & Drive Rules (Crucial)
 - **Primary Single Working Directory**: The ONLY valid project location is `C:\HDDGOD`. All edits, builds, runs, and git commands MUST execute in `C:\HDDGOD`.
-- **NO GOOGLE DRIVE SYNC (절대 금지)**: Do NOT read from, write to, copy to, or sync with Google Drive (`G:\내 드라이브`, `G:\`, etc.). Google Drive sync is completely disabled and prohibited.
-- **Git Sync with GitHub**: All version control is strictly synchronized directly between local `C:\HDDGOD` and GitHub remote `origin` (`https://github.com/eunpa23-ctrl/HDDGOD.git`).
+- **Git Sync with GitHub**: All version control is strictly synchronized directly between local working PC (`C:\HDDGOD`) and GitHub remote `origin` (`https://github.com/eunpa23-ctrl/HDDGOD.git`).
+- **Google Drive Policy**: Do NOT use Google Drive for automated/primary git syncing. However, accessing Google Drive (`G:\내 드라이브`, `G:\` 등) is fully permitted whenever necessary or requested by the user to retrieve reference materials, backups, or assets.
 - **Client Installation Path**: The client installation path on all target PCs is strictly fixed to `C:\ZeusAgent\`.
 
 ## 2. System Identifiers & Windows Policies
@@ -45,12 +45,25 @@
 - **실제 화면 캡처 교차 검증(mss) 의무화**:
   - 프로세스 PID나 HWND의 단순 존재 여부만으로 성공을 단정 짓지 말고, 반드시 `ensure_desktop()` 후 `mss`로 실제 모니터 화면을 캡처하여 시각적으로 온전히 표출되었는지 직접 교차 검증한다.
 
-## 9. 6대 절대 개발 원칙 (Core Development Rules - 사장님 지침)
-1. **짐작하지 말고 애매한 부분은 사용자에게 물어봐라**: 임의 추측 및 단정 금지. 불명확한 점은 즉시 질문하여 확인.
-2. **시킨 것만 코딩하고 200줄 짰는데 50줄로 되면 다시 짜라**: 요청 범위만 정밀 구현. 안전장치/예외처리/로깅 누락 및 임의 축소 절대 금지.
-3. **시키지 않은 코드는 건들지 마라**: 요청 외 모듈/기능 임의 변경 절대 금지. 부작용 원천 차단.
-4. **성공 기준을 정하고 실행해라**: 작업 착수 전 객관적 성공 판정 기준(체크리스트)을 먼저 정의하고 검증.
-5. **해도 잘 안 되면 중간에 멈추고 상황 보고하고 조언을 구하고 필요한 정보를 요청해라**: 무리한 삽질/땜질 반복 금지. 즉시 멈추고 현황 보고 후 사장님께 조언과 정보 요청.
-6. **에이전트 추가가 필요시 제시해서 업무 효율성을 높여라**: 복잡한 대규모 분석, 심층 리서치 또는 병렬 검증 필요 시 혼자 시간을 끌지 말고 전문 서브에이전트 추가 협업을 적극 제안하여 효율 극대화.
+## 9. 에이전트 행동 경계 표준 (Always / Ask First / Never - 사장님 절대 헌법)
+
+### 🟢 Always (항상 준수할 것)
+1. **성공 기준을 먼저 정하고 실행하라**: 작업 착수 전 객관적 실측 체크리스트를 정의하고, 완료 전 데이터 및 실제 화면 캡처로 직접 검증한다.
+2. **시킨 것만 견고하게 코딩하라**: 200줄짜리 견고한 코드가 50줄로 날림 축소되지 않도록 예외 처리, 동기화 락, 로깅을 철저히 보존한다.
+3. **안 되면 즉시 멈추고 조언을 구하라**: 오류 반복 시 혼자 무리하게 삽질하지 말고, 조기에 작업을 멈춘 뒤 현황을 보고하고 사장님께 조언과 정보를 요청한다.
+4. **에이전트 추가를 적극 제시하라**: 복잡한 대규모 분석, 심층 리서치 또는 병렬 검증이 필요할 때 서브에이전트 추가 협업을 제안하여 업무 효율을 극대화한다.
+5. **실제 화면 캡처 교차 검증 의무화**: GUI 작업 시 프로세스 존재 여부만 믿지 말고 실제 모니터 화면 캡처(`mss`)로 온전히 표출되었는지 확인한다.
+
+### 🟡 Ask First (반드시 먼저 물어볼 것)
+1. **짐작하지 말고 애매한 부분은 질문하라**: 요구사항이 모호하거나 여러 방법이 있을 때 자의적으로 판단하지 말고 즉시 사장님께 질문하여 의도를 명확히 확인한다.
+2. **구조적 변경 및 주요 파일 삭제**: 대규모 아키텍처 변경, 새로운 외부 라이브러리 추가, 기존 파일 삭제가 필요할 때는 사장님의 사전 승인을 얻는다.
+
+### 🔴 Never (절대 하지 말 것)
+1. **짐작 코딩 절대 금지**: "이러면 되겠지"라는 추측 기반 코딩을 일체 하지 않는다.
+2. **시키지 않은 코드 건들기 절대 금지**: 요청받지 않은 정상 모듈, 파일, 설정값을 임의로 수정하거나 리팩토링하지 않는다.
+3. **손님 이용 중 좌석 간섭 절대 금지**: 피카 카운터상 손님 이용 중(`USING`) 좌석에는 원격 재부팅, 에이전트 강제 업데이트, 화면 제어를 일체 하지 않는다.
+4. **기본 Git 동기화에 구글 드라이브 사용 금지**: 기본 깃 버전 관리는 오직 작업 PC(`C:\HDDGOD`)와 GitHub 간에 직접 수행한다. (단, 자료/백업 참조를 위한 구글 드라이브 접속은 허용)
+5. **백그라운드 가상 세션 기동 및 마우스 좌표 의존 금지**: GUI 프로세스는 실제 데스크톱(`WinSta0\Default`)에 띄우고, 마우스 좌표 클릭 대신 Win32 컨트롤 메시지 주입을 우선한다.
+
 
 

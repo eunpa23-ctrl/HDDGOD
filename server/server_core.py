@@ -192,6 +192,14 @@ async def lifespan(app):
     if pica_dog.is_enabled:
         pica_dog.start()
 
+    # 피카 실시간 손님 입퇴실/결제 알림 및 자정 23:59 마감 데몬 구동
+    try:
+        from server.pica_sales_notifier import pica_sales_notifier
+        asyncio.create_task(pica_sales_notifier.run_loop())
+        logger.info("⚡ 피카 실시간 손님 입퇴실/결제 알림 및 자정 마감 데몬 가동 완료")
+    except Exception as e:
+        logger.error(f"피카 알림 데몬 시작 실패: {e}")
+
     # 윈도우 작업표시줄 시스템 트레이 아이콘 백그라운드 구동
     try:
         from server.server_tray import start_server_tray_thread
@@ -1638,6 +1646,16 @@ async def get_pica_status():
         "auto_login_enabled": pica_dog.auto_login_enabled,
         "password_masked": "*" * len(pica_dog.password) if pica_dog.password else ""
     }
+
+@app.post("/api/pica/send_daily_report")
+async def trigger_daily_report():
+    """피카 일일 매출 마감 보고서 즉시 캡처 및 텔레그램 발송 API"""
+    from server.pica_sales_notifier import capture_and_send_daily_closing
+    success = await asyncio.to_thread(capture_and_send_daily_closing)
+    if success:
+        return {"status": "ok", "message": "일일 마감 보고서가 텔레그램으로 전송되었습니다."}
+    else:
+        return {"status": "error", "message": "마감 보고서 전송 실패 (피카 창 또는 텔레그램 설정 확인 필요)"}
 
 @app.post("/api/pica/restart")
 async def manual_restart_pica():

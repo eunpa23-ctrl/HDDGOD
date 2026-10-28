@@ -19,14 +19,25 @@ user32 = ctypes.windll.user32
 WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
 
+kernel32 = ctypes.windll.kernel32
+
 def ensure_desktop():
-    """현재 스레드를 활성 입력 데스크톱(또는 Default 데스크톱)에 연결"""
+    """현재 스레드를 실제 모니터 데스크톱('Default')에 확실히 연결하고 핸들 누수 방지"""
     try:
+        cur_desk = user32.GetThreadDesktop(kernel32.GetCurrentThreadId())
+        if cur_desk:
+            buf = ctypes.create_unicode_buffer(256)
+            needed = wintypes.DWORD()
+            if user32.GetUserObjectInformationW(cur_desk, 2, buf, ctypes.sizeof(buf), ctypes.byref(needed)):
+                if buf.value.lower() == "default":
+                    return
+
         hdesk = user32.OpenInputDesktop(0, False, 0x01FF)
         if not hdesk:
             hdesk = user32.OpenDesktopW('Default', 0, False, 0x01FF)
         if hdesk:
             user32.SetThreadDesktop(hdesk)
+            user32.CloseDesktop(hdesk)
     except Exception as e:
         logger.warning(f"SetThreadDesktop 예외: {e}")
 
@@ -50,15 +61,19 @@ def for_each_desktop(callback):
         for dname in desktops:
             hdesk = user32.OpenDesktopW(dname, 0, False, 0x01FF)
             if hdesk:
-                user32.SetThreadDesktop(hdesk)
-                res = callback(hdesk, dname)
-                if res is not None:
-                    return res
+                try:
+                    user32.SetThreadDesktop(hdesk)
+                    res = callback(hdesk, dname)
+                    if res is not None:
+                        return res
+                finally:
+                    user32.CloseDesktop(hdesk)
     except Exception as e:
         logger.warning(f"for_each_desktop 예외: {e}")
         
     ensure_desktop()
     return None
+
 
 
 class PicaWatchdog:

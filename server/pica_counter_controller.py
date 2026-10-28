@@ -17,7 +17,11 @@ logger = logging.getLogger("PicaCounterController")
 
 user32 = ctypes.windll.user32
 gdi32 = ctypes.windll.gdi32
+kernel32 = ctypes.windll.kernel32
 WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+_cached_desktop_handle = None
+
 
 # 1920x1080 카운터 화면 기준 각 좌석 카드 정중앙 좌표
 SEAT_COORDS = {
@@ -122,15 +126,32 @@ def get_counter_seat_states() -> Dict[int, str]:
         return _last_counter_states
 
 def ensure_desktop():
-    """현재 스레드를 활성 입력 데스크톱(또는 Default 데스크톱)에 연결"""
+    """현재 스레드를 활성 입력 데스크톱(또는 Default 데스크톱)에 연결 (핸들 누수 원천 차단)"""
+    global _cached_desktop_handle
     try:
+        # 1. 현재 스레드에 이미 유효한 데스크톱이 붙어있는지 확인
+        cur_desk = user32.GetThreadDesktop(kernel32.GetCurrentThreadId())
+        if cur_desk:
+            return
+
+        # 2. 캐시된 핸들이 있다면 재사용 시도
+        if _cached_desktop_handle:
+            if user32.SetThreadDesktop(_cached_desktop_handle):
+                return
+            else:
+                user32.CloseDesktop(_cached_desktop_handle)
+                _cached_desktop_handle = None
+
+        # 3. 새로운 데스크톱 핸들 1회 획득 및 캐싱
         hdesk = user32.OpenInputDesktop(0, False, 0x01FF)
         if not hdesk:
             hdesk = user32.OpenDesktopW('Default', 0, False, 0x01FF)
         if hdesk:
+            _cached_desktop_handle = hdesk
             user32.SetThreadDesktop(hdesk)
     except Exception as e:
         logger.warning(f"SetThreadDesktop 예외: {e}")
+
 
 def get_pica_hwnd() -> Optional[int]:
     """PicaLive 메인 윈도우 HWND 반환 (전체화면 및 최소화 아이콘 지원)"""

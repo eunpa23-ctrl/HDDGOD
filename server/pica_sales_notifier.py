@@ -175,10 +175,15 @@ def capture_and_send_daily_closing() -> bool:
 def send_telegram_text(msg: str):
     """동기식 텔레그램 단문 텍스트 발송"""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        logger.warning("텔레그램 설정 누락으로 발송 생략")
         return
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg}, timeout=5)
+        resp = requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg}, timeout=5)
+        if resp.status_code == 200:
+            logger.info(f"✅ 텔레그램 발송 성공: {msg.splitlines()[0]}")
+        else:
+            logger.error(f"❌ 텔레그램 발송 실패 ({resp.status_code}): {resp.text}")
     except Exception as e:
         logger.error(f"텔레그램 발송 오류: {e}")
 
@@ -229,14 +234,22 @@ class PicaSalesNotifier:
                         # A. [손님 로그인 감지]: LOCKED/OFFLINE -> USING
                         if prev_st in ("LOCKED", "OFFLINE") and cur_st == "USING":
                             logger.info(f"🔔 [좌석 {seat}번] 손님 로그인 감지! ({prev_st} -> USING)")
-                            # 약간의 결제 반영 대기 (0.5초)
-                            await asyncio.sleep(0.5)
+                            # 선불기/카운터 결제 데이터 피카 창 반영 대기 (1.5초)
+                            await asyncio.sleep(1.5)
                             new_vaults = await asyncio.to_thread(get_pica_vault_amounts)
                             curr_total = new_vaults.get("total", 0)
 
                             delta = 0
                             if self.last_total_vault > 0 and curr_total > self.last_total_vault:
                                 delta = curr_total - self.last_total_vault
+                            elif self.last_total_vault > 0 and curr_total <= self.last_total_vault:
+                                # 결제가 1초 정도 더 늦게 들어오는 경우 대비 (추가 1.5초 후 재확인)
+                                await asyncio.sleep(1.5)
+                                retry_vaults = await asyncio.to_thread(get_pica_vault_amounts)
+                                retry_total = retry_vaults.get("total", 0)
+                                if retry_total > self.last_total_vault:
+                                    curr_total = retry_total
+                                    delta = curr_total - self.last_total_vault
 
                             now_time = datetime.now().strftime("%H:%M:%S")
                             if delta > 0:
@@ -250,7 +263,7 @@ class PicaSalesNotifier:
                             else:
                                 msg = (
                                     f"🟢 [PC {seat}번] 손님 로그인\n"
-                                    f"⏰ 시간: {now_time} (기존 잔여시간 이용)"
+                                    f"⏰ 시간: {now_time} (기존 잔여시간 이용 또는 정액제)"
                                 )
                                 if curr_total > 0:
                                     self.last_total_vault = curr_total
@@ -262,7 +275,7 @@ class PicaSalesNotifier:
                             logger.info(f"🔔 [좌석 {seat}번] 손님 로그아웃 감지! (USING -> {cur_st})")
                             now_time = datetime.now().strftime("%H:%M:%S")
                             msg = (
-                                f"🔴 [PC {seat}번] 손님 로그아웃\n"
+                                f"🔴 [PC {seat}번] 손님 이용 종료 (로그아웃)\n"
                                 f"⏰ 이용 종료 시간: {now_time}"
                             )
                             await asyncio.to_thread(send_telegram_text, msg)

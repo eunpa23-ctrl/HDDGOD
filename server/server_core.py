@@ -200,6 +200,14 @@ async def lifespan(app):
     except Exception as e:
         logger.error(f"피카 알림 데몬 시작 실패: {e}")
 
+    # 텔레그램 양방향 원격 명령 수신 데몬 구동 (사장님 문자 명령 제어)
+    try:
+        from server.telegram_cmd_bot import telegram_cmd_bot
+        asyncio.create_task(telegram_cmd_bot.run_loop())
+        logger.info("⚡ 텔레그램 원격 명령 수신 데몬 가동 완료")
+    except Exception as e:
+        logger.error(f"텔레그램 명령 봇 시작 실패: {e}")
+
     # 윈도우 작업표시줄 시스템 트레이 아이콘 백그라운드 구동
     try:
         from server.server_tray import start_server_tray_thread

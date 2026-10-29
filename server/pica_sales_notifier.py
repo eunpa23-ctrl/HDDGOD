@@ -81,6 +81,36 @@ def get_pica_vault_amounts() -> Dict[str, int]:
 
     return amounts
 
+def get_today_total_sales() -> int:
+    """
+    피카 매니저 메인 화면에서 '오늘 총매출' 실시간 추출
+    (예: '총 회원 매출 : 30,000 원' -> 30000)
+    """
+    ensure_desktop()
+    pica = get_pica_hwnd()
+    if not pica:
+        return 0
+
+    val = 0
+    def cb(h, lp):
+        nonlocal val
+        l = user32.GetWindowTextLengthW(h)
+        if l > 0:
+            buf = ctypes.create_unicode_buffer(l + 1)
+            user32.GetWindowTextW(h, buf, l + 1)
+            txt = buf.value
+            if ':' in txt and ',' in txt:
+                parts = txt.split(':')
+                if len(parts) >= 2:
+                    digits = ''.join(c for c in parts[-1] if c.isdigit())
+                    if digits:
+                        val = int(digits)
+        return True
+
+    W = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_size_t, ctypes.c_size_t)
+    user32.EnumChildWindows(pica, W(cb), 0)
+    return val
+
 def click_coords(x: int, y: int):
     """지정 좌표 마우스 클릭"""
     user32.SetCursorPos(x, y)
@@ -135,8 +165,8 @@ def capture_and_send_daily_closing() -> bool:
             click_coords(*TAB_COORDS["STORE"])
             time.sleep(0.3)
 
-            # 5. 현재 금고 현황도 함께 확인
-            vaults = get_pica_vault_amounts()
+            # 5. 오늘 총매출 확인
+            today_sales = get_today_total_sales()
 
             # 6. 텔레그램 발송
             now_str = datetime.now().strftime("%Y년 %m월 %d일 %H:%M")
@@ -145,9 +175,7 @@ def capture_and_send_daily_closing() -> bool:
                 f"⏰ 마감 일시: {now_str}\n"
                 f"🏢 대상: 피카 매니저 카운터\n"
                 f"────────────────\n"
-                f"💰 판매기기 금고: {vaults['kiosk']:,}원\n"
-                f"💰 카운터 금고: {vaults['counter']:,}원\n"
-                f"🏆 금고 총합계: {vaults['total']:,}원\n"
+                f"💵 오늘 총매출: {today_sales:,}원\n"
                 f"────────────────\n"
                 f"※ 오늘 하루 상세 종합 매출은 첨부된 화면 캡처를 확인해 주세요."
             )
@@ -201,7 +229,8 @@ class PicaSalesNotifier:
             self.prev_seat_states = get_counter_seat_states()
             vaults = get_pica_vault_amounts()
             self.last_total_vault = vaults.get("total", 0)
-            logger.info(f"피카 감시 데몬 초기화 완료: 좌석상태={self.prev_seat_states}, 기준금고총액={self.last_total_vault:,}원")
+            today_sales = get_today_total_sales()
+            logger.info(f"피카 감시 데몬 초기화 완료: 좌석상태={self.prev_seat_states}, 기준금고={self.last_total_vault:,}원, 오늘총매출={today_sales:,}원")
         except Exception as e:
             logger.error(f"초기화 예외: {e}")
 
@@ -251,19 +280,22 @@ class PicaSalesNotifier:
                                     curr_total = retry_total
                                     delta = curr_total - self.last_total_vault
 
+                            today_sales = await asyncio.to_thread(get_today_total_sales)
                             now_time = datetime.now().strftime("%H:%M:%S")
+
                             if delta > 0:
                                 msg = (
                                     f"🟢 [PC {seat}번] 손님 로그인\n"
                                     f"💳 결제 금액: {delta:,}원\n"
                                     f"⏰ 시간: {now_time}\n"
-                                    f"💰 현재 금고 총합: {curr_total:,}원"
+                                    f"💵 오늘 총매출: {today_sales:,}원"
                                 )
                                 self.last_total_vault = curr_total
                             else:
                                 msg = (
                                     f"🟢 [PC {seat}번] 손님 로그인\n"
-                                    f"⏰ 시간: {now_time} (기존 잔여시간 이용 또는 정액제)"
+                                    f"⏰ 시간: {now_time} (기존 잔여시간 이용 또는 정액제)\n"
+                                    f"💵 오늘 총매출: {today_sales:,}원"
                                 )
                                 if curr_total > 0:
                                     self.last_total_vault = curr_total

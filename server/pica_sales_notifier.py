@@ -81,35 +81,100 @@ def get_pica_vault_amounts() -> Dict[str, int]:
 
     return amounts
 
-def get_today_total_sales() -> int:
-    """
-    피카 매니저 메인 화면에서 '오늘 총매출' 실시간 추출
-    (예: '총 회원 매출 : 30,000 원' -> 30000)
-    """
-    ensure_desktop()
-    pica = get_pica_hwnd()
-    if not pica:
+REPORT_DIGIT_TEMPLATES = {
+    '0': ['.####.', '##..##', '##..##', '##..##', '##..##', '##..##', '##..##', '##..##', '##..##', '.####.'],
+    '1': ['.##', '###', '.##', '.##', '.##', '.##', '.##', '.##', '.##', '.##'],
+    '2': ['.####.', '##..##', '##..##', '....##', '...##.', '..##..', '.##...', '##....', '##....', '######'],
+    '3': ['.####.', '##..##', '....##', '....##', '.####.', '....##', '....##', '....##', '##..##', '.####.'],
+    '4': ['...##.', '..###.', '..###.', '.##.##', '.##.##', '##..##', '##..##', '######', '...##.', '...##.'],
+    '5': ['######', '##....', '##....', '##....', '#####.', '##..##', '....##', '....##', '##..##', '.####.'],
+    '6': ['.####.', '##..##', '##....', '##....', '#####.', '##..##', '##..##', '##..##', '##..##', '.####.'],
+    '7': ['######', '....##', '....##', '...##.', '...##.', '...##.', '..##..', '..##..', '..##..', '..##..'],
+    '8': ['.####.', '##..##', '##..##', '##..##', '.####.', '##..##', '##..##', '##..##', '##..##', '.####.'],
+    '9': ['.####.', '##..##', '##..##', '##..##', '##..##', '.#####', '....##', '....##', '##..##', '.####.'],
+}
+
+def parse_report_amount_from_image(im) -> int:
+    """피카 [보고서] 화면 캡처에서 '오늘매출 종합합계' 금액을 도트 매칭으로 정확히 파싱"""
+    try:
+        # 종합합계 금액 좌표 영역: x: 920~1000, y: 175~198 (1920x1080 기준)
+        crop = im.crop((920, 175, 1000, 198)).convert('L')
+        w, h = crop.size
+        cols = [any(crop.getpixel((x, y)) < 128 for y in range(h)) for x in range(w)]
+        segments = []
+        in_seg = False
+        start_x = 0
+        for x in range(w):
+            if cols[x] and not in_seg:
+                in_seg = True
+                start_x = x
+            elif not cols[x] and in_seg:
+                in_seg = False
+                segments.append((start_x, x - 1))
+        if in_seg:
+            segments.append((start_x, w - 1))
+
+        parsed = []
+        for sx, ex in segments:
+            seg_w = ex - sx + 1
+            lines = []
+            for y in range(h):
+                row = ''.join('#' if crop.getpixel((x, y)) < 128 else '.' for x in range(sx, ex + 1))
+                if '#' in row:
+                    lines.append(row)
+            if len(lines) <= 3:  # 쉼표(,) 건너뛰기
+                continue
+            best_ch = '?'
+            best_diff = 999
+            for ch, tmpl in REPORT_DIGIT_TEMPLATES.items():
+                th, tw = len(tmpl), len(tmpl[0])
+                diff = sum(
+                    1 for r in range(max(len(lines), th)) for c in range(max(seg_w, tw))
+                    if (lines[r][c] if r < len(lines) and c < seg_w else '.') != (tmpl[r][c] if r < th and c < tw else '.')
+                )
+                if diff < best_diff:
+                    best_diff = diff
+                    best_ch = ch
+            if best_diff <= 15:
+                parsed.append(best_ch)
+        res = ''.join(parsed)
+        return int(res) if res.isdigit() else 0
+    except Exception as e:
+        logger.error(f"보고서 금액 파싱 오류: {e}")
         return 0
 
-    val = 0
-    def cb(h, lp):
-        nonlocal val
-        l = user32.GetWindowTextLengthW(h)
-        if l > 0:
-            buf = ctypes.create_unicode_buffer(l + 1)
-            user32.GetWindowTextW(h, buf, l + 1)
-            txt = buf.value
-            if ':' in txt and ',' in txt:
-                parts = txt.split(':')
-                if len(parts) >= 2:
-                    digits = ''.join(c for c in parts[-1] if c.isdigit())
-                    if digits:
-                        val = int(digits)
-        return True
+def get_today_total_sales() -> int:
+    """
+    피카 매니저 [보고서] 탭에서 오늘 실제 '종합합계 총매출' 실시간 추출
+    - [보고서] 탭으로 0.3초 순간 전환 후 캡처 및 파싱, 즉시 [매장관리] 좌석 화면으로 복귀
+    """
+    with _action_lock:
+        ensure_desktop()
+        pica = get_pica_hwnd()
+        if not pica:
+            return 0
 
-    W = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_size_t, ctypes.c_size_t)
-    user32.EnumChildWindows(pica, W(cb), 0)
-    return val
+        orig_pt = wintypes.POINT()
+        user32.GetCursorPos(ctypes.byref(orig_pt))
+        try:
+            user32.keybd_event(0x12, 0, 0, 0); user32.keybd_event(0x12, 0, 2, 0)
+            user32.ShowWindow(pica, 9)
+            user32.ShowWindow(pica, 3)
+            user32.SetForegroundWindow(pica)
+            user32.BringWindowToTop(pica)
+            time.sleep(0.15)
+            click_coords(*TAB_COORDS['REPORT'])
+            time.sleep(0.3)
+            im = ImageGrab.grab()
+            click_coords(*TAB_COORDS['STORE'])
+            val = parse_report_amount_from_image(im)
+            logger.info(f"피카 [보고서] 실시간 오늘 총매출 추출 성공: {val:,}원")
+            return val
+        except Exception as e:
+            logger.error(f"오늘 총매출 추출 오류: {e}")
+            return 0
+        finally:
+            user32.SetCursorPos(orig_pt.x, orig_pt.y)
 
 def click_coords(x: int, y: int):
     """지정 좌표 마우스 클릭"""

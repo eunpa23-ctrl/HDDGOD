@@ -331,6 +331,32 @@ class PicaWatchdog:
             logger.warning(f"보조 창 닫기 및 메인 창 활성화 예외: {e}")
         return False
 
+    def auto_close_interfering_popups(self):
+        """카운터 화면을 가리는 불필요한 팝업(메모리 부족 알림, 업데이트 공지 등) 자동 정리"""
+        try:
+            ensure_desktop()
+            def enum(h, _):
+                if user32.IsWindowVisible(h):
+                    l = user32.GetWindowTextLengthW(h)
+                    if l > 0:
+                        buf = ctypes.create_unicode_buffer(l + 1)
+                        user32.GetWindowTextW(h, buf, l + 1)
+                        title = buf.value
+                        if any(k in title for k in ["메모리", "안내", "공지", "업데이트"]):
+                            r = wintypes.RECT()
+                            user32.GetWindowRect(h, ctypes.byref(r))
+                            w = r.right - r.left
+                            h_len = r.bottom - r.top
+                            # 작은 팝업창인 경우 (폭 600 이하, 높이 500 이하)
+                            if 50 < w <= 600 and 50 < h_len <= 500:
+                                user32.SetWindowPos(h, 0, -5000, -5000, 0, 0, 0x0001 | 0x0080)
+                                user32.PostMessageW(h, win32con.WM_CLOSE, 0, 0)
+                return True
+            CHILDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+            user32.EnumWindows(CHILDENUMPROC(enum), 0)
+        except Exception:
+            pass
+
     def perform_login(self, max_wait_sec: int = 25) -> bool:
         """
         PicaLive 로그인 창을 감지하여 비밀번호를 자동 입력하고 로그인을 완수합니다.
@@ -629,6 +655,9 @@ class PicaWatchdog:
                             pids = self.get_picalive_pids()
                             pid_str = str(pids[0]) if pids else "?"
                             self.last_status_msg = f"정상 영업 중 (PID: {pid_str}, HWND: {main_h})"
+
+                            # 카운터 방해 팝업(메모리 부족, 공지 등) 상시 자동 청소
+                            self.auto_close_interfering_popups()
 
                             # 로그인 직후 35초간 비동기로 늦게 열리는 보조 창(상품주문목록 등) 감지 시 자동 종료
                             if time.time() < self.post_login_cleanup_until:

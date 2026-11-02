@@ -124,8 +124,11 @@
             <!-- 4. 넷플릭스 시청 중 -->
             <div class="bg-slate-900 border border-red-800/40 p-4 rounded-xl flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400 font-semibold mb-1">넷플릭스 시청 중</p>
-                    <p id="stat-netflix" class="text-2xl font-black text-red-500">0 대</p>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">넷플릭스 (오늘 누적 / 시청중)</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-netflix-count" class="text-2xl font-black text-red-500 font-mono">0회</span>
+                        <span id="stat-netflix" class="text-sm font-bold text-slate-400 font-mono">(0대 시청중)</span>
+                    </div>
                 </div>
                 <div class="w-10 h-10 bg-red-950/60 text-red-500 border border-red-700/40 rounded-lg flex items-center justify-center"><i class="fa-solid fa-play"></i></div>
             </div>
@@ -751,7 +754,11 @@
             const elOff = document.getElementById('stat-offline');
             if (elOff) elOff.innerText = `${guestPcs.length - onlineCount} 대`;
             const elNf = document.getElementById('stat-netflix');
-            if (elNf) elNf.innerText = `${netflixCount} 대`;
+            if (elNf) elNf.innerText = `(${netflixCount}대 시청중)`;
+            const elNfCount = document.getElementById('stat-netflix-count');
+            if (elNfCount && data.netflix_launch_count !== undefined) {
+                elNfCount.innerText = `${data.netflix_launch_count}회`;
+            }
         }
 
         
@@ -991,7 +998,11 @@
             const elOff = document.getElementById('stat-offline');
             if (elOff) elOff.innerText = `${guestPcs.length - onlineCount} 대`;
             const elNf = document.getElementById('stat-netflix');
-            if (elNf) elNf.innerText = `${netflixCount} 대`;
+            if (elNf) elNf.innerText = `(${netflixCount}대 시청중)`;
+            const elNfCount = document.getElementById('stat-netflix-count');
+            if (elNfCount && data.netflix_launch_count !== undefined) {
+                elNfCount.innerText = `${data.netflix_launch_count}회`;
+            }
 
             renderGrid();
         }

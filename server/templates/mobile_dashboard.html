@@ -37,9 +37,12 @@
                 <span class="text-[9px] text-amber-400 font-bold flex items-center gap-0.5"><i class="fa-solid fa-lock text-[8px]"></i>빈자리</span>
                 <span id="mob-stat-guest-idle" class="text-[11px] font-black text-amber-400 font-mono">0대</span>
             </div>
-            <div class="bg-slate-900 border border-red-800/30 rounded-lg px-1.5 py-1 flex items-center justify-between">
+            <div class="bg-slate-900 border border-red-800/30 rounded-lg px-1.5 py-1 flex items-center justify-between" title="오늘 총 실행 누적 횟수 및 실시간 이용 대수">
                 <span class="text-[9px] text-red-400 font-bold flex items-center gap-0.5"><i class="fa-solid fa-play text-[8px]"></i>넷플</span>
-                <span id="mob-stat-netflix" class="text-[11px] font-black text-red-400 font-mono">0대</span>
+                <div class="flex items-baseline gap-1">
+                    <span id="mob-stat-netflix-count" class="text-[11px] font-black text-red-400 font-mono">{{ netflix_launch_count | default(0) }}회</span>
+                    <span id="mob-stat-netflix" class="text-[9px] text-slate-400 font-mono">(0대)</span>
+                </div>
             </div>
         </div>
     </div>
@@ -464,9 +467,13 @@
                 const mobActiveEl = document.getElementById('mob-stat-guest-active');
                 const mobIdleEl = document.getElementById('mob-stat-guest-idle');
                 const mobNfEl = document.getElementById('mob-stat-netflix');
+                const mobNfCountEl = document.getElementById('mob-stat-netflix-count');
                 if (mobActiveEl) mobActiveEl.innerText = `${guestActiveCount} 대`;
                 if (mobIdleEl) mobIdleEl.innerText = `${guestIdleCount} 대`;
-                if (mobNfEl) mobNfEl.innerText = `${netflixActiveCount} 대`;
+                if (mobNfEl) mobNfEl.innerText = `(${netflixActiveCount}대)`;
+                if (mobNfCountEl && data.netflix_launch_count !== undefined) {
+                    mobNfCountEl.innerText = `${data.netflix_launch_count}회`;
+                }
 
                 // 🌟 관리 서버(카운터 100 + 메인 9) 실시간 CPU/RAM 리소스 및 상태 갱신
                 updateServerCardsUI(data);

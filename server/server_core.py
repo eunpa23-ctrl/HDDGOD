@@ -37,6 +37,59 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ZeusServer")
 
+DAILY_STATS_FILE = os.path.join(PROJECT_ROOT, "server", "daily_stats.json")
+_stats_lock = threading.Lock()
+
+def get_today_str() -> str:
+    return time.strftime("%Y-%m-%d")
+
+def load_daily_stats() -> dict:
+    """일일 통계(넷플릭스 실행 횟수 등) 로드 및 날짜 변경 시 자동 리셋"""
+    today = get_today_str()
+    default_stats = {
+        "date": today,
+        "netflix_launch_count": 0,
+        "netflix_by_pc": {}
+    }
+    with _stats_lock:
+        if not os.path.exists(DAILY_STATS_FILE):
+            try:
+                with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(default_stats, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+            return default_stats
+        try:
+            with open(DAILY_STATS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if data.get("date") != today:
+                data = default_stats
+                with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            return data
+        except Exception:
+            return default_stats
+
+def record_netflix_launch(client_id: str) -> int:
+    """넷플릭스 실행 감지 시 일일 카운터 1 증가 및 저장"""
+    today = get_today_str()
+    with _stats_lock:
+        stats = load_daily_stats()
+        if stats.get("date") != today:
+            stats = {"date": today, "netflix_launch_count": 0, "netflix_by_pc": {}}
+        stats["netflix_launch_count"] = stats.get("netflix_launch_count", 0) + 1
+        by_pc = stats.get("netflix_by_pc", {})
+        by_pc[client_id] = by_pc.get(client_id, 0) + 1
+        stats["netflix_by_pc"] = by_pc
+        try:
+            with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"daily_stats.json 저장 실패: {e}")
+        logger.info(f"🎬 [넷플릭스 카운트] {client_id} 실행 감지! 오늘 총 이용 횟수: {stats['netflix_launch_count']}회 (PC별: {by_pc})")
+        return stats["netflix_launch_count"]
+
+
 async def send_telegram_msg(msg: str):
     """텔레그램 메시지 발송 헬퍼"""
     from common.config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
@@ -510,13 +563,15 @@ async def get_mobile_dashboard(request: Request):
             pc["ram_total_gb"] = c_info.get("ram_total_gb", 0.0)
         elif s_num in c_states:
             pc["pica"] = c_states[s_num]
+    daily_st = load_daily_stats()
     return templates.TemplateResponse(
         request=request,
         name="mobile_dashboard.html",
         context={
             "initial_pc_list": json.dumps(pc_list, ensure_ascii=False),
             "pc_count": len(pc_list),
-            "server_stats": json.dumps(server_stats, ensure_ascii=False)
+            "server_stats": json.dumps(server_stats, ensure_ascii=False),
+            "netflix_launch_count": daily_st.get("netflix_launch_count", 0)
         }
     )
 
@@ -742,6 +797,14 @@ async def client_websocket(websocket: WebSocket, client_id: str):
                         pass
 
                 target_watchdog_id = seat_id if seat_id else session_key
+
+                # 🎬 넷플릭스 실행 감지 (상태가 CLOSED/UNKNOWN/없음 -> RUNNING/LOGGED_IN/NAVIGATING 전환 시 카운팅)
+                prev_client_info = watchdog.clients.get(target_watchdog_id, {})
+                prev_nf = str(prev_client_info.get("netflix_status") or "CLOSED").upper()
+                cur_nf = str(netflix_st or "CLOSED").upper()
+                if cur_nf in ["RUNNING", "LOGGED_IN", "NAVIGATING_TO_LOGIN"] and prev_nf not in ["RUNNING", "LOGGED_IN", "NAVIGATING_TO_LOGIN"]:
+                    record_netflix_launch(target_watchdog_id)
+
                 watchdog.update_heartbeat(target_watchdog_id, reported_ip, mac, uwf_st, netflix_st, version=ver_st, hostname=client_id, pica_status=pica_st, cpu=cpu_metric, ram=ram_metric, ram_used_gb=ram_used_gb, ram_total_gb=ram_total_gb)
 
             elif p_type == PacketType.OTP_REQUIRED:
@@ -860,6 +923,8 @@ async def broadcast_dashboard_state():
         ram_usage = ram_info.percent
         ram_used_gb = round(ram_info.used / (1024**3), 1)
         ram_total_gb = round(ram_info.total / (1024**3), 1)
+        server_ram_mb = round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+        daily_st = load_daily_stats()
         state_data = {
             "type": "FULL_STATE",
             "cpu": cpu_usage,
@@ -867,6 +932,8 @@ async def broadcast_dashboard_state():
             "ram_used_gb": ram_used_gb,
             "ram_total_gb": ram_total_gb,
             "server_ram_mb": server_ram_mb,
+            "netflix_launch_count": daily_st.get("netflix_launch_count", 0),
+            "netflix_by_pc": daily_st.get("netflix_by_pc", {}),
             "auto_optimize": AUTO_OPTIMIZE_ENABLED,
             "clients": watchdog.clients
         }
@@ -891,6 +958,7 @@ async def dashboard_websocket(websocket: WebSocket):
             ram_used_gb = round(ram_info.used / (1024**3), 1)
             ram_total_gb = round(ram_info.total / (1024**3), 1)
             server_ram_mb = round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+            daily_st = load_daily_stats()
             
             state_data = {
                 "type": "FULL_STATE",
@@ -899,6 +967,8 @@ async def dashboard_websocket(websocket: WebSocket):
                 "ram_used_gb": ram_used_gb,
                 "ram_total_gb": ram_total_gb,
                 "server_ram_mb": server_ram_mb,
+                "netflix_launch_count": daily_st.get("netflix_launch_count", 0),
+                "netflix_by_pc": daily_st.get("netflix_by_pc", {}),
                 "auto_optimize": AUTO_OPTIMIZE_ENABLED,
                 "clients": watchdog.clients
             }

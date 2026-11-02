@@ -37,8 +37,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ZeusServer")
 
-DAILY_STATS_FILE = os.path.join(PROJECT_ROOT, "server", "daily_stats.json")
 _stats_lock = threading.Lock()
+
+def get_daily_stats_file() -> str:
+    return os.path.join(get_root_dir(), "server", "daily_stats.json")
 
 def get_today_str() -> str:
     return time.strftime("%Y-%m-%d")
@@ -51,20 +53,21 @@ def load_daily_stats() -> dict:
         "netflix_launch_count": 0,
         "netflix_by_pc": {}
     }
+    stats_file = get_daily_stats_file()
     with _stats_lock:
-        if not os.path.exists(DAILY_STATS_FILE):
+        if not os.path.exists(stats_file):
             try:
-                with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+                with open(stats_file, "w", encoding="utf-8") as f:
                     json.dump(default_stats, f, ensure_ascii=False, indent=2)
             except Exception:
                 pass
             return default_stats
         try:
-            with open(DAILY_STATS_FILE, "r", encoding="utf-8") as f:
+            with open(stats_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             if data.get("date") != today:
                 data = default_stats
-                with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+                with open(stats_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
             return data
         except Exception:
@@ -73,6 +76,7 @@ def load_daily_stats() -> dict:
 def record_netflix_launch(client_id: str) -> int:
     """넷플릭스 실행 감지 시 일일 카운터 1 증가 및 저장"""
     today = get_today_str()
+    stats_file = get_daily_stats_file()
     with _stats_lock:
         stats = load_daily_stats()
         if stats.get("date") != today:
@@ -82,7 +86,7 @@ def record_netflix_launch(client_id: str) -> int:
         by_pc[client_id] = by_pc.get(client_id, 0) + 1
         stats["netflix_by_pc"] = by_pc
         try:
-            with open(DAILY_STATS_FILE, "w", encoding="utf-8") as f:
+            with open(stats_file, "w", encoding="utf-8") as f:
                 json.dump(stats, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"daily_stats.json 저장 실패: {e}")

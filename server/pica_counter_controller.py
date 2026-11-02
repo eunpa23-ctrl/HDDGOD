@@ -152,7 +152,13 @@ def ensure_desktop():
 def get_pica_hwnd() -> Optional[int]:
     """PicaLive 메인 윈도우 HWND 반환 (전체화면 및 최소화 아이콘 지원)"""
     import psutil
-    pids = [p.pid for p in psutil.process_iter() if 'picalive' in p.name().lower()]
+    pids = []
+    for p in psutil.process_iter(['name', 'pid']):
+        try:
+            if 'picalive' in (p.info.get('name') or '').lower():
+                pids.append(p.info.get('pid'))
+        except Exception:
+            pass
     if not pids:
         return None
     found_hwnd = None

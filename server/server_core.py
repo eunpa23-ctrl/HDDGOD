@@ -976,10 +976,15 @@ async def dashboard_websocket(websocket: WebSocket):
                 "auto_optimize": AUTO_OPTIMIZE_ENABLED,
                 "clients": watchdog.clients
             }
-            await websocket.send_text(json.dumps(state_data, ensure_ascii=False))
+            try:
+                await websocket.send_text(json.dumps(state_data, ensure_ascii=False))
+            except (WebSocketDisconnect, RuntimeError, Exception):
+                break
             await asyncio.sleep(2)
-    except WebSocketDisconnect:
-        dashboard_subscribers.remove(websocket)
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        dashboard_subscribers.discard(websocket)
 
 @app.websocket("/ws/remote_view/{client_id}")
 async def remote_view_websocket(websocket: WebSocket, client_id: str):

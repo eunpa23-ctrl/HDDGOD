@@ -143,16 +143,20 @@ def parse_report_amount_from_image(im) -> int:
         logger.error(f"보고서 금액 파싱 오류: {e}")
         return 0
 
+_last_known_today_sales = 0
+
 def get_today_total_sales() -> int:
     """
     피카 매니저 [보고서] 탭에서 오늘 실제 '종합합계 총매출' 실시간 추출
-    - [보고서] 탭으로 0.3초 순간 전환 후 캡처 및 파싱, 즉시 [매장관리] 좌석 화면으로 복귀
+    - [보고서] 탭으로 순간 전환 후 캡처 및 파싱, 즉시 [매장관리] 좌석 화면으로 복귀
+    - 탭 전환 렌더링 지연 대비 최대 2회 재시도 및 마지막 유효 매출 보존
     """
+    global _last_known_today_sales
     with _action_lock:
         ensure_desktop()
         pica = get_pica_hwnd()
         if not pica:
-            return 0
+            return _last_known_today_sales
 
         orig_pt = wintypes.POINT()
         user32.GetCursorPos(ctypes.byref(orig_pt))
@@ -162,17 +166,32 @@ def get_today_total_sales() -> int:
             user32.ShowWindow(pica, 3)
             user32.SetForegroundWindow(pica)
             user32.BringWindowToTop(pica)
-            time.sleep(0.15)
+            time.sleep(0.2)
+
             click_coords(*TAB_COORDS['REPORT'])
-            time.sleep(0.3)
+            time.sleep(0.4)
             im = ImageGrab.grab()
-            click_coords(*TAB_COORDS['STORE'])
             val = parse_report_amount_from_image(im)
-            logger.info(f"피카 [보고서] 실시간 오늘 총매출 추출 성공: {val:,}원")
-            return val
+
+            # 렌더링이 늦어 0원이 나온 경우 0.3초 추가 대기 후 1회 재시도
+            if val == 0:
+                time.sleep(0.3)
+                im = ImageGrab.grab()
+                val = parse_report_amount_from_image(im)
+
+            click_coords(*TAB_COORDS['STORE'])
+            if val > 0:
+                _last_known_today_sales = val
+                logger.info(f"피카 [보고서] 실시간 오늘 총매출 추출 성공: {val:,}원")
+                return val
+            elif _last_known_today_sales > 0:
+                logger.warning(f"피카 [보고서] 0원 판정 -> 최근 확인된 정상 매출({_last_known_today_sales:,}원) 반환")
+                return _last_known_today_sales
+            else:
+                return 0
         except Exception as e:
             logger.error(f"오늘 총매출 추출 오류: {e}")
-            return 0
+            return _last_known_today_sales
         finally:
             user32.SetCursorPos(orig_pt.x, orig_pt.y)
 

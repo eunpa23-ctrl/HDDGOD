@@ -125,27 +125,31 @@ def get_counter_seat_states() -> Dict[int, str]:
         logger.error(f"좌석 상태 색상 판별 예외: {e}")
         return _last_counter_states
 
+_desktop_tls = threading.local()
+
 def ensure_desktop():
-    """현재 스레드를 실제 모니터 데스크톱('Default')에 확실히 연결하고 핸들 누수 방지"""
+    """현재 스레드를 실제 모니터 데스크톱('Default')에 확실히 연결하고 핸들 누수 방지 (스레드별 1회 캐싱)"""
+    if getattr(_desktop_tls, "has_desktop", False):
+        return True
     try:
-        # 1. 현재 스레드가 이미 실제 모니터 데스크톱('Default')에 연결되어 있는지 확인
         cur_desk = user32.GetThreadDesktop(kernel32.GetCurrentThreadId())
         if cur_desk:
             buf = ctypes.create_unicode_buffer(256)
             needed = wintypes.DWORD()
             if user32.GetUserObjectInformationW(cur_desk, 2, buf, ctypes.sizeof(buf), ctypes.byref(needed)):
                 if buf.value.lower() == "default":
-                    return # 이미 실제 모니터 데스크톱에 정상이므로 핸들 추가 생성 없이 즉시 반환
+                    _desktop_tls.has_desktop = True
+                    return True
 
-        # 2. 실제 모니터 데스크톱('Default' 또는 InputDesktop) 획득 및 전환
-        hdesk = user32.OpenInputDesktop(0, False, 0x01FF)
-        if not hdesk:
-            hdesk = user32.OpenDesktopW('Default', 0, False, 0x01FF)
+        hdesk = user32.OpenInputDesktop(0, False, 0x01FF) or user32.OpenDesktopW("Default", 0, False, 0x01FF)
         if hdesk:
-            user32.SetThreadDesktop(hdesk)
-            user32.CloseDesktop(hdesk) # 스레드 연결 후 핸들 즉시 반환
+            ret = user32.SetThreadDesktop(hdesk)
+            _desktop_tls.has_desktop = bool(ret)
+            _desktop_tls.hdesk = hdesk
+            return bool(ret)
     except Exception as e:
         logger.warning(f"SetThreadDesktop 예외: {e}")
+    return False
 
 
 

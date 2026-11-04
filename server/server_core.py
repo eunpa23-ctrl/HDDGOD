@@ -1684,8 +1684,8 @@ async def notify_tunnel_url_to_telegram():
 {url}/mobile"""
             if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
                 try:
-                    r = requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", json={"chat_id": TELEGRAM_CHAT_ID, "text": msg}, timeout=5)
-                    logger.info(f"텔레그램 발송 응답: {r.status_code}")
+                    await asyncio.to_thread(requests.post, f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", json={"chat_id": TELEGRAM_CHAT_ID, "text": msg}, timeout=5)
+                    logger.info("텔레그램 터널 주소 발송 성공")
                 except Exception as e:
                     logger.error(f"발송 실패: {e}")
             break

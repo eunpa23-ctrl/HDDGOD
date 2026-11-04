@@ -90,9 +90,8 @@ class TunnelManager:
                 creationflags=creationflags
             )
 
-            # stderr 스트림 비동기 모니터링 (cloudflared는 로그를 stderr로 출력)
-            asyncio.create_task(self._read_stream(self.process.stderr))
-            asyncio.create_task(self._read_stream(self.process.stdout))
+            # stderr/stdout 스트림 비동기 모니터링 및 프로세스 종료 감시
+            asyncio.create_task(self._monitor_process())
 
         except Exception as e:
             logger.error(f"Cloudflare 터널 프로세스 실행 실패: {e}")
@@ -119,7 +118,17 @@ class TunnelManager:
                 logger.info(f"🎉 [스마트폰 원격 접속 URL 생성 성공]: {self.public_url}")
                 logger.info(f"📱 스마트폰 카메라로 QR 코드를 스캔하여 매장 밖에서도 즉시 접속 가능합니다.")
 
-        # 스트림 종료 = 터널 프로세스 비정상 종료 → 자동 재시작
+    async def _monitor_process(self):
+        """stderr/stdout 스트림 읽기 및 프로세스 종료 감시"""
+        if not self.process:
+            return
+        t_err = asyncio.create_task(self._read_stream(self.process.stderr))
+        t_out = asyncio.create_task(self._read_stream(self.process.stdout))
+        
+        # 프로세스가 실제로 종료될 때까지 대기
+        await self.process.wait()
+        await asyncio.gather(t_err, t_out, return_exceptions=True)
+
         if self.status != "stopped":
             logger.warning("⚠️ Cloudflare 터널 연결이 끊어졌습니다. 10초 후 자동 재시작합니다...")
             self.status = "stopped"

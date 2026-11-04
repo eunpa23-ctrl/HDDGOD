@@ -49,37 +49,7 @@ def ensure_desktop():
     return False
 
 
-def for_each_desktop(callback):
-    """모든 가용 데스크톱을 순회하며 콜백(hdesk, dname) 실행. 콜백이 None이 아닌 값을 반환하면 즉시 반환"""
-    try:
-        hwinsta = user32.GetProcessWindowStation()
-        desktops = []
-        def enum_desk(name, lp):
-            desktops.append(name)
-            return True
-        DESKTOPENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_wchar_p, ctypes.c_void_p)
-        user32.EnumDesktopsW(hwinsta, DESKTOPENUMPROC(enum_desk), 0)
-        
-        # Default 데스크톱을 항상 최우선으로 검사
-        if "Default" in desktops:
-            desktops.remove("Default")
-            desktops.insert(0, "Default")
-            
-        for dname in desktops:
-            hdesk = user32.OpenDesktopW(dname, 0, False, 0x01FF)
-            if hdesk:
-                try:
-                    user32.SetThreadDesktop(hdesk)
-                    res = callback(hdesk, dname)
-                    if res is not None:
-                        return res
-                finally:
-                    user32.CloseDesktop(hdesk)
-    except Exception as e:
-        logger.warning(f"for_each_desktop 예외: {e}")
-        
-    ensure_desktop()
-    return None
+
 
 
 
@@ -132,71 +102,67 @@ class PicaWatchdog:
         return len(self.get_picalive_pids()) > 0
 
     def get_main_window_hwnd(self) -> Optional[int]:
-        """PicaLive 정상 영업 메인 화면(카운터 그리드) HWND 반환 (모든 데스크톱 검색 지원)"""
+        """PicaLive 정상 영업 메인 화면(카운터 그리드) HWND 반환 (핸들 누수 원천 차단)"""
         pids = self.get_picalive_pids()
         if not pids:
             return None
 
-        def check_desktop(hdesk, dname):
-            found_hwnd = None
-            def enum(h, _):
-                nonlocal found_hwnd
-                pid = wintypes.DWORD()
-                user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                if pid.value in pids and user32.IsWindowVisible(h):
-                    length = user32.GetWindowTextLengthW(h)
-                    buf = ctypes.create_unicode_buffer(length + 1)
-                    user32.GetWindowTextW(h, buf, length + 1)
-                    title = buf.value.lower()
-                    r = wintypes.RECT()
-                    user32.GetWindowRect(h, ctypes.byref(r))
-                    w = r.right - r.left
-                    hh = r.bottom - r.top
-                    is_iconic = user32.IsIconic(h)
-                    # 메인 카운터 창 판별 (PicaLive 타이틀 및 ver / 4.0 / 대형 창 / 최소화 상태)
-                    if "picalive" in title and ("ver" in title or "4.0" in title or (w > 800 and hh > 600) or is_iconic):
-                        found_hwnd = h
-                        return False
-                return True
+        ensure_desktop()
+        found_hwnd = None
+        def enum(h, _):
+            nonlocal found_hwnd
+            pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+            if pid.value in pids and user32.IsWindowVisible(h):
+                length = user32.GetWindowTextLengthW(h)
+                buf = ctypes.create_unicode_buffer(length + 1)
+                user32.GetWindowTextW(h, buf, length + 1)
+                title = buf.value.lower()
+                r = wintypes.RECT()
+                user32.GetWindowRect(h, ctypes.byref(r))
+                w = r.right - r.left
+                hh = r.bottom - r.top
+                is_iconic = user32.IsIconic(h)
+                # 메인 카운터 창 판별 (PicaLive 타이틀 및 ver / 4.0 / 대형 창 / 최소화 상태)
+                if "picalive" in title and ("ver" in title or "4.0" in title or (w > 800 and hh > 600) or is_iconic):
+                    found_hwnd = h
+                    return False
+            return True
 
-            user32.EnumWindows(WNDENUMPROC(enum), 0)
-            return found_hwnd
-
-        return for_each_desktop(check_desktop)
+        user32.EnumWindows(WNDENUMPROC(enum), 0)
+        return found_hwnd
 
     def get_login_window_hwnd(self) -> Optional[int]:
-        """PicaLive 로그인 대화상자 HWND 반환 (모든 데스크톱 검색 지원)"""
+        """PicaLive 로그인 대화상자 HWND 반환 (핸들 누수 원천 차단)"""
         pids = self.get_picalive_pids()
         if not pids:
             return None
 
-        def check_desktop(hdesk, dname):
-            found_hwnd = None
-            def enum(h, _):
-                nonlocal found_hwnd
-                pid = wintypes.DWORD()
-                user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                if pid.value in pids and user32.IsWindowVisible(h):
-                    length = user32.GetWindowTextLengthW(h)
-                    buf = ctypes.create_unicode_buffer(length + 1)
-                    user32.GetWindowTextW(h, buf, length + 1)
-                    title = buf.value.lower()
-                    r = wintypes.RECT()
-                    user32.GetWindowRect(h, ctypes.byref(r))
-                    w = r.right - r.left
-                    hh = r.bottom - r.top
-                    # 로그인 창 크기 (100 < w <= 800, 50 < hh <= 600) 및 중앙 대화상자
-                    if (100 < w <= 800 and 50 < hh <= 600) and not (r.left >= 1350 and r.top >= 650):
-                        if "picalive" in title or "로그인" in title or not title:
-                            if "상품" not in title and "ver" not in title:
-                                found_hwnd = h
-                                return False
-                return True
+        ensure_desktop()
+        found_hwnd = None
+        def enum(h, _):
+            nonlocal found_hwnd
+            pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+            if pid.value in pids and user32.IsWindowVisible(h):
+                length = user32.GetWindowTextLengthW(h)
+                buf = ctypes.create_unicode_buffer(length + 1)
+                user32.GetWindowTextW(h, buf, length + 1)
+                title = buf.value.lower()
+                r = wintypes.RECT()
+                user32.GetWindowRect(h, ctypes.byref(r))
+                w = r.right - r.left
+                hh = r.bottom - r.top
+                # 로그인 창 크기 (100 < w <= 800, 50 < hh <= 600) 및 중앙 대화상자
+                if (100 < w <= 800 and 50 < hh <= 600) and not (r.left >= 1350 and r.top >= 650):
+                    if "picalive" in title or "로그인" in title or not title:
+                        if "상품" not in title and "ver" not in title:
+                            found_hwnd = h
+                            return False
+            return True
 
-            user32.EnumWindows(WNDENUMPROC(enum), 0)
-            return found_hwnd
-
-        return for_each_desktop(check_desktop)
+        user32.EnumWindows(WNDENUMPROC(enum), 0)
+        return found_hwnd
 
     def verify_main_screen_captured(self) -> dict:
         """
@@ -297,30 +263,26 @@ class PicaWatchdog:
             if not pids:
                 return False
 
+            ensure_desktop()
             closed_any = False
-            def find_and_close_order(hdesk, dname):
+            def enum(h, _):
                 nonlocal closed_any
-                def enum(h, _):
-                    nonlocal closed_any
-                    pid = wintypes.DWORD()
-                    user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
-                    if pid.value in pids and user32.IsWindowVisible(h):
-                        length = user32.GetWindowTextLengthW(h)
-                        buf = ctypes.create_unicode_buffer(length + 1)
-                        user32.GetWindowTextW(h, buf, length + 1)
-                        title = buf.value.strip()
+                pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+                if pid.value in pids and user32.IsWindowVisible(h):
+                    length = user32.GetWindowTextLengthW(h)
+                    buf = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(h, buf, length + 1)
+                    title = buf.value.strip()
 
-                        # 보조 창 감지: '상품주문', '상품주문목록', '주문목록' 등 메인 좌석 화면을 가리는 시작 팝업
-                        if any(k in title for k in ["상품주문", "상품주문목록", "주문목록"]):
-                            logger.info(f"🧹 [PicaWatchdog] 로그인 보조 창 자동 종료 처리: HWND={h}, Title='{title}'")
-                            user32.PostMessageW(h, win32con.WM_CLOSE, 0, 0)
-                            closed_any = True
-                    return True
+                    # 보조 창 감지: '상품주문', '상품주문목록', '주문목록' 등 메인 좌석 화면을 가리는 시작 팝업
+                    if any(k in title for k in ["상품주문", "상품주문목록", "주문목록"]):
+                        logger.info(f"🧹 [PicaWatchdog] 로그인 보조 창 자동 종료 처리: HWND={h}, Title='{title}'")
+                        user32.PostMessageW(h, win32con.WM_CLOSE, 0, 0)
+                        closed_any = True
+                return True
 
-                user32.EnumWindows(WNDENUMPROC(enum), 0)
-                return closed_any
-
-            for_each_desktop(find_and_close_order)
+            user32.EnumWindows(WNDENUMPROC(enum), 0)
 
             if closed_any:
                 time.sleep(0.5)

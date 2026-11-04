@@ -756,7 +756,7 @@
             const elNf = document.getElementById('stat-netflix');
             if (elNf) elNf.innerText = `(${netflixCount}대 시청중)`;
             const elNfCount = document.getElementById('stat-netflix-count');
-            if (elNfCount && data.netflix_launch_count !== undefined) {
+            if (elNfCount && typeof data !== 'undefined' && data && data.netflix_launch_count !== undefined) {
                 elNfCount.innerText = `${data.netflix_launch_count}회`;
             }
         }

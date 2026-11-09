@@ -1137,18 +1137,25 @@ async def get_tunnel_info():
 # --- 서버 생명주기 (시작/종료 이벤트) ---
 
 
-AUTO_OPTIMIZE_ENABLED = False
+AUTO_OPTIMIZE_ENABLED = True
+
+def restart_server_process():
+    """1시간 주기 메모리 및 OS 핸들러 완전 반납을 위한 관제 서버 무중단 프로세스 재기동"""
+    import subprocess, sys, os
+    root_dir = PROJECT_ROOT
+    restarter = os.path.join(root_dir, "server", "auto_restart.py")
+    logger.info("⚡ [1시간 주기 서버 재기동] 메모리 및 핸들러 완전 반납을 위해 관제 서버를 재기동합니다...")
+    DETACHED_PROCESS = 0x00000008
+    subprocess.Popen([sys.executable, restarter], cwd=root_dir, creationflags=DETACHED_PROCESS, close_fds=True)
+    os._exit(0)
 
 async def auto_optimize_loop():
+    """1시간 주기 메모리/핸들 반납 및 서버 자동 재기동 루프"""
     while True:
-        await asyncio.sleep(3600)  # 1시간 대기
+        await asyncio.sleep(3600)  # 1시간 대기 (3600초)
         if AUTO_OPTIMIZE_ENABLED:
             try:
-                await optimize_memory()
-                logger.info("1시간 주기 카운터 PC 자동 메모리 최적화 완료")
-            except Exception as e:
-                pass
-            try:
+                # 1. 메인 데이터 서버 (PC-09) 메모리 최적화 명령 원격 전송
                 ws = get_client_ws("PC-09")
                 if ws:
                     cmd = make_packet(PacketType.COMMAND, {"action": "OPTIMIZE_MEMORY"})
@@ -1156,6 +1163,19 @@ async def auto_optimize_loop():
                     logger.info("1시간 주기 메인 서버(PC-09) 원격 메모리 최적화 명령 발송")
             except Exception as e:
                 pass
+
+            try:
+                # 2. 카운터 관제 서버 로컬 최적화 선실행
+                await optimize_memory()
+                logger.info("1시간 주기 카운터 PC 메모리 최적화 완료")
+            except Exception as e:
+                pass
+
+            # 3. 누적된 메모리 누수 및 윈도우 OS 핸들러 완전 반납을 위한 서버 자체 프로세스 재기동
+            try:
+                restart_server_process()
+            except Exception as e:
+                logger.error(f"서버 자동 재기동 실패: {e}")
 
 @app.post("/api/toggle_auto_optimize")
 async def toggle_auto_optimize():

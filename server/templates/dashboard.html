@@ -711,17 +711,31 @@
 
         let pcList = Array.isArray(initialServerData) && initialServerData.length > 0 ? initialServerData : [];
 
-        // 데이터가 비어있을 경우 서버 API에서 동기화
-        if (pcList.length === 0) {
-            fetch('/api/get_mapping')
-                .then(r => r.json())
-                .then(data => {
+        // 서버에 저장된 최신 매핑 정보 비동기 동기화 (모바일 대시보드와 동일 기준 적용)
+        async function loadSavedMapping() {
+            try {
+                const res = await fetch('/api/get_mapping');
+                const data = await res.json();
+                if (data && Array.isArray(data) && data.length > 0) {
+                    data.forEach(newPc => {
+                        const existing = pcList.find(p => p.id === newPc.id);
+                        if (existing) {
+                            newPc.status = (existing.status === 'ONLINE' ? 'ONLINE' : (newPc.status || 'OFFLINE'));
+                            newPc.pica = newPc.pica || existing.pica || 'UNKNOWN';
+                            newPc.netflix = existing.netflix || newPc.netflix || 'CLOSED';
+                            newPc.version = existing.version || newPc.version || '';
+                        }
+                    });
                     pcList = data;
                     renderGrid();
                     renderMappingTable();
                     updateTotalStat();
-                });
+                }
+            } catch(e) {
+                console.error('Mapping fetch failed:', e);
+            }
         }
+        loadSavedMapping();
 
         function updateTotalStat() {
             const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
@@ -896,6 +910,8 @@
             let netflixCount = 0;
             let guestActiveCount = 0;
             let guestIdleCount = 0;
+
+            pcList.forEach(pc => {
 
                 // ⚡ 1순위: IP 주소 일치 (매장 방 고유 고정 IP 기준 절대 매핑)
                 let live = null;

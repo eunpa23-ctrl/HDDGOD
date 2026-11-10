@@ -112,7 +112,7 @@ class TunnelManager:
                 continue
 
             match = url_pattern.search(text)
-            if match and not self.public_url:
+            if match and not self.public_url and "api.trycloudflare.com" not in match.group(0):
                 self.public_url = match.group(0)
                 self.status = "ready"
                 logger.info(f"🎉 [스마트폰 원격 접속 URL 생성 성공]: {self.public_url}")

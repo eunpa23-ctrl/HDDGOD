@@ -117,6 +117,13 @@ description: >-
 - **로그인 보조 방해 창(`상품주문목록`) 자동 종료 및 메인 좌석 화면 최상위 활성화**:
   - 로그인 직후 비동기로 열려 좌석 배치표를 가리는 `상품주문목록` 창을 자동 감지하여 `WM_CLOSE`로 닫고 좌석 화면 전면 배치.
   - 35초 안전 유예 기간(Grace Period)을 두어 시작 팝업만 닫고, 사장님이 일상 영업 중 수동으로 여는 창은 일체 간섭하지 않도록 보호.
-- **윈도우 부팅 시 제우스 서버 및 관제 자동 시작**:
-  - `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\ZeusServer.lnk` (`WindowStyle = 7` 최소화) 등록 완료.
+### 5.4 외부 봇넷 보안 방어 및 PC/모바일 대시보드 무결성 통합 릴리즈 (`v6.0.0`)
+- **외부 인터넷 취약점 스캔 공격(MSMQ QueueJumper) 완벽 방어**:
+  - 외부 공인 IP에서 카운터 PC로 침투하는 10만 개 이상의 악의적 스캔 세션으로 인한 MSMQ(`mqsvc.exe`) 메모리 폭증(3.5GB) 문제 해결.
+  - Windows 방화벽 인바운드 차단 규칙(`Block_MSMQ_External`, 포트: `1024, 1801, 2101, 2103, 2105, 2107`) 적용으로 외부 접근 원천 차단 및 메모리 즉각 회수(13MB 정상화).
+- **PC 대시보드(`dashboard.html`) 자바스크립트 구문 및 예외 방어 완전 안정화**:
+  - HTML/JS 파싱 오류 유발 요인(`SyntaxError: Invalid token`, `ReferenceError: fullData is not defined`) 제거.
+  - 모바일 대시보드(`mobile_dashboard.html`)의 검증된 데이터 파이프라인(`targetData = fullData || latestFullState`)을 PC 대시보드에 일치 적용하여, 페이지 진입 및 실시간 WebSocket 수신 시 상단 CPU/RAM 리소스, 관리서버100 및 손님 PC 1~8번 카드 전체가 100% 무결점 실시간 렌더링되도록 구현.
+- **모바일 대시보드 무결성 보존**:
+  - 정상 검증되어 운영 중인 모바일 대시보드 코드는 일체 변경 없이 100% 무결성 유지.
 

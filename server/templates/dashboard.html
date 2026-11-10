@@ -741,7 +741,7 @@
         }
         loadSavedMapping();
 
-        function updateTotalStat() {
+        function updateTotalStat(fullData = null) {
             const guestPcs = pcList.filter(p => !p.is_server && p.seat !== 9);
             const el = document.getElementById('stat-total');
             if (el) el.innerText = `${guestPcs.length} 대`;
@@ -774,9 +774,9 @@
             const elNf = document.getElementById('stat-netflix');
             if (elNf) elNf.innerText = `(${netflixCount}대 시청중)`;
             const elNfCount = document.getElementById('stat-netflix-count');
-            if (elNfCount && fullData && fullData.netflix_launch_count !== undefined) {
-                elNfCount.innerText = `${fullData.netflix_launch_count}회`;
-            }회`;
+            const targetData = fullData || latestFullState;
+            if (elNfCount && targetData && targetData.netflix_launch_count !== undefined) {
+                elNfCount.innerText = `${targetData.netflix_launch_count}회`;
             }
         }
 
@@ -1067,8 +1067,8 @@
             const elNf = document.getElementById('stat-netflix');
             if (elNf) elNf.innerText = `(${netflixCount}대 시청중)`;
             const elNfCount = document.getElementById('stat-netflix-count');
-            if (elNfCount && data.netflix_launch_count !== undefined) {
-                elNfCount.innerText = `${data.netflix_launch_count}회`;
+            if (elNfCount && fullData && fullData.netflix_launch_count !== undefined) {
+                elNfCount.innerText = `${fullData.netflix_launch_count}회`;
             }
 
             renderGrid();
